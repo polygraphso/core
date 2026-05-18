@@ -7,7 +7,7 @@ export function Problem() {
       <div className="grid md:grid-cols-12 gap-10 md:gap-16">
         <div className="md:col-span-8">
           <p className="font-serif text-2xl md:text-[28px] leading-snug text-ink max-w-3xl">
-            The MCP ecosystem grew faster than anyone&rsquo;s ability to vet it.
+            The MCP ecosystem grew faster than anyone&rsquo;s ability to polygraph it.
           </p>
           <p className="mt-6 text-ink-muted text-lg leading-relaxed max-w-2xl">
             Adoption metrics and dependency scans don&rsquo;t tell you whether a
