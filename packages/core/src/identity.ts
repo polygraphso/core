@@ -2,9 +2,15 @@
  * Server-identity helpers for refs of the form `{registry}/{owner}/{name}@{version}`.
  *
  * Examples:
- *   npm/@modelcontextprotocol/server-filesystem@0.4.2
- *   github/anthropic/mcp-server-foo@v0.1.3
- *   pypi/some-org/some-mcp@1.2.0
+ *   npm/@modelcontextprotocol/server-filesystem@0.4.2   (scoped npm)
+ *   npm/lodash@4.17.21                                  (unscoped npm)
+ *   pypi/mcp-server-git@1.0.0                           (pypi — no owner)
+ *   github/anthropic/mcp-server-foo@v0.1.3              (github — owner required)
+ *
+ * Owner rules per registry:
+ *   - npm: optional (scoped packages have `@scope` as owner; unscoped omit it)
+ *   - pypi: always absent (PyPI packages are flat — no owner namespacing)
+ *   - github: required (always `{owner}/{repo}`)
  *
  * npm scopes are preserved (the `@` in `@modelcontextprotocol` belongs to the
  * scope, not the version delimiter).
@@ -14,7 +20,7 @@ import type { Registry } from "./types.js";
 
 export interface ParsedServerRef {
   registry: Registry;
-  /** Null only when the registry is npm and the package is unscoped. */
+  /** Null for unscoped npm and for all pypi refs; required for github. */
   owner: string | null;
   name: string;
   version: string | null;
@@ -67,10 +73,10 @@ export function parseServerRef(ref: string): ParsedServerRef {
   let owner: string | null;
   let name: string;
   if (lastSlash === -1) {
-    if (registry !== "npm") {
-      throw new ServerRefParseError(ref, "expected `{registry}/{owner}/{name}`");
+    if (registry === "github") {
+      throw new ServerRefParseError(ref, "github requires `{owner}/{repo}`");
     }
-    // Unscoped npm package: `npm/lodash`.
+    // Unscoped npm package (`npm/lodash`) or a pypi package (`pypi/mcp-server-git`).
     owner = null;
     name = pathPart;
     if (!name) {
