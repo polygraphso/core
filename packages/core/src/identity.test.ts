@@ -47,26 +47,23 @@ describe("parseServerRef", () => {
     });
   });
 
-  it("parses a pypi ref with version", () => {
-    expect(parseServerRef("pypi/some-org/some-mcp@1.2.0")).toEqual({
+
+  it("parses an ownerless pypi ref with version", () => {
+    expect(parseServerRef("pypi/mcp-server-git@1.0.0")).toEqual({
       registry: "pypi",
-      owner: "some-org",
-      name: "some-mcp",
-      version: "1.2.0",
+      owner: null,
+      name: "mcp-server-git",
+      version: "1.0.0",
     });
   });
 
-  it("parses a pypi ref without version", () => {
-    expect(parseServerRef("pypi/some-org/some-mcp")).toEqual({
+  it("parses an ownerless pypi ref without version", () => {
+    expect(parseServerRef("pypi/mcp-server-git")).toEqual({
       registry: "pypi",
-      owner: "some-org",
-      name: "some-mcp",
+      owner: null,
+      name: "mcp-server-git",
       version: null,
     });
-  });
-
-  it("rejects pypi without owner", () => {
-    expect(() => parseServerRef("pypi/some-pkg@1.0.0")).toThrow(ServerRefParseError);
   });
 
   it("rejects github without owner", () => {
@@ -107,8 +104,8 @@ describe("formatServerRef", () => {
     expect(formatServerRef(parseServerRef(ref))).toBe(ref);
   });
 
-  it("round-trips a pypi ref", () => {
-    const ref = "pypi/some-org/some-mcp@1.2.0";
+  it("round-trips an ownerless pypi ref", () => {
+    const ref = "pypi/mcp-server-git@1.0.0";
     expect(formatServerRef(parseServerRef(ref))).toBe(ref);
   });
 });
