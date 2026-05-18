@@ -62,8 +62,8 @@ export function Hero() {
           </h1>
 
           <p className="mt-8 max-w-xl text-ink-muted text-lg leading-relaxed">
-            Independent, lab-evaluated trust grades for MCP servers and the
-            agents that use them. Free public grades.{" "}
+            Independent, lab-evaluated polygraphs for MCP servers and the
+            agents that use them. Free public polygraphs.{" "}
             <span className="font-mono text-base text-ink">CLI</span> for
             runtime checks.
           </p>
