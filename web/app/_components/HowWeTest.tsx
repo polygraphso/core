@@ -55,7 +55,7 @@ export function HowWeTest() {
     >
       <SectionHeader
         number="§ 02"
-        label="How we test"
+        label="How we polygraph"
         title={`${v1ProbeCount} probes. ${v1CategoryCount} categories. One sandbox.`}
       >
         Every probe runs in an isolated sandbox. Every result is reproducible

@@ -10,7 +10,7 @@ const rows = [
   {
     q: "Does it behave well under pressure?",
     src: "Our sandbox",
-    status: "v1 grade — shipping",
+    status: "v1 polygraph — shipping",
     statusKind: "primary" as const,
   },
   {
@@ -81,7 +81,7 @@ export function WhereWeSit() {
       </figure>
 
       <p className="mt-4 font-mono text-[10.5px] text-ink-faint uppercase tracking-[0.18em]">
-        We grade axis 02. We point at axes 01 and 03 — never average them in.
+        We run axis 02 — the polygraph. We point at axes 01 and 03 — never average them in.
       </p>
     </section>
   );
