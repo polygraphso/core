@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" font-family="'Source Serif 4', 'Source Serif Pro', Georgia, 'Times New Roman', serif">
+  <!-- Embeds Source Serif from Google Fonts so this renders right in browsers.
+       For raster export use the build script in this folder. -->
+  <defs>
+    <style type="text/css"><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&amp;display=swap');
+    ]]></style>
+  </defs>
+
+  <!-- transparent ground so the mark sits on whatever surface it's placed on -->
+
+  <!-- logomark (scaled-down, same paths as mark.svg) -->
+  <g transform="translate(40, 80) scale(0.3125)">
+    <rect width="512" height="512" rx="72" fill="#161512"/>
+    <line
+      x1="48" y1="256" x2="464" y2="256"
+      stroke="#5c5550"
+      stroke-width="1.5"
+      stroke-dasharray="6 10"
+      opacity="0.55"
+    />
+    <path
+      d="M48 256 L120 256 L150 248 L180 264 L210 256 L230 200 L246 312 L262 184 L278 326 L294 196 L310 320 L326 232 L342 280 L358 220 L374 292 L390 256 L420 256 L464 256"
+      fill="none"
+      stroke="#f5f1e5"
+      stroke-width="10"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+    <circle cx="86" cy="256" r="7" fill="#7a1f2b"/>
+  </g>
+
+  <!-- wordmark -->
+  <text
+    x="240" y="208"
+    font-size="160"
+    font-weight="600"
+    letter-spacing="-4"
+    fill="#161512"
+  >poligrafo<tspan fill="#7a1f2b">.</tspan><tspan font-style="italic" font-weight="400" fill="#5c5550">ai</tspan></text>
+</svg>

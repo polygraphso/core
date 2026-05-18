@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" font-family="'Source Serif 4', 'Source Serif Pro', Georgia, 'Times New Roman', serif">
+  <defs>
+    <style type="text/css"><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,500;0,600;1,400&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap');
+      .mono { font-family: 'IBM Plex Mono', ui-monospace, Menlo, monospace; }
+    ]]></style>
+
+    <!-- subtle paper grain pattern -->
+    <pattern id="grain" x="0" y="0" width="3" height="3" patternUnits="userSpaceOnUse">
+      <circle cx="0" cy="0" r="0.5" fill="#161512" opacity="0.04"/>
+    </pattern>
+  </defs>
+
+  <!-- Parchment ground + paper grain -->
+  <rect width="1280" height="640" fill="#f5f1e5"/>
+  <rect width="1280" height="640" fill="url(#grain)"/>
+
+  <!-- Top hairline -->
+  <line x1="64" y1="56" x2="1216" y2="56" stroke="#d9d2c2" stroke-width="1"/>
+
+  <!-- Top stamp row: pulse dot + brand mark id, repo path on the right -->
+  <circle cx="74" cy="85" r="4" fill="#7a1f2b"/>
+  <text x="86" y="90" class="mono" font-size="14" letter-spacing="2.4" fill="#5c5550">POLIGRAFO.AI</text>
+  <text x="1216" y="90" class="mono" font-size="14" letter-spacing="2.4" fill="#8a8378" text-anchor="end">POLYGRAPH-SO / CORE</text>
+
+  <!-- Logomark, larger so it anchors the composition -->
+  <g transform="translate(64, 156) scale(0.36)">
+    <rect width="512" height="512" rx="72" fill="#161512"/>
+    <line x1="48" y1="256" x2="464" y2="256" stroke="#5c5550" stroke-width="1.5" stroke-dasharray="6 10" opacity="0.55"/>
+    <path
+      d="M48 256 L120 256 L150 248 L180 264 L210 256 L230 200 L246 312 L262 184 L278 326 L294 196 L310 320 L326 232 L342 280 L358 220 L374 292 L390 256 L420 256 L464 256"
+      fill="none" stroke="#f5f1e5" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"
+    />
+    <circle cx="86" cy="256" r="7" fill="#7a1f2b"/>
+  </g>
+
+  <!-- Wordmark + positioning headline -->
+  <g>
+    <text x="284" y="232" font-size="84" font-weight="600" letter-spacing="-2" fill="#161512">
+      poligrafo<tspan fill="#7a1f2b">.</tspan><tspan font-style="italic" font-weight="400" fill="#5c5550">ai</tspan>
+    </text>
+
+    <text x="284" y="316" font-size="34" font-weight="400" fill="#5c5550">
+      <tspan x="284" dy="0">Independent, lab-evaluated</tspan>
+      <tspan x="284" dy="42">trust grades for AI agents.</tspan>
+    </text>
+  </g>
+
+  <!-- Polygraph trace across the bottom — same shape as the divider on the site -->
+  <line x1="64" y1="540" x2="1216" y2="540" stroke="#d9d2c2" stroke-width="1" stroke-dasharray="3 6"/>
+  <path
+    d="M64 540
+       L300 540
+       L320 530 L340 552 L360 540
+       L380 480 L398 600 L416 472 L434 608 L452 484 L470 600 L488 510 L506 564 L524 504 L542 576 L560 540
+       L820 540
+       L850 532 L880 548 L910 540
+       L1216 540"
+    fill="none"
+    stroke="#7a1f2b"
+    stroke-width="2.2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <!-- Footer caption -->
+  <text x="64" y="600" class="mono" font-size="13" letter-spacing="2.4" fill="#8a8378">
+    BASELINE  ·  ADVERSARIAL PROBES  ·  BASELINE
+  </text>
+  <text x="1216" y="600" class="mono" font-size="13" letter-spacing="2.4" fill="#8a8378" text-anchor="end">
+    POLIGRAFO.AI
+  </text>
+</svg>
