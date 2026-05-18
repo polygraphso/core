@@ -1,4 +1,4 @@
-# web — poligrafo.ai landing page
+# web — polygraph.so landing page
 
 Launch landing page. Built against `landing-brief.md` in the strategy folder, with `pivot-2026-05-15.md` (three-layer architecture) and `brand-foundation.md` (voice / positioning / principles) as supporting source-of-truth.
 
@@ -28,8 +28,8 @@ app/
 ├── globals.css             # design tokens, paper grain, animations
 ├── icon.svg                # polygraph waveform favicon
 ├── _components/
-│   ├── Hero.tsx            # nav strip + headline + CTAs + install card
-│   ├── InstallCard.tsx     # copy-paste $ npx poligrafo check + lookup-flow steps
+│   ├── Hero.tsx            # nav strip + tagline H1 + positioning subhead + CTAs + install card
+│   ├── InstallCard.tsx     # copy-paste $ npx polygraph check + lookup-flow steps
 │   ├── PolygraphTrace.tsx  # oscillograph divider SVG
 │   ├── Problem.tsx         # § 01
 │   ├── HowWeTest.tsx       # § 02 — categories mirror litmus-test-v1.md
@@ -51,16 +51,16 @@ Aesthetic target: arXiv-preprint / lab-report **for the chrome**, product-page *
 
 ## Launch posture
 
-Page is built for **launch-with-product**. Hero leads with positioning ("Independent, lab-evaluated trust grades for AI agents."); the single primary CTA is **Install the CLI**. The waitlist demotes to a single-field "notify me about new grades" tile down-page. "PREPRINT V0.1 / DEPOSITED" framing has been retired from the main landing.
+Page is built for **launch-with-product**. Hero leads with the tagline ("We polygraph AI agents so you don't have to."), positioning sits as the sub-headline ("Independent, lab-evaluated trust grades for MCP servers and the agents that use them. Free public grades. CLI for runtime checks."). The single primary CTA is **Install the CLI**. The waitlist demotes to a single-field "notify me when grades publish" tile down-page. "PREPRINT V0.1 / DEPOSITED" framing is off the main landing.
 
-The `Hero` includes a copy of `npx poligrafo check <mcp-server>` plus a three-step explanation of what the CLI does. Per pivot's three-layer model: **the CLI is a thin lookup over precomputed grades (layer 3) — it does not run probes locally.** If a server isn't yet evaluated, the CLI returns `queued, position #N` and notifies on completion.
+The `Hero` includes a copy of `npx polygraph check <mcp-server>` plus a three-step explanation of what the CLI does. Per pivot's three-layer model: **the CLI is a thin lookup over precomputed grades (layer 3) — it does not run probes locally.** If a server isn't yet evaluated, the CLI returns `queued, position #N` and notifies on completion.
 
 ## Launch dependencies (gate v1 ship)
 
 The brief is firm: *if real grades aren't ready, the page isn't ready.* Track both:
 
-- [ ] **`npx poligrafo` CLI binary is publishable.** The hero install card surfaces `npx poligrafo check <mcp-server>` as the primary CTA — that command needs to actually work. Replace the three-step explainer with embedded asciinema of a real run when available.
-- [ ] **Grading pipeline has produced ≥1 Top-10 real grade with a working evidence link.** The Public-grades matrix (§04, formerly `Top50.tsx`) has been **pulled** until this lands — an empty grid actively undercuts credibility per the brief. Restore the section with real `cells` data when the pipeline ships output. Renumber Independence back to §05 when you do.
+- [ ] **`npx polygraph` CLI binary is publishable.** The hero install card surfaces `npx polygraph check <mcp-server>` as the primary CTA — that command needs to actually work. Replace the three-step explainer with embedded asciinema of a real run when available.
+- [ ] **Grading pipeline has produced ≥1 Top-10 real grade with a working evidence link.** The Public-grades matrix (formerly `Top50.tsx`) has been **pulled** until this lands — an empty grid actively undercuts credibility per the brief. Restore the section with real `cells` data when the pipeline ships output. Renumber subsequent sections accordingly.
 
 ## Before launch (rest of the checklist)
 

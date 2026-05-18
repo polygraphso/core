@@ -22,14 +22,15 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://poligrafo.ai"),
+  metadataBase: new URL("https://polygraph.so"),
   title: {
-    default: "poligrafo.ai — independent trust grade for AI agents",
-    template: "%s · poligrafo.ai",
+    default:
+      "polygraph.so — independent, lab-evaluated trust grades for AI agents",
+    template: "%s · polygraph.so",
   },
   description:
-    "Behavioral evaluation for MCP servers and the agents that use them. Lab-evaluated. Vendor-independent. Free public grades. CLI for runtime checks.",
-  applicationName: "poligrafo",
+    "We polygraph AI agents so you don't have to. Behavioral evaluation for MCP servers and the agents that use them. Free public grades. CLI for runtime checks.",
+  applicationName: "polygraph",
   keywords: [
     "MCP",
     "AI agents",
@@ -37,21 +38,23 @@ export const metadata: Metadata = {
     "MCP server evaluation",
     "behavioral testing",
     "agent trust",
+    "polygraph",
   ],
   openGraph: {
-    title: "poligrafo.ai — independent trust grade for AI agents",
+    title:
+      "polygraph.so — independent, lab-evaluated trust grades for AI agents",
     description:
-      "Lab-evaluated. Vendor-independent. Continuously checked. Free public grades plus a CLI for runtime checks of MCP servers.",
-    url: "https://poligrafo.ai",
-    siteName: "poligrafo.ai",
+      "We polygraph AI agents so you don't have to. Free public grades plus a CLI for runtime checks of MCP servers.",
+    url: "https://polygraph.so",
+    siteName: "polygraph.so",
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "poligrafo.ai",
+    title: "polygraph.so",
     description:
-      "Independent, lab-evaluated trust grade for AI agents and MCP servers.",
+      "Independent, lab-evaluated trust grades for AI agents and MCP servers.",
   },
   robots: { index: true, follow: true },
 };

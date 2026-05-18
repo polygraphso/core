@@ -1,6 +1,6 @@
 # brand
 
-Visual identity assets for poligrafo.ai. SVGs are the source-of-truth for any web/print use; PNGs are the GitHub-ready exports built from the same designs.
+Visual identity assets for polygraph.so. SVGs are the source-of-truth for any web/print use; PNGs are the GitHub-ready exports built from the same designs.
 
 ## What's here
 
@@ -9,7 +9,7 @@ Visual identity assets for poligrafo.ai. SVGs are the source-of-truth for any we
 | `mark.svg` | Square logomark — polygraph oscillograph trace on ink ground | App icons, favicons, anywhere a single-glyph mark is wanted (web) |
 | `mark.png` | 1024×1024 raster of the mark | **GitHub org avatar** (`polygraph-so`), Twitter/X, LinkedIn |
 | `mark-512.png` | 512×512 raster of the mark | Upload UIs that cap at 512 |
-| `wordmark.svg` | Horizontal mark + "poligrafo.ai" wordmark | README headers, deck title slides, email signatures |
+| `wordmark.svg` | Horizontal mark + "polygraph.so" wordmark | README headers, deck title slides, email signatures |
 | `social-preview.svg` | 1280×640 social preview composition | Source for the PNG below; embed anywhere SVG works |
 | `social-preview.png` | 1280×640 raster of the above | **GitHub repo social preview** (Settings → Social preview) |
 | `build.sh` | Rasterizer — composes the PNGs from `magick` primitives | Re-run any time the design changes |
@@ -29,7 +29,7 @@ GitHub will downscale automatically for the various places these appear (notific
 ## Design notes
 
 - **Logomark** is a polygraph trace: calm baseline · spike cluster · calm baseline — the same shape as the divider on the landing page hero. The tiny oxblood dot at the left baseline is the brand pulse, echoing the pulse-soft dot on the site's top stamp.
-- **Wordmark** sets "poligrafo" in a transitional serif (Source Serif 4 in the web SVG, Georgia in the PNG fallback), with ".ai" in lighter italic and a red period — a quiet brand cue that scales down without breaking.
+- **Wordmark** sets "polygraph" in a transitional serif (Source Serif 4 in the web SVG, Georgia in the PNG fallback), with ".so" in lighter italic and a red period — a quiet brand cue that scales down without breaking.
 - **Palette**: ink `#161512`, parchment `#f5f1e5`, oxblood `#7a1f2b`, muted `#5c5550`, faint `#8a8378`, rule `#d9d2c2`. Same tokens as `web/app/globals.css`.
 
 ## Rebuilding

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rasterize the poligrafo brand assets to PNG.
+# Rasterize the polygraph.so brand assets to PNG.
 #
 # ImageMagick's native SVG renderer (MSVG) drops complex strokes, so we
 # compose the PNGs programmatically here instead of converting from SVG.
@@ -69,7 +69,7 @@ magick -size 1280x640 "xc:$PARCHMENT" \
   -draw "circle 74,85 80,85" \
   `# Top stamp text (mono, spaced)` \
   -fill "$MUTED" -stroke none -font "$MONO" -pointsize 16 \
-  -gravity NorthWest -annotate +94+76 "P O L I G R A F O . A I" \
+  -gravity NorthWest -annotate +94+76 "P O L Y G R A P H . S O" \
   -fill "$FAINT" \
   -gravity NorthEast -annotate +64+76 "P O L Y G R A P H - S O   /   C O R E" \
   `# Logomark — composited from the just-built mark.png at the right size` \
@@ -77,11 +77,11 @@ magick -size 1280x640 "xc:$PARCHMENT" \
   -gravity NorthWest -geometry +64+136 -composite \
   `# Wordmark` \
   -fill "$INK" -stroke none -font "$SERIF_BOLD" -pointsize 92 \
-  -gravity NorthWest -annotate +296+156 "poligrafo" \
+  -gravity NorthWest -annotate +296+156 "polygraph" \
   -fill "$OXBLOOD" -font "$SERIF_BOLD" -pointsize 92 \
-  -annotate +746+156 "." \
+  -annotate +795+156 "." \
   -fill "$MUTED" -font "$SERIF_ITALIC" -pointsize 92 \
-  -annotate +770+156 "ai" \
+  -annotate +820+156 "so" \
   `# Positioning headline (two lines)` \
   -fill "$MUTED" -font "$SERIF" -pointsize 38 \
   -annotate +296+278 "Independent, lab-evaluated" \
@@ -98,7 +98,7 @@ magick -size 1280x640 "xc:$PARCHMENT" \
   `# Footer caption (mono, low-key)` \
   -fill "$FAINT" -stroke none -font "$MONO" -pointsize 13 \
   -gravity NorthWest -annotate +64+590 "B A S E L I N E   ·   A D V E R S A R I A L   P R O B E S   ·   B A S E L I N E" \
-  -gravity NorthEast -annotate +64+590 "P O L I G R A F O . A I" \
+  -gravity NorthEast -annotate +64+590 "P O L Y G R A P H . S O" \
   social-preview.png
 
 echo "done."

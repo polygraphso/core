@@ -1,22 +1,24 @@
-# poligrafo
+# polygraph
 
-Source-of-truth code repo for **poligrafo.ai** — independent, lab-evaluated trust grade for AI agents.
+Source-of-truth code repo for **polygraph.so** — independent, lab-evaluated trust grades for AI agents. (Originally `poligrafo.ai`; renamed for findability.)
 
 ## Layout
 
 ```
-poligrafo/
-├── web/         # v0 landing page + waitlist (Next.js 16, App Router)
+core/
+├── web/         # launch landing page (Next.js 16, App Router)
+├── brand/       # logomark, wordmark, social preview (SVG + PNG)
 └── .claude/     # local dev tooling (preview launch config, etc.)
 ```
 
-Future siblings (not yet built): `cli/` (the `npx poligrafo check` runtime), `probes/` (the litmus-test sandbox + probe pack), `infra/` (deploy plumbing).
+Future siblings (not yet built): `cli/` (the `npx polygraph check` runtime), `probes/` (the litmus-test sandbox + probe pack), `infra/` (deploy plumbing).
 
 ## Strategy & decision log
 
-Lives outside this repo, in `~/Documents/workspace/assistant/poligrafo/`:
+Lives outside this repo, in `~/Documents/workspace/assistant/polygraph/`:
 
 - `pivot-2026-05-15.md` — current direction (read first when context shifts).
+- `brand-foundation.md` — mission / vision / positioning / tagline / voice / principles. Settled core.
 - `landing-brief.md` — content + tone + visual spec the landing page is built against.
 - `litmus-test-v1.md` — MCP behavioral evaluation spec (5 probes / 4 categories).
 
@@ -35,4 +37,4 @@ Hosted on Vercel or Cloudflare Pages — either works. The waitlist endpoint at 
 
 - Pre-traction default: anything not gating litmus-v1 + landing is parking-lot.
 - Clean slate from Talent Protocol heritage. Don't drag in Builder Score, Talent Passport, or other legacy concepts.
-- Independence covenant is non-negotiable: **vendors never pay us.**
+- Independence is disclosure-based, not refusal-based — see `brand-foundation.md` principle #1.

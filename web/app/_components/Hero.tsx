@@ -12,7 +12,7 @@ export function Hero() {
               className="inline-block w-1.5 h-1.5 bg-oxblood pulse-soft"
               aria-hidden
             />
-            <span className="text-ink">poligrafo.ai</span>
+            <span className="text-ink">polygraph.so</span>
           </div>
           <nav className="hidden sm:flex items-center gap-5">
             <a
@@ -37,12 +37,12 @@ export function Hero() {
             Catch the agents you can&rsquo;t trust before they touch your data.
           </p>
           <h1 className="font-serif text-[44px] leading-[1.04] tracking-tight md:text-[68px] md:leading-[1.04] text-ink">
-            Independent,
+            We polygraph
             <br />
-            lab-evaluated
+            AI agents so you
             <br />
             <span className="relative inline-block">
-              trust grades
+              don&rsquo;t have to
               <svg
                 aria-hidden
                 viewBox="0 0 280 14"
@@ -58,13 +58,12 @@ export function Hero() {
                 />
               </svg>
             </span>
-            <br />
-            for AI agents.
+            .
           </h1>
 
           <p className="mt-8 max-w-xl text-ink-muted text-lg leading-relaxed">
-            Behavioral evaluation for MCP servers and the agents that use them.
-            Free public grades.{" "}
+            Independent, lab-evaluated trust grades for MCP servers and the
+            agents that use them. Free public grades.{" "}
             <span className="font-mono text-base text-ink">CLI</span> for
             runtime checks.
           </p>

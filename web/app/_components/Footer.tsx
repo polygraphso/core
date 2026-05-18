@@ -43,12 +43,11 @@ export function Footer() {
 
       <div className="mx-auto max-w-6xl px-6 py-14 grid md:grid-cols-12 gap-10">
         <div className="md:col-span-5">
-          <div className="font-serif text-2xl text-ink">poligrafo.ai</div>
+          <div className="font-serif text-2xl text-ink">polygraph.so</div>
           <p className="mt-3 text-ink-muted text-sm leading-relaxed max-w-sm">
-            <em className="font-serif">poligrafo</em>{" "}
-            <span className="text-ink-faint">/po.li.&apos;ɡɾa.fu/</span>{" "}
-            &mdash; Portuguese for <em className="font-serif">polygraph</em>.
-            Lie detector, for AI agents.
+            Originally{" "}
+            <em className="font-serif">poligrafo.ai</em>. We pivoted to the
+            English spelling so people could find us.
           </p>
         </div>
 
@@ -107,25 +106,25 @@ export function Footer() {
               <li>
                 <a
                   className="text-ink hover:text-oxblood transition-colors"
-                  href="mailto:hello@poligrafo.ai"
+                  href="mailto:hello@polygraph.so"
                 >
-                  hello@poligrafo.ai
+                  hello@polygraph.so
                 </a>
               </li>
               <li>
                 <a
                   className="text-ink hover:text-oxblood transition-colors"
-                  href="mailto:research@poligrafo.ai"
+                  href="mailto:research@polygraph.so"
                 >
-                  research@poligrafo.ai
+                  research@polygraph.so
                 </a>
               </li>
               <li>
                 <a
                   className="text-ink hover:text-oxblood transition-colors"
-                  href="mailto:disclosures@poligrafo.ai"
+                  href="mailto:disclosures@polygraph.so"
                 >
-                  disclosures@poligrafo.ai
+                  disclosures@polygraph.so
                 </a>
               </li>
             </ul>
@@ -154,7 +153,7 @@ export function Footer() {
 
       <div className="border-t hairline">
         <div className="mx-auto max-w-6xl px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-          <span>© {new Date().getFullYear()} poligrafo.ai</span>
+          <span>© {new Date().getFullYear()} polygraph.so</span>
           <span>
             Material support is on the{" "}
             <a
