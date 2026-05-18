@@ -1,0 +1,115 @@
+# Curated seed list of MCP servers for polygraph scoring.
+#
+# Sources (78 entries total, verified against npm / pypi at seed time):
+#
+#   1. @modelcontextprotocol/* reference servers (npm) — canonical set,
+#      verified live on registry.npmjs.org.
+#   2. mcp-server-* reference servers (pypi) — the Python-implemented
+#      counterparts, verified live on pypi.org.
+#   3. Well-known third-party MCP packages — Notion, Cloudflare, Supabase,
+#      Upstash. Hand-picked, verified live.
+#   4. The Official MCP Registry at registry.modelcontextprotocol.io —
+#      every listing is vetted by the MCP team. We snapshot the
+#      `isLatest`+`active` entries with an npm or pypi `packages[]`
+#      entry, deduplicated by (registry, owner, name). This is a
+#      static snapshot; a live "registry sync" adapter is a later
+#      phase.
+#
+# Maintenance rules:
+#   - **Add** by appending YAML rows; the seed script upserts on
+#     (registry, owner, name) with `nulls not distinct` so unscoped
+#     npm packages (owner: null) round-trip correctly.
+#   - **Remove** by commenting out, not deleting — the row + its history
+#     in versions / adoption_scores stays valid; a hard delete would
+#     orphan downstream rows.
+#   - **Schema** — every entry has `registry` (npm | pypi | github),
+#     `name`, and an optional `owner`. pypi/github require owner; only
+#     unscoped npm packages may omit it.
+
+servers:
+
+  # ── @modelcontextprotocol/* reference servers (npm) (12) ─────────────
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-filesystem }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-postgres }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-brave-search }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-everything }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-gdrive }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-github }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-gitlab }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-google-maps }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-memory }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-puppeteer }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-slack }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-everart }
+
+  # ── mcp-server-* canonical reference servers (pypi) (5) ─────────────
+  - { registry: pypi,                              name: mcp-server-git }
+  - { registry: pypi,                              name: mcp-server-fetch }
+  - { registry: pypi,                              name: mcp-server-sqlite }
+  - { registry: pypi,                              name: mcp-server-time }
+  - { registry: pypi,                              name: mcp-server-sentry }
+
+  # ── Well-known third-party MCP packages (4) ─────────────────────────
+  - { registry: npm, owner: "@upstash", name: context7-mcp }
+  - { registry: npm, owner: "@notionhq", name: notion-mcp-server }
+  - { registry: npm, owner: "@cloudflare", name: mcp-server-cloudflare }
+  - { registry: npm, owner: "@supabase", name: mcp-server-supabase }
+
+  # ── From the Official MCP Registry (registry.modelcontextprotocol.io) (57) 
+  - { registry: npm, owner: "@adeu", name: mcp-server }
+  - { registry: npm, owner: "@agenttrust", name: mcp-server }
+  - { registry: npm, owner: "@ankimcp", name: anki-mcp-server }
+  - { registry: pypi,                              name: armor-mcp }
+  - { registry: npm, owner: "@contextlayer", name: mcp }
+  - { registry: npm,                              name: ctxl }
+  - { registry: npm,                              name: ctxl-mcp }
+  - { registry: npm, owner: "@autonomad1", name: computeback-mcp }
+  - { registry: npm,                              name: autonomad-travel }
+  - { registry: pypi,                              name: borealhost-mcp }
+  - { registry: npm, owner: "@buywhere", name: mcp-server }
+  - { registry: npm,                              name: contextstudios-mcp }
+  - { registry: npm, owner: "@cueapi", name: mcp }
+  - { registry: npm,                              name: fodda-mcp }
+  - { registry: npm, owner: "@i18n-agent", name: mcp-client }
+  - { registry: npm, owner: "@ai-dossier", name: mcp-server }
+  - { registry: npm, owner: "@kawacode", name: mcp }
+  - { registry: npm,                              name: lawai-mcp-server }
+  - { registry: pypi,                              name: mcpcap }
+  - { registry: npm, owner: "@meetlark", name: mcp-server }
+  - { registry: pypi,                              name: nexustoken-sdk }
+  - { registry: npm,                              name: nocturnusai-mcp }
+  - { registry: pypi,                              name: nudg3-mcp }
+  - { registry: pypi,                              name: obris-mcp }
+  - { registry: npm, owner: "@perplexity-ai", name: mcp-server }
+  - { registry: npm,                              name: ponlo-ai }
+  - { registry: npm, owner: "@proofslip", name: mcp-server }
+  - { registry: npm, owner: "@rapay", name: mcp-server }
+  - { registry: npm,                              name: raven-mcp }
+  - { registry: pypi,                              name: reka-mcp }
+  - { registry: npm, owner: "@rolli", name: mcp }
+  - { registry: pypi,                              name: roxels-mcp }
+  - { registry: npm,                              name: mcp-merchant }
+  - { registry: npm,                              name: mcp-socialapi }
+  - { registry: npm,                              name: telbase }
+  - { registry: npm, owner: "@tensorfeed", name: mcp-server }
+  - { registry: npm, owner: "@tensorfeed", name: x402-base-mcp }
+  - { registry: npm, owner: "@toolprint", name: hypertool-mcp }
+  - { registry: npm, owner: "@traderouter", name: trade-router-mcp }
+  - { registry: npm, owner: "@tuteliq", name: mcp }
+  - { registry: npm, owner: "@wildcard-ai", name: deepcontext }
+  - { registry: npm,                              name: 3dstreet-mcp }
+  - { registry: npm, owner: "@businys", name: mcp-server }
+  - { registry: npm, owner: "@borough", name: mcp }
+  - { registry: npm, owner: "@scanbim-labs", name: scanbim-mcp }
+  - { registry: npm,                              name: mcp-server-scf }
+  - { registry: npm, owner: "@calx", name: selis-mcp }
+  - { registry: npm, owner: "@trustrails", name: mcp-server }
+  - { registry: npm, owner: "@undisk-mcp", name: stdio-proxy }
+  - { registry: pypi,                              name: nginx-proxy-manager-mcp-full }
+  - { registry: pypi,                              name: mcp-proxy-for-aws }
+  - { registry: npm, owner: "@scope-bid", name: scope-aec-mcp }
+  - { registry: npm, owner: "@scope-bid", name: scope-claims-mcp }
+  - { registry: npm, owner: "@scope-bid", name: scope-mcp }
+  - { registry: npm, owner: "@hovecapital", name: read-only-mysql-mcp-server }
+  - { registry: npm, owner: "@hovecapital", name: read-only-postgres-mcp-server }
+  - { registry: pypi,                              name: machins }
