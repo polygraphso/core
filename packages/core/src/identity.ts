@@ -14,7 +14,8 @@ import type { Registry } from "./types.js";
 
 export interface ParsedServerRef {
   registry: Registry;
-  owner: string;
+  /** Null only when the registry is npm and the package is unscoped. */
+  owner: string | null;
   name: string;
   version: string | null;
 }
@@ -63,24 +64,39 @@ export function parseServerRef(ref: string): ParsedServerRef {
   }
 
   const lastSlash = pathPart.lastIndexOf("/");
+  let owner: string | null;
+  let name: string;
   if (lastSlash === -1) {
-    throw new ServerRefParseError(ref, "expected `{registry}/{owner}/{name}`");
-  }
-  const owner = pathPart.slice(0, lastSlash);
-  const name = pathPart.slice(lastSlash + 1);
-  if (!owner || !name) {
-    throw new ServerRefParseError(ref, "empty owner or name segment");
+    if (registry !== "npm") {
+      throw new ServerRefParseError(ref, "expected `{registry}/{owner}/{name}`");
+    }
+    // Unscoped npm package: `npm/lodash`.
+    owner = null;
+    name = pathPart;
+    if (!name) {
+      throw new ServerRefParseError(ref, "empty name segment");
+    }
+  } else {
+    owner = pathPart.slice(0, lastSlash);
+    name = pathPart.slice(lastSlash + 1);
+    if (!owner || !name) {
+      throw new ServerRefParseError(ref, "empty owner or name segment");
+    }
   }
 
   return { registry: registry as Registry, owner, name, version };
 }
 
 export function formatServerRef(parts: ParsedServerRef): string {
-  const base = `${parts.registry}/${parts.owner}/${parts.name}`;
+  const base = parts.owner
+    ? `${parts.registry}/${parts.owner}/${parts.name}`
+    : `${parts.registry}/${parts.name}`;
   return parts.version ? `${base}@${parts.version}` : base;
 }
 
 /** Identity of a server without a version pin. */
 export function serverKey(parts: Pick<ParsedServerRef, "registry" | "owner" | "name">): string {
-  return `${parts.registry}/${parts.owner}/${parts.name}`;
+  return parts.owner
+    ? `${parts.registry}/${parts.owner}/${parts.name}`
+    : `${parts.registry}/${parts.name}`;
 }

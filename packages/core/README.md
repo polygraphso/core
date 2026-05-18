@@ -21,6 +21,4 @@ Each migration file is timestamped (`YYYYMMDDHHMMSS_description.sql`) and append
 
 Migration ownership follows the rule in `core-contracts.md`: **the package owning the table writes its migration**. Scoring owns `servers`/`versions`/`adoption_scores`/`runs`; litmus will add `behavioral_grades`; onboarding will add `users` and `alerts`.
 
-## See also
-
-- `~/Documents/workspace/assistant/polygraph/core-contracts.md` — the human-readable shared agreement this package implements.
+Strategy and contract docs live outside this repo.

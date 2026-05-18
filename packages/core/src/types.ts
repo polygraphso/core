@@ -19,7 +19,8 @@ export type RunStatus = "queued" | "running" | "completed" | "failed";
 export interface ServerRow {
   id: string;
   registry: Registry;
-  owner: string;
+  /** Null only for unscoped npm packages. */
+  owner: string | null;
   name: string;
   first_seen: string;
   last_seen: string;
@@ -62,7 +63,7 @@ export interface AdoptionComponents {
   smithery_verified?: boolean | null;
   depsdev_dependents_count?: number | null;
   depsdev_advisory_count?: number | null;
-  sources_used?: string[];
+  sources_used?: string[] | null;
   [key: string]: unknown;
 }
 
