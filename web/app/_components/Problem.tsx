@@ -12,7 +12,7 @@ export function Problem() {
           <p className="mt-6 text-ink-muted text-lg leading-relaxed max-w-2xl">
             Adoption metrics and dependency scans don&rsquo;t tell you whether a
             server will exfiltrate your data or hijack the agent calling it.
-            Frontier labs won&rsquo;t independently grade the ecosystem
+            Frontier labs won&rsquo;t independently polygraph the ecosystem
             they&rsquo;re building on. You need an outside opinion.
           </p>
         </div>

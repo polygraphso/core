@@ -4,12 +4,12 @@ import { useState } from "react";
 
 const COMMAND = "npx polygraph check <mcp-server>";
 
-// CLI is layer 3 — a thin lookup over precomputed grades (sub-second).
+// CLI is layer 3 — a thin lookup over precomputed polygraphs (sub-second).
 // It does NOT run probes locally. The lab pipeline (layer 1) is async on our side.
 // See pivot-2026-05-15.md "What we build" for the three-layer architecture.
 const STEPS: Array<{ id: string; label: string }> = [
-  { id: "01", label: "fetches the grade from polygraph.so" },
-  { id: "02", label: "returns grade + last-tested date" },
+  { id: "01", label: "fetches the polygraph from polygraph.so" },
+  { id: "02", label: "returns polygraph: grade + last-tested date" },
   { id: "03", label: "links to the full evidence report" },
 ];
 
@@ -68,8 +68,8 @@ export function InstallCard() {
         <p className="mt-5 pt-4 border-t hairline font-mono text-[11px] text-ink-faint leading-relaxed">
           Not yet evaluated? The CLI returns{" "}
           <span className="text-ink-muted">queued, position #N</span> and
-          notifies you when the grade lands. The CLI is a lookup &mdash; probes
-          run in our lab, not on your machine.
+          notifies you when the polygraph lands. The CLI is a lookup &mdash;
+          probes run in our lab, not on your machine.
         </p>
       </div>
     </div>
