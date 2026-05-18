@@ -1,0 +1,9 @@
+{
+  "name": "polygraph",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "typecheck": "pnpm -r typecheck"
+  }
+}
