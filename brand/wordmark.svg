@@ -11,7 +11,7 @@
 
   <!-- logomark (scaled-down, same paths as mark.svg) -->
   <g transform="translate(40, 80) scale(0.3125)">
-    <rect width="512" height="512" rx="72" fill="#161512"/>
+    <rect width="512" height="512" fill="#161512"/>
     <line
       x1="48" y1="256" x2="464" y2="256"
       stroke="#5c5550"

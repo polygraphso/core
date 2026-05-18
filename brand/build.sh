@@ -42,7 +42,7 @@ WAVEFORM_512='
 # ─────────────────────────────────────────────────────────────────────────────
 echo "building mark.png (1024x1024)…"
 magick -size 1024x1024 xc:none \
-  -fill "$INK" -draw "roundrectangle 0,0 1023,1023 144,144" \
+  -fill "$INK" -draw "rectangle 0,0 1023,1023" \
   -fill none -stroke "$MUTED" -strokewidth 3 \
   -draw "stroke-dasharray 12,20 line 96,512 928,512" \
   -fill none -stroke "$PARCHMENT" -strokewidth 20 \

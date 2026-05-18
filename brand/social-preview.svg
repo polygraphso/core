@@ -25,7 +25,7 @@
 
   <!-- Logomark, larger so it anchors the composition -->
   <g transform="translate(64, 156) scale(0.36)">
-    <rect width="512" height="512" rx="72" fill="#161512"/>
+    <rect width="512" height="512" fill="#161512"/>
     <line x1="48" y1="256" x2="464" y2="256" stroke="#5c5550" stroke-width="1.5" stroke-dasharray="6 10" opacity="0.55"/>
     <path
       d="M48 256 L120 256 L150 248 L180 264 L210 256 L230 200 L246 312 L262 184 L278 326 L294 196 L310 320 L326 232 L342 280 L358 220 L374 292 L390 256 L420 256 L464 256"
