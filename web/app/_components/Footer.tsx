@@ -1,5 +1,3 @@
-const TODAY_ISO = "2026-05-15";
-
 export function Footer() {
   return (
     <footer className="mt-10 border-t hairline">
@@ -73,7 +71,7 @@ export function Footer() {
                   className="text-ink hover:text-oxblood transition-colors"
                   href="#"
                 >
-                  v1 spec (preprint)
+                  v1 spec
                 </a>
               </li>
               <li>
@@ -106,25 +104,21 @@ export function Footer() {
               <li>
                 <a
                   className="text-ink hover:text-oxblood transition-colors"
-                  href="mailto:hello@polygraph.so"
+                  href="https://x.com/0x_leal"
+                  target="_blank"
+                  rel="noreferrer"
                 >
-                  hello@polygraph.so
+                  @0x_leal
                 </a>
               </li>
               <li>
                 <a
                   className="text-ink hover:text-oxblood transition-colors"
-                  href="mailto:research@polygraph.so"
+                  href="https://x.com/pcbo"
+                  target="_blank"
+                  rel="noreferrer"
                 >
-                  research@polygraph.so
-                </a>
-              </li>
-              <li>
-                <a
-                  className="text-ink hover:text-oxblood transition-colors"
-                  href="mailto:disclosures@polygraph.so"
-                >
-                  disclosures@polygraph.so
+                  @pcbo
                 </a>
               </li>
             </ul>
@@ -142,11 +136,8 @@ export function Footer() {
             />
             v1 in private testing
           </div>
-          <div className="mt-6 font-mono text-[11px] text-ink-faint uppercase tracking-[0.18em]">
-            Updated{" "}
-            <time dateTime={TODAY_ISO} className="tabular">
-              {TODAY_ISO}
-            </time>
+          <div className="mt-6 font-mono text-[11px] text-ink-faint uppercase tracking-[0.18em] tabular">
+            v0.1
           </div>
         </div>
       </div>

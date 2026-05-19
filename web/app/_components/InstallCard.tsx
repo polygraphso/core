@@ -67,9 +67,10 @@ export function InstallCard() {
 
         <p className="mt-5 pt-4 border-t hairline font-mono text-[11px] text-ink-faint leading-relaxed">
           Not yet polygraphed? The CLI returns{" "}
-          <span className="text-ink-muted">queued, position #N</span> and
-          notifies you when the polygraph lands. The CLI is a lookup &mdash;
-          probes run in our lab, not on your machine.
+          <span className="text-ink-muted">queued</span>{" "}
+          with your place in line, and notifies you when the polygraph lands.
+          The CLI is a lookup &mdash; probes run in our lab, not on your
+          machine.
         </p>
       </div>
     </div>
