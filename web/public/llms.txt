@@ -1,0 +1,56 @@
+# polygraph.so
+
+> Independent, lab-evaluated polygraphs for AI agents. We test MCP servers under adversarial conditions in our own sandbox and publish the result — not vendor self-claims, not gameable user reviews. Free public polygraphs, plus a CLI for runtime checks. Vendors never pay us; that's how the polygraph stays independent.
+
+## What we produce
+
+For each MCP server we track, we issue a **polygraph**: an A–F **grade** backed by **probe** results (the individual behavioral tests) and **evidence** (the run artifacts a reader can inspect). Each polygraph is paired with an **adoption tier** — `top10`, `top25`, `top50`, or `top100` — describing where the server sits on the popularity axis.
+
+Behavioral grading is rolling out with the v1 litmus harness; in the meantime, `polygraph` is reported as `null` on tracked servers and the adoption tier is what's live.
+
+## Vocabulary
+
+- **Polygraph** — the deliverable. The result we issue for an MCP server.
+- **Grade** — the A–F letter inside the polygraph.
+- **Probe** — an individual behavioral test in the harness.
+- **Adoption tier** — `top10` / `top25` / `top50` / `top100`, by adoption.
+- **Server ref** — registry-prefixed identifier for an MCP server (format below).
+
+## How to query
+
+The fast path is the CLI. Lookups are sub-second against precomputed grades:
+
+```
+npx polygraphso check npm/@modelcontextprotocol/server-filesystem
+npx polygraphso list
+```
+
+The same data is available over HTTP. No auth, no rate limit:
+
+```
+curl -X POST https://polygraph.so/api/cli/check \
+  -H 'content-type: application/json' \
+  -d '{"server_ref":"npm/@modelcontextprotocol/server-filesystem"}'
+
+curl https://polygraph.so/api/cli/list
+```
+
+## Server-ref format
+
+Three variants, matching each registry's native namespace shape:
+
+- `npm/<package>@<version>` — `<name>` (unscoped) or `@<scope>/<name>` (scoped). Example: `npm/@modelcontextprotocol/server-filesystem`.
+- `pypi/<name>@<version>` — flat, no owner. Example: `pypi/mcp-server-git`.
+- `github/<owner>/<repo>@<version>` — owner required. Example: `github/anthropic/mcp-server-foo`.
+
+Version is optional. Lookups are versionless: two CLI calls for `1.0.0` and `1.0.1` of the same package resolve to the same server record.
+
+## Independence
+
+No undisclosed financial relationship with anyone we grade. Material support — payments, credits, gifts, free access, discounts, in-kind — is publicly recorded in the disclosures registry. No graded party gets review or approval rights over their polygraph.
+
+## Where to learn more
+
+- API documentation: https://polygraph.so/docs/api
+- Landing: https://polygraph.so
+- Methodology spec: publishing alongside the v1 litmus harness.
