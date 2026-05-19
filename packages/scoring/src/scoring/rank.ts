@@ -73,6 +73,7 @@ export function rankAndTier(inputs: readonly RankInput[]): ScoredServer[] {
       consistency: Math.round(consistency * 10) / 10,
       risk: Math.round(risk * 10) / 10,
       sources_used: input.raw.sources_used,
+      redistribution: input.raw.redistribution,
     };
   });
 
@@ -98,6 +99,7 @@ export function rankAndTier(inputs: readonly RankInput[]): ScoredServer[] {
         risk: c.risk,
       },
       sources_used: c.sources_used,
+      redistribution: c.redistribution,
     };
   });
 }

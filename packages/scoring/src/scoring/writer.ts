@@ -65,6 +65,7 @@ export function buildComponents(snapshot: ComponentSnapshot, scored: ScoredServe
   // via the [key: string]: unknown index signature). Useful for debugging.
   (components as Record<string, unknown>).dimensions = scored.dimensions;
   (components as Record<string, unknown>).rank = scored.rank;
+  (components as Record<string, unknown>).redistribution = scored.redistribution;
   if (snapshot.depsdev) {
     (components as Record<string, unknown>).depsdev_max_severity = snapshot.depsdev.max_advisory_severity;
     (components as Record<string, unknown>).depsdev_severities = snapshot.depsdev.advisory_severities;

@@ -172,6 +172,45 @@ describe("fetchGitHub", () => {
     expect(await fetchGitHub("missing-owner", "missing-repo")).toBeNull();
   });
 
+  it("returns null PR counts (not zero) when the search API fails", async () => {
+    // GitHub's /search/issues returns 422 for some niche repos (very-new,
+    // empty, or with validation issues that retries don't fix). Compute
+    // must be able to distinguish "search failed" from "actually 0 PRs"
+    // so the structurally-absent path in the quality dimension kicks in.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: string) => {
+        if (input.endsWith("/repos/aws/aws-mcp-proxy")) {
+          return jsonResponse({
+            stargazers_count: 5,
+            forks_count: 1,
+            archived: false,
+            pushed_at: "2026-05-01T00:00:00Z",
+            created_at: "2026-04-01T00:00:00Z",
+          });
+        }
+        if (input.includes("/search/issues")) {
+          return new Response(JSON.stringify({ message: "Validation Failed" }), {
+            status: 422,
+          });
+        }
+        if (input.includes("/contributors")) return new Response("", { status: 200 });
+        if (input.endsWith("/stats/commit_activity")) return jsonResponse([]);
+        if (input.endsWith("/community/profile")) {
+          return jsonResponse({ files: {} });
+        }
+        if (input.includes("/releases?per_page=")) return jsonResponse([]);
+        throw new Error(`Unexpected URL: ${input}`);
+      }),
+    );
+
+    const result = await fetchGitHub("aws", "aws-mcp-proxy");
+    expect(result?.pr_count_open).toBeNull();
+    expect(result?.pr_count_closed).toBeNull();
+    // Other fields still come through fine.
+    expect(result?.stars).toBe(5);
+  });
+
   it("returns empty commit_activity when GitHub responds 202 (stats still computing)", async () => {
     vi.stubGlobal(
       "fetch",
