@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const COMMAND = "npx polygraph check <mcp-server>";
+const COMMAND = "npx polygraphso check <mcp-server>";
 
 // CLI is layer 3 — a thin lookup over precomputed polygraphs (sub-second).
 // It does NOT run probes locally. The lab pipeline (layer 1) is async on our side.
