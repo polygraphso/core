@@ -7,6 +7,14 @@
  *   - last_push_at, created_at
  *   - pr_count_open, pr_count_closed (via search API)
  *   - commit_activity_last_year (52-week array of weekly commit counts)
+ *   - has_security_md, has_contributing_md (community-profile signals)
+ *   - release_count_last_year, avg_days_between_releases (version cadence)
+ *
+ * Community profile and release cadence are static metadata signals —
+ * per the locked scope-split rule in scoring-brief.md, they belong here
+ * (not litmus). Compute doesn't currently consume them, but they sit in
+ * adoption_scores.components for the forensic view and are ready for
+ * future weighting.
  *
  * Requires `GITHUB_TOKEN` at call time per the documented operational
  * stance — unauthed requests are 60/hr which is unworkable at scale and
@@ -36,6 +44,11 @@ export interface GithubAdapterData {
   pr_count_closed: number;
   /** Length 52 when available. Empty when GitHub's stats endpoint isn't ready (it computes on first request). */
   commit_activity_last_year: number[];
+  has_security_md: boolean;
+  has_contributing_md: boolean;
+  release_count_last_year: number;
+  /** Null when fewer than two releases exist. */
+  avg_days_between_releases: number | null;
 }
 
 interface RepoResponse {
@@ -52,6 +65,17 @@ interface SearchResponse {
 
 interface WeekActivity {
   total?: number;
+}
+
+interface CommunityProfileResponse {
+  files?: {
+    security?: unknown;
+    contributing?: unknown;
+  };
+}
+
+interface ReleaseResponse {
+  published_at?: string | null;
 }
 
 function requireToken(): string {
@@ -77,6 +101,39 @@ export function parseContributorsCount(linkHeader: string | null): number {
   if (!linkHeader) return 1; // single-page response, exactly one page of contributors
   const match = linkHeader.match(/[?&]page=(\d+)>;\s*rel="last"/);
   return match ? Number(match[1]) : 1;
+}
+
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const MS_PER_YEAR = 365 * MS_PER_DAY;
+
+/**
+ * Compute release-cadence signals from a list of published_at strings (any order).
+ * Exported for unit testing.
+ */
+export function computeReleaseCadence(
+  publishedAts: Array<string | null | undefined>,
+  now: number = Date.now(),
+): { release_count_last_year: number; avg_days_between_releases: number | null } {
+  const timestamps = publishedAts
+    .filter((iso): iso is string => Boolean(iso))
+    .map((iso) => new Date(iso).getTime())
+    .filter((t) => Number.isFinite(t));
+
+  const release_count_last_year = timestamps.filter((t) => t > now - MS_PER_YEAR).length;
+
+  if (timestamps.length < 2) {
+    return { release_count_last_year, avg_days_between_releases: null };
+  }
+  const sorted = [...timestamps].sort((a, b) => b - a);
+  let totalDiff = 0;
+  for (let i = 0; i < sorted.length - 1; i++) {
+    totalDiff += sorted[i]! - sorted[i + 1]!;
+  }
+  const avgMs = totalDiff / (sorted.length - 1);
+  return {
+    release_count_last_year,
+    avg_days_between_releases: avgMs / MS_PER_DAY,
+  };
 }
 
 export async function fetchGitHub(
@@ -149,6 +206,44 @@ export async function fetchGitHub(
   } catch {
     // non-critical
   }
+  await rateLimitDelay(DELAY_MS);
+
+  // Community profile — static metadata, doesn't require any sandboxed
+  // execution. Non-fatal; both flags default to false.
+  let hasSecurityMd = false;
+  let hasContributingMd = false;
+  try {
+    const profileRes = await fetchWithRetry(
+      `${API}/repos/${owner}/${repo}/community/profile`,
+      { label: LABEL, headers, passThroughStatuses: [404] },
+    );
+    if (profileRes.ok) {
+      const profile = (await profileRes.json()) as CommunityProfileResponse;
+      hasSecurityMd = Boolean(profile.files?.security);
+      hasContributingMd = Boolean(profile.files?.contributing);
+    }
+  } catch {
+    // non-critical
+  }
+  await rateLimitDelay(DELAY_MS);
+
+  // Release cadence — version cadence is in-scope per the brief.
+  let releaseCadence = {
+    release_count_last_year: 0,
+    avg_days_between_releases: null as number | null,
+  };
+  try {
+    const relRes = await fetchWithRetry(
+      `${API}/repos/${owner}/${repo}/releases?per_page=100`,
+      { label: LABEL, headers, passThroughStatuses: [404] },
+    );
+    if (relRes.ok) {
+      const releases = (await relRes.json()) as ReleaseResponse[];
+      releaseCadence = computeReleaseCadence(releases.map((r) => r.published_at));
+    }
+  } catch {
+    // non-critical
+  }
 
   return {
     owner,
@@ -162,5 +257,9 @@ export async function fetchGitHub(
     pr_count_open: prCountOpen,
     pr_count_closed: prCountClosed,
     commit_activity_last_year: commitActivity,
+    has_security_md: hasSecurityMd,
+    has_contributing_md: hasContributingMd,
+    release_count_last_year: releaseCadence.release_count_last_year,
+    avg_days_between_releases: releaseCadence.avg_days_between_releases,
   };
 }
