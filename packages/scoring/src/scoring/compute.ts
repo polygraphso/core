@@ -228,11 +228,15 @@ export function computeRawDimensions(
   // Brief excludes Glama grades + Smithery `verified` (components, not weights)
   // and npms.io scores (defunct). Only PR-merge-rate and OpenSSF aggregate
   // remain; weights renormalized from 0.15 + 0.25 = 0.40 → 0.375 + 0.625.
-  const totalPRs = ghMasked
-    ? 0
-    : (snap.github?.pr_count_open ?? 0) + (snap.github?.pr_count_closed ?? 0);
+  //
+  // PR counts may be null when the github search API failed (422 on some
+  // niche repos). null is structurally-absent — weightedAverage skips it
+  // and renormalizes — vs `0` which would be "actually zero PRs."
+  const prOpen = ghMasked ? null : snap.github?.pr_count_open ?? null;
+  const prClosed = ghMasked ? null : snap.github?.pr_count_closed ?? null;
+  const totalPRs = prOpen !== null && prClosed !== null ? prOpen + prClosed : null;
   const prMergeRate: number | null =
-    totalPRs > 0 ? (snap.github?.pr_count_closed ?? 0) / totalPRs : null;
+    totalPRs !== null && totalPRs > 0 ? (prClosed ?? 0) / totalPRs : null;
   const openssfNormalized =
     snap.openssf?.aggregate_score != null ? snap.openssf.aggregate_score / 10 : null;
   const quality = weightedAverage([

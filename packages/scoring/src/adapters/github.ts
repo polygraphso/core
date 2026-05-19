@@ -40,8 +40,15 @@ export interface GithubAdapterData {
   archived: boolean;
   last_push_at: string | null;
   created_at: string | null;
-  pr_count_open: number;
-  pr_count_closed: number;
+  /**
+   * Null when the /search/issues fetch failed (GitHub returns 422 for
+   * niche cases — very-new/empty repos, validation issues — that retries
+   * don't fix). Distinguishing "fetch failed" from "actually 0 PRs" lets
+   * compute treat the former as structurally absent (per scoring-brief.md)
+   * instead of silently counting it as zero activity.
+   */
+  pr_count_open: number | null;
+  pr_count_closed: number | null;
   /** Length 52 when available. Empty when GitHub's stats endpoint isn't ready (it computes on first request). */
   commit_activity_last_year: number[];
   has_security_md: boolean;
@@ -170,23 +177,33 @@ export async function fetchGitHub(
   await rateLimitDelay(DELAY_MS);
 
   // PR counts via search API — total_count is what we want, per_page=1 minimizes body.
-  let prCountOpen = 0;
-  let prCountClosed = 0;
+  // 422 ("Validation Failed") comes back for some niche repos (very-new,
+  // empty, query-validation edge cases). Retrying doesn't fix it and the
+  // exponential backoff burns ~10s per affected repo, so pass it through
+  // as a non-retry. On failure stay at null (not 0) so compute can
+  // distinguish "search failed" from "actually zero PRs" — see comment
+  // on GithubAdapterData.pr_count_open.
+  let prCountOpen: number | null = null;
+  let prCountClosed: number | null = null;
   try {
     const [openRes, closedRes] = await Promise.all([
       fetchWithRetry(
         `${API}/search/issues?q=repo:${owner}/${repo}+type:pr+state:open&per_page=1`,
-        { label: LABEL, headers },
+        { label: LABEL, headers, passThroughStatuses: [422] },
       ),
       fetchWithRetry(
         `${API}/search/issues?q=repo:${owner}/${repo}+type:pr+state:closed&per_page=1`,
-        { label: LABEL, headers },
+        { label: LABEL, headers, passThroughStatuses: [422] },
       ),
     ]);
-    prCountOpen = ((await openRes.json()) as SearchResponse).total_count ?? 0;
-    prCountClosed = ((await closedRes.json()) as SearchResponse).total_count ?? 0;
+    if (openRes.ok) {
+      prCountOpen = ((await openRes.json()) as SearchResponse).total_count ?? 0;
+    }
+    if (closedRes.ok) {
+      prCountClosed = ((await closedRes.json()) as SearchResponse).total_count ?? 0;
+    }
   } catch {
-    // non-critical
+    // network/timeout — null is the right "unknown" sentinel for compute
   }
   await rateLimitDelay(DELAY_MS);
 

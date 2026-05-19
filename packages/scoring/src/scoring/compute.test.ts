@@ -136,6 +136,62 @@ describe("computeRawDimensions", () => {
     expect(result.sources_used).toEqual([]);
   });
 
+  it("treats null PR counts (search failed) as structurally absent for quality", () => {
+    // When github's /search/issues fails (e.g. 422 on niche repos), the
+    // adapter returns null PR counts. compute must NOT count this as "0
+    // PRs" (which would falsely depress the merge-rate signal) — it must
+    // skip the signal entirely and let weightedAverage redistribute.
+    const ghShape = {
+      owner: "aws",
+      repo: "aws-mcp-proxy",
+      stars: 5,
+      forks: 1,
+      contributors_count: 3,
+      archived: false,
+      last_push_at: "2026-05-01T00:00:00Z",
+      created_at: "2026-04-01T00:00:00Z",
+      commit_activity_last_year: [],
+      has_security_md: false,
+      has_contributing_md: false,
+      release_count_last_year: 0,
+      avg_days_between_releases: null,
+    };
+
+    // OpenSSF carries the quality dimension when PR-merge-rate is absent.
+    const openssfShape = {
+      owner: "aws",
+      repo: "aws-mcp-proxy",
+      aggregate_score: 8,
+      checks: {},
+    };
+
+    const withNullPRs = computeRawDimensions(
+      snap({
+        github: { ...ghShape, pr_count_open: null, pr_count_closed: null },
+        openssf: openssfShape,
+      }),
+      opts,
+    );
+    const withZeroPRs = computeRawDimensions(
+      snap({
+        github: { ...ghShape, pr_count_open: 0, pr_count_closed: 0 },
+        openssf: openssfShape,
+      }),
+      opts,
+    );
+
+    // With null PR counts: weightedAverage skips the missing signal and
+    // quality reflects OpenSSF alone (0.8). With "actually 0 PRs":
+    // pr_merge_rate is still null (totalPRs is 0), same fallback path.
+    // The two should match — that's exactly the property we want when
+    // both inputs mean "we have no merge-rate information for this repo."
+    expect(withNullPRs.quality).toBeCloseTo(withZeroPRs.quality, 5);
+    // But the distinction matters for repos where compute might later
+    // care about "we tried and got zero" vs "we couldn't even ask."
+    // Document via a stable snapshot check on the OpenSSF-only quality.
+    expect(withNullPRs.quality).toBeCloseTo(0.8, 5);
+  });
+
   it("reports smithery as structurally absent when the adapter returned null", () => {
     const result = computeRawDimensions(
       snap({
