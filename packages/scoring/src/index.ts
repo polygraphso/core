@@ -24,3 +24,17 @@ export type { GlamaAdapterData } from "./adapters/glama.js";
 
 export { fetchSmithery } from "./adapters/smithery.js";
 export type { SmitheryAdapterData } from "./adapters/smithery.js";
+
+// Scoring pipeline
+export { computeRawDimensions, buildSharedRepoMask } from "./scoring/compute.js";
+export { rankAndTier, assignTier, WEIGHTS } from "./scoring/rank.js";
+export { writeAdoptionScores, buildComponents } from "./scoring/writer.js";
+export { readTopRanked } from "./scoring/reporter.js";
+export { scoreAllTrackedServers } from "./scoring/orchestrate.js";
+export type {
+  ComponentSnapshot,
+  RawDimensions,
+  ScoredServer,
+} from "./scoring/types.js";
+export type { TopRankEntry } from "./scoring/reporter.js";
+export type { ScoreRunOptions, ScoreRunResult } from "./scoring/orchestrate.js";
