@@ -73,7 +73,7 @@ export function Footer() {
                   className="text-ink hover:text-oxblood transition-colors"
                   href="#"
                 >
-                  v1 spec (preprint)
+                  v1 spec
                 </a>
               </li>
               <li>
@@ -106,25 +106,21 @@ export function Footer() {
               <li>
                 <a
                   className="text-ink hover:text-oxblood transition-colors"
-                  href="mailto:hello@polygraph.so"
+                  href="https://x.com/0x_leal"
+                  target="_blank"
+                  rel="noreferrer"
                 >
-                  hello@polygraph.so
+                  @0x_leal
                 </a>
               </li>
               <li>
                 <a
                   className="text-ink hover:text-oxblood transition-colors"
-                  href="mailto:research@polygraph.so"
+                  href="https://x.com/pcbo"
+                  target="_blank"
+                  rel="noreferrer"
                 >
-                  research@polygraph.so
-                </a>
-              </li>
-              <li>
-                <a
-                  className="text-ink hover:text-oxblood transition-colors"
-                  href="mailto:disclosures@polygraph.so"
-                >
-                  disclosures@polygraph.so
+                  @pcbo
                 </a>
               </li>
             </ul>
