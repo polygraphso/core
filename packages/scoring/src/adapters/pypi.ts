@@ -6,9 +6,17 @@
  * Returns null when the package doesn't exist on PyPI (404).
  */
 
-import { fetchWithRetry } from "./fetch.js";
+import { fetchWithRetry, rateLimitDelay } from "./fetch.js";
 
 const LABEL = "pypi";
+/**
+ * pypistats.org rate-limits aggressive bursts; the production scoring log
+ * showed ~10 429s when we fired the two pypistats endpoints in parallel
+ * per server. Serialize them with a small courtesy delay between to stay
+ * under the rate limit. The pypi.org metadata call is on a different
+ * host so it still runs in parallel with the first pypistats call.
+ */
+const PYPISTATS_DELAY_MS = 200;
 
 export interface PypiAdapterData {
   package_name: string;
@@ -72,7 +80,8 @@ export function toPypiWeeklyDownloads(range: PypiStatsRange): number[] {
 export async function fetchPypi(packageName: string): Promise<PypiAdapterData | null> {
   const encoded = encodeURIComponent(packageName);
 
-  const [metaRes, recentRes, rangeRes] = await Promise.all([
+  // pypi.org + the first pypistats call in parallel (different hosts).
+  const [metaRes, recentRes] = await Promise.all([
     fetchWithRetry(`https://pypi.org/pypi/${encoded}/json`, {
       label: LABEL,
       passThroughStatuses: [404],
@@ -81,11 +90,13 @@ export async function fetchPypi(packageName: string): Promise<PypiAdapterData | 
       label: LABEL,
       passThroughStatuses: [404],
     }),
-    fetchWithRetry(`https://pypistats.org/api/packages/${encoded}/overall?mirrors=true`, {
-      label: LABEL,
-      passThroughStatuses: [404],
-    }),
   ]);
+  // Space out the second pypistats call so we don't trigger their burst limit.
+  await rateLimitDelay(PYPISTATS_DELAY_MS);
+  const rangeRes = await fetchWithRetry(
+    `https://pypistats.org/api/packages/${encoded}/overall?mirrors=true`,
+    { label: LABEL, passThroughStatuses: [404] },
+  );
 
   if (metaRes.status === 404) return null;
 

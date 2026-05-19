@@ -17,7 +17,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Registry } from "@polygraph/core";
+import type { IdentitySource, Registry } from "@polygraph/core";
 import { fetchDepsDev } from "../adapters/depsdev.js";
 import { fetchGitHub } from "../adapters/github.js";
 import { fetchGlama } from "../adapters/glama.js";
@@ -38,6 +38,20 @@ interface ServerRow {
   name: string;
   latest_version_id: string | null;
 }
+
+/**
+ * Curated identities per server, keyed by source. Built once from
+ * `server_identities` at the start of each run and passed down to the
+ * scrape functions so they can look up the right Smithery / Glama
+ * identifier without guessing.
+ *
+ * Servers without a curated identity for a given source skip that
+ * adapter entirely — no fuzzy fallback (silent false positives are
+ * unacceptable for trust-grading data, per scoring-brief.md). Absent
+ * sources then fall through to structural-absence normalization in
+ * compute.
+ */
+export type IdentityMap = ReadonlyMap<string, Partial<Record<IdentitySource, string>>>;
 
 export interface ScoreRunResult {
   rows_written: number;
@@ -61,19 +75,28 @@ interface ServerScrape {
   snapshot: Omit<ComponentSnapshot, "version_id">;
 }
 
-async function scrapeNpmServer(server: ServerRow): Promise<ServerScrape> {
+async function scrapeNpmServer(
+  server: ServerRow,
+  identities: Partial<Record<IdentitySource, string>>,
+): Promise<ServerScrape> {
   const pkg = server.owner ? `${server.owner}/${server.name}` : server.name;
   const npm = await fetchNpm(pkg);
   const gh = npm?.github_owner_repo ?? null;
 
-  // Per-source fetches that don't depend on each other run in parallel.
-  // Glama / Smithery are best-effort — many servers aren't on either.
+  // Smithery / Glama are only called when a curated identity exists for
+  // that source — see IdentityMap comment. No fuzzy match.
+  const glamaIdent = identities.glama; // expected shape: "namespace/slug"
+  const glamaPair = glamaIdent ? glamaIdent.split("/", 2) : null;
+  const smitheryIdent = identities.smithery;
+
   const [github, openssf, depsdev, glama, smithery] = await Promise.all([
     gh ? fetchGitHub(gh.owner, gh.repo) : Promise.resolve(null),
     gh ? fetchOpenSSF(gh.owner, gh.repo) : Promise.resolve(null),
     fetchDepsDev(pkg, "npm"),
-    server.owner ? fetchGlama(server.owner.replace(/^@/, ""), server.name) : Promise.resolve(null),
-    server.owner ? fetchSmithery(`${server.owner}/${server.name}`) : Promise.resolve(null),
+    glamaPair && glamaPair[0] && glamaPair[1]
+      ? fetchGlama(glamaPair[0], glamaPair[1])
+      : Promise.resolve(null),
+    smitheryIdent ? fetchSmithery(smitheryIdent) : Promise.resolve(null),
   ]);
 
   return {
@@ -154,15 +177,43 @@ async function scrapeGithubServer(server: ServerRow): Promise<ServerScrape> {
   };
 }
 
-async function scrapeServer(server: ServerRow): Promise<ServerScrape> {
+async function scrapeServer(
+  server: ServerRow,
+  identities: Partial<Record<IdentitySource, string>> = {},
+): Promise<ServerScrape> {
   switch (server.registry) {
     case "npm":
-      return scrapeNpmServer(server);
+      return scrapeNpmServer(server, identities);
     case "pypi":
       return scrapePypiServer(server);
     case "github":
       return scrapeGithubServer(server);
   }
+}
+
+/**
+ * Load curated identities for the given server ids in one batch query.
+ * Result is keyed by server_id with each value being a partial map of
+ * source → identity.
+ */
+export async function loadIdentityMap(
+  supabase: SupabaseClient,
+  serverIds: readonly string[],
+): Promise<IdentityMap> {
+  const map = new Map<string, Partial<Record<IdentitySource, string>>>();
+  if (serverIds.length === 0) return map;
+  const { data, error } = await supabase
+    .from("server_identities")
+    .select("server_id, source, identity")
+    .in("server_id", serverIds as string[]);
+  if (error) throw new Error(`loadIdentityMap: ${error.message}`);
+  for (const row of data ?? []) {
+    const sid = row.server_id as string;
+    const slot = map.get(sid) ?? {};
+    slot[row.source as IdentitySource] = row.identity as string;
+    map.set(sid, slot);
+  }
+  return map;
 }
 
 /**
@@ -222,7 +273,10 @@ export interface ScoreRunOptions {
   /** Skip the DB write step. Returns the would-be scored list. */
   dryRun?: boolean;
   /** Override the per-server scrape (used by tests). */
-  scrape?: (server: ServerRow) => Promise<ServerScrape>;
+  scrape?: (
+    server: ServerRow,
+    identities: Partial<Record<IdentitySource, string>>,
+  ) => Promise<ServerScrape>;
 }
 
 export async function scoreAllTrackedServers(
@@ -243,6 +297,11 @@ export async function scoreAllTrackedServers(
     return { rows_written: 0, scored: [], snapshots: [], skipped: [] };
   }
 
+  const identities = await loadIdentityMap(
+    supabase,
+    (servers as ServerRow[]).map((s) => s.id),
+  );
+
   const scrapes: ServerScrape[] = [];
   const skipped: Array<{ server_id: string; reason: string }> = [];
 
@@ -250,7 +309,7 @@ export async function scoreAllTrackedServers(
   // can fan out with a bounded concurrency pool if 78 × ~5s gets painful.
   for (const server of servers as ServerRow[]) {
     try {
-      const result = await scrape(server);
+      const result = await scrape(server, identities.get(server.id) ?? {});
       scrapes.push(result);
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);

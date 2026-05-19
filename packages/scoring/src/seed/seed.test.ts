@@ -12,7 +12,50 @@ describe("validateSeed", () => {
       { registry: "pypi", name: "mcp-server-git" },
     ]);
     expect(rows).toHaveLength(3);
-    expect(rows[1]).toEqual({ registry: "npm", owner: null, name: "lodash" });
+    expect(rows[1]).toEqual({
+      registry: "npm",
+      owner: null,
+      name: "lodash",
+      identities: [],
+    });
+  });
+
+  it("parses smithery_qualified_name and glama_namespace_slug into identities", () => {
+    const rows = validateSeed([
+      {
+        registry: "npm",
+        owner: "@upstash",
+        name: "context7-mcp",
+        smithery_qualified_name: "upstash/context7-mcp",
+        glama_namespace_slug: "upstash/context7-mcp",
+      },
+      {
+        registry: "npm",
+        owner: "@notionhq",
+        name: "notion-mcp-server",
+        smithery_qualified_name: "notion",
+      },
+    ]);
+    expect(rows[0]?.identities).toEqual([
+      { source: "smithery", identity: "upstash/context7-mcp" },
+      { source: "glama", identity: "upstash/context7-mcp" },
+    ]);
+    expect(rows[1]?.identities).toEqual([{ source: "smithery", identity: "notion" }]);
+  });
+
+  it("rejects glama_namespace_slug without the namespace/slug shape", () => {
+    expect(() =>
+      validateSeed([{ registry: "npm", owner: "@x", name: "y", glama_namespace_slug: "not-a-pair" }]),
+    ).toThrow(/glama_namespace_slug must be "namespace\/slug"/);
+  });
+
+  it("ignores empty / whitespace-only identity fields", () => {
+    const rows = validateSeed([
+      { registry: "npm", owner: "@x", name: "y", smithery_qualified_name: "" },
+      { registry: "npm", owner: "@z", name: "w", smithery_qualified_name: "   " },
+    ]);
+    expect(rows[0]?.identities).toEqual([]);
+    expect(rows[1]?.identities).toEqual([]);
   });
 
   it("rejects unscoped github (owner required)", () => {

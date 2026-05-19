@@ -38,6 +38,28 @@ export interface VersionRow {
 }
 
 /**
+ * Sources for cross-registry identity stitching. `npm`/`pypi`/`github` mirror
+ * the primary registries already on `servers`; the others are additional
+ * marketplaces / aggregators that use their own naming scheme.
+ */
+export type IdentitySource =
+  | "npm"
+  | "pypi"
+  | "github"
+  | "smithery"
+  | "glama"
+  | "mcp_registry";
+
+export interface ServerIdentityRow {
+  id: string;
+  server_id: string;
+  source: IdentitySource;
+  identity: string;
+  source_url: string | null;
+  added_at: string;
+}
+
+/**
  * Component breakdown captured alongside the score. Each property is optional;
  * shape evolves as adapters land. Numbers are pre-normalization signal values
  * so debugging stays grounded ("npm dropped from 1M → 200k weekly downloads").

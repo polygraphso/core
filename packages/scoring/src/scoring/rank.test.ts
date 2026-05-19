@@ -11,6 +11,7 @@ function input(id: string, adoption: number, risk = 0): RankInput {
       consistency: 0.7,
       risk,
       sources_used: ["npm"],
+      redistribution: { adoption: { structurally_absent: [], scale_factor: 1 } },
     },
   };
 }
@@ -77,7 +78,14 @@ describe("rankAndTier", () => {
     const diverse = (id: string, a: number, q: number, c: number): RankInput => ({
       server_id: id,
       version_id: `v-${id}`,
-      raw: { adoption: a, quality: q, consistency: c, risk: 0, sources_used: ["npm"] },
+      raw: {
+        adoption: a,
+        quality: q,
+        consistency: c,
+        risk: 0,
+        sources_used: ["npm"],
+        redistribution: { adoption: { structurally_absent: [], scale_factor: 1 } },
+      },
     });
     const out = rankAndTier([
       diverse("hi", 10, 1.0, 1.0),

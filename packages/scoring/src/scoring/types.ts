@@ -49,6 +49,27 @@ export interface RawDimensions {
   risk: number;
   /** Adapters that contributed at least one non-null signal. */
   sources_used: string[];
+  /**
+   * Per-dimension record of how structural-absence normalization applied
+   * (which signals were absent for this server and how their weight was
+   * redistributed). Surfaces into the components jsonb so tier shifts
+   * caused by formula-application changes are debuggable.
+   */
+  redistribution: RedistributionReport;
+}
+
+export interface RedistributionReport {
+  adoption: {
+    /** Adoption-signal names that were structurally absent for this server. */
+    structurally_absent: string[];
+    /**
+     * Multiplier applied to each present signal's original weight after
+     * redistribution. 1.0 means all signals present; > 1.0 means absent
+     * weight was redistributed; null means every signal was absent and
+     * adoption fell back to 0.
+     */
+    scale_factor: number | null;
+  };
 }
 
 /** Final scored row for one server, ready to write to adoption_scores. */
@@ -67,4 +88,6 @@ export interface ScoredServer {
     risk: number;
   };
   sources_used: string[];
+  /** Structural-absence report from compute, passed through for the debug view. */
+  redistribution: RedistributionReport;
 }

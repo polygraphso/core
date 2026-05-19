@@ -25,17 +25,25 @@
 #   - **Schema** — every entry has `registry` (npm | pypi | github),
 #     `name`, and an optional `owner`. pypi/github require owner; only
 #     unscoped npm packages may omit it.
+#   - **Cross-registry identities** — entries may also carry optional
+#     `smithery_qualified_name` and `glama_namespace_slug` fields. When
+#     present, the seed script writes corresponding `server_identities`
+#     rows so the Smithery / Glama adapters can look up the correct entry.
+#     Without these, the adapter is skipped for that server and the signal
+#     is treated as structurally absent (its weight redistributes per
+#     scoring-brief.md). Only hand-curate when you've verified the mapping
+#     against the live registry — no fuzzy matching, ever.
 
 servers:
 
   # ── @modelcontextprotocol/* reference servers (npm) (12) ─────────────
   - { registry: npm, owner: "@modelcontextprotocol", name: server-filesystem }
   - { registry: npm, owner: "@modelcontextprotocol", name: server-postgres }
-  - { registry: npm, owner: "@modelcontextprotocol", name: server-brave-search }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-brave-search, smithery_qualified_name: brave }
   - { registry: npm, owner: "@modelcontextprotocol", name: server-everything }
-  - { registry: npm, owner: "@modelcontextprotocol", name: server-gdrive }
-  - { registry: npm, owner: "@modelcontextprotocol", name: server-github }
-  - { registry: npm, owner: "@modelcontextprotocol", name: server-gitlab }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-gdrive, smithery_qualified_name: googledrive }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-github, smithery_qualified_name: github }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-gitlab, smithery_qualified_name: gitlab }
   - { registry: npm, owner: "@modelcontextprotocol", name: server-google-maps }
   - { registry: npm, owner: "@modelcontextprotocol", name: server-memory }
   - { registry: npm, owner: "@modelcontextprotocol", name: server-puppeteer }
@@ -50,10 +58,10 @@ servers:
   - { registry: pypi,                              name: mcp-server-sentry }
 
   # ── Well-known third-party MCP packages (4) ─────────────────────────
-  - { registry: npm, owner: "@upstash", name: context7-mcp }
-  - { registry: npm, owner: "@notionhq", name: notion-mcp-server }
-  - { registry: npm, owner: "@cloudflare", name: mcp-server-cloudflare }
-  - { registry: npm, owner: "@supabase", name: mcp-server-supabase }
+  - { registry: npm, owner: "@upstash", name: context7-mcp, smithery_qualified_name: upstash/context7-mcp, glama_namespace_slug: upstash/context7-mcp }
+  - { registry: npm, owner: "@notionhq", name: notion-mcp-server, smithery_qualified_name: notion }
+  - { registry: npm, owner: "@cloudflare", name: mcp-server-cloudflare, smithery_qualified_name: cloudflare }
+  - { registry: npm, owner: "@supabase", name: mcp-server-supabase, smithery_qualified_name: Supabase }
 
   # ── From the Official MCP Registry (registry.modelcontextprotocol.io) (57) 
   - { registry: npm, owner: "@adeu", name: mcp-server }
