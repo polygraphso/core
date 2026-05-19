@@ -121,21 +121,19 @@ export function Footer() {
               <li>
                 <a
                   className="text-ink hover:text-oxblood transition-colors"
-                  href="https://x.com/0x_leal"
-                  target="_blank"
-                  rel="noreferrer"
+                  href="mailto:hello@polygraph.so"
                 >
-                  @0x_leal
+                  hello@polygraph.so
                 </a>
               </li>
               <li>
                 <a
                   className="text-ink hover:text-oxblood transition-colors"
-                  href="https://x.com/pcbo"
+                  href="https://x.com/polygraphso"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  @pcbo
+                  @polygraphso
                 </a>
               </li>
             </ul>
@@ -143,17 +141,7 @@ export function Footer() {
         </nav>
 
         <div className="md:col-span-3 md:text-right">
-          <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-            Status
-          </div>
-          <div className="mt-1 inline-flex items-center gap-2 font-mono text-[12px] text-ink">
-            <span
-              aria-hidden
-              className="inline-block w-1.5 h-1.5 bg-grade-a"
-            />
-            v1 in private testing
-          </div>
-          <div className="mt-6 font-mono text-[11px] text-ink-faint uppercase tracking-[0.18em] tabular">
+          <div className="font-mono text-[11px] text-ink-faint uppercase tracking-[0.18em] tabular">
             v0.2
           </div>
         </div>
