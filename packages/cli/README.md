@@ -23,6 +23,7 @@ polygraphso check pypi/mcp-server-git
 
 ```
 polygraphso check <registry>/<owner>/<name>
+polygraphso list [--json]
 polygraphso --version
 polygraphso --help
 ```
@@ -57,12 +58,24 @@ Untracked server:
 
 In v0, behavioral polygraphs aren't published yet — every tracked server shows `polygraph: not yet available`. The adoption tier and notify URL are real; the polygraph result lands when the litmus harness ships.
 
+## Browse the tracked set
+
+```
+polygraphso list
+```
+
+Prints every tracked MCP server with its adoption tier and polygraph status, tier-sorted. Pipe through `jq` with `--json`:
+
+```
+polygraphso list --json | jq '.servers[] | select(.adoption_tier == "top10")'
+```
+
 ## Configuration
 
 Override the API endpoint (useful for testing):
 
 ```
-POLYGRAPH_API_URL=http://localhost:3000/api/cli/check polygraphso check npm/lodash
+POLYGRAPH_API_URL=http://localhost:3000 polygraphso check npm/lodash
 ```
 
 ## Links

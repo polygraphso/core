@@ -40,7 +40,7 @@ export function Footer() {
       </div>
 
       <div className="mx-auto max-w-6xl px-6 py-14 grid md:grid-cols-12 gap-10">
-        <div className="md:col-span-5">
+        <div className="md:col-span-3">
           <div className="font-serif text-2xl text-ink">polygraph.so</div>
           <p className="mt-3 text-ink-muted text-sm leading-relaxed max-w-sm">
             Originally{" "}
@@ -51,8 +51,25 @@ export function Footer() {
 
         <nav
           aria-label="Footer"
-          className="md:col-span-4 grid grid-cols-2 gap-8 text-sm"
+          className="md:col-span-6 grid grid-cols-2 sm:grid-cols-4 gap-8 text-sm"
         >
+          <div className="col-span-2 sm:col-span-2">
+            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint mb-3">
+              CLI
+            </div>
+            <ul className="space-y-2 font-mono text-[11.5px] text-ink whitespace-nowrap">
+              <li>
+                <code className="text-ink">polygraphso check &lt;ref&gt;</code>
+              </li>
+              <li>
+                <code className="text-ink">polygraphso list</code>
+              </li>
+            </ul>
+            <p className="mt-3 text-ink-faint font-sans text-[11.5px] leading-relaxed">
+              <code className="text-ink-muted">npm i -g polygraphso</code>, or{" "}
+              <code className="text-ink-muted">npx</code>.
+            </p>
+          </div>
           <div>
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint mb-3">
               Methodology
@@ -137,7 +154,7 @@ export function Footer() {
             v1 in private testing
           </div>
           <div className="mt-6 font-mono text-[11px] text-ink-faint uppercase tracking-[0.18em] tabular">
-            v0.1
+            v0.2
           </div>
         </div>
       </div>
