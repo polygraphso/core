@@ -101,6 +101,14 @@ export function Footer() {
               </li>
               <li>
                 <a
+                  className="text-ink hover:text-oxblood transition-colors"
+                  href="/docs/api"
+                >
+                  API docs
+                </a>
+              </li>
+              <li>
+                <a
                   id="disclosures"
                   className="text-ink hover:text-oxblood transition-colors"
                   href="#disclosures"
