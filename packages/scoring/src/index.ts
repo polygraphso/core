@@ -13,7 +13,11 @@ export { fetchOpenSSF } from "./adapters/openssf.js";
 export type { OpenSSFAdapterData } from "./adapters/openssf.js";
 
 export { fetchDepsDev } from "./adapters/depsdev.js";
-export type { DepsDevAdapterData, DepsDevEcosystem } from "./adapters/depsdev.js";
+export type {
+  AdvisorySeverity,
+  DepsDevAdapterData,
+  DepsDevEcosystem,
+} from "./adapters/depsdev.js";
 
 export { fetchGlama } from "./adapters/glama.js";
 export type { GlamaAdapterData } from "./adapters/glama.js";
