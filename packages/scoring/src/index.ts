@@ -30,7 +30,16 @@ export { computeRawDimensions, buildSharedRepoMask } from "./scoring/compute.js"
 export { rankAndTier, assignTier, WEIGHTS } from "./scoring/rank.js";
 export { writeAdoptionScores, buildComponents } from "./scoring/writer.js";
 export { readTopRanked } from "./scoring/reporter.js";
-export { scoreAllTrackedServers } from "./scoring/orchestrate.js";
+export {
+  scoreAllTrackedServers,
+  ensureVersionId,
+} from "./scoring/orchestrate.js";
+export { pollVersions } from "./scoring/poll-versions.js";
+export {
+  emit,
+  notifyGradeComputed,
+  notifyVersionDetected,
+} from "./scoring/events.js";
 export type {
   ComponentSnapshot,
   RawDimensions,
@@ -38,3 +47,5 @@ export type {
 } from "./scoring/types.js";
 export type { TopRankEntry } from "./scoring/reporter.js";
 export type { ScoreRunOptions, ScoreRunResult } from "./scoring/orchestrate.js";
+export type { PollOptions, PollResult } from "./scoring/poll-versions.js";
+export type { NotifyChannel } from "./scoring/events.js";

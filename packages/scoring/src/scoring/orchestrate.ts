@@ -26,6 +26,7 @@ import { fetchOpenSSF } from "../adapters/openssf.js";
 import { fetchPypi } from "../adapters/pypi.js";
 import { fetchSmithery } from "../adapters/smithery.js";
 import { buildSharedRepoMask, computeRawDimensions } from "./compute.js";
+import { notifyGradeComputed, notifyVersionDetected } from "./events.js";
 import { rankAndTier, type RankInput } from "./rank.js";
 import type { ComponentSnapshot, ScoredServer } from "./types.js";
 import { writeAdoptionScores } from "./writer.js";
@@ -167,13 +168,16 @@ async function scrapeServer(server: ServerRow): Promise<ServerScrape> {
 /**
  * Upserts a `versions` row for the given (server_id, version) and returns
  * the resulting id. Uses a SELECT-then-INSERT pattern (vs. true upsert) so
- * we don't accidentally overwrite `detected_at` on subsequent runs.
+ * we don't accidentally overwrite `detected_at` on subsequent runs. Emits
+ * `version_detected` on insert (not on existing-row hit).
+ *
+ * Exported so the hourly poll-versions worker can use the same path.
  */
-async function ensureVersionId(
+export async function ensureVersionId(
   supabase: SupabaseClient,
   server_id: string,
   version: string,
-): Promise<string> {
+): Promise<{ version_id: string; isNew: boolean }> {
   const { data: existing, error: selErr } = await supabase
     .from("versions")
     .select("id")
@@ -181,7 +185,7 @@ async function ensureVersionId(
     .eq("version", version)
     .maybeSingle();
   if (selErr) throw new Error(`ensureVersionId(${server_id}): ${selErr.message}`);
-  if (existing) return existing.id as string;
+  if (existing) return { version_id: existing.id as string, isNew: false };
 
   const { data: inserted, error: insErr } = await supabase
     .from("versions")
@@ -189,7 +193,11 @@ async function ensureVersionId(
     .select("id")
     .single();
   if (insErr) throw new Error(`ensureVersionId(${server_id}) insert: ${insErr.message}`);
-  return inserted.id as string;
+  const version_id = inserted.id as string;
+  // Fire-and-forget — emit() swallows errors so a NOTIFY drop doesn't fail
+  // the broader insert that just succeeded.
+  await notifyVersionDetected(supabase, { version_id, server_id });
+  return { version_id, isNew: true };
 }
 
 /**
@@ -262,7 +270,7 @@ export async function scoreAllTrackedServers(
     }
     const version_id = options.dryRun
       ? `dry-run-${s.server_id}`
-      : await ensureVersionId(supabase, s.server_id, s.latest_version);
+      : (await ensureVersionId(supabase, s.server_id, s.latest_version)).version_id;
     snapshots.push({ ...s.snapshot, version_id });
     if (!options.dryRun) {
       await updateLatestVersionId(supabase, s.server_id, version_id);
@@ -283,6 +291,20 @@ export async function scoreAllTrackedServers(
   if (!options.dryRun) {
     const snapshotsById = new Map(snapshots.map((s) => [s.server_id, s]));
     rows_written = await writeAdoptionScores(supabase, scored, snapshotsById);
+
+    // Emit grade_computed per server. Fire-and-forget — emit() swallows
+    // errors so an alert-worker outage doesn't fail the scoring write that
+    // just succeeded. One NOTIFY per server is fine (daily cadence, ~78
+    // round-trips); batch if it ever becomes a hot path.
+    await Promise.all(
+      scored.map((s) =>
+        notifyGradeComputed(supabase, {
+          version_id: s.version_id,
+          kind: "adoption",
+          new_value: s.score,
+        }),
+      ),
+    );
   }
 
   return { rows_written, scored, snapshots, skipped };

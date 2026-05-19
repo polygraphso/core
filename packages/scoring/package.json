@@ -13,7 +13,8 @@
     "seed": "node --env-file=../../.env --import tsx ./src/seed/seed.ts",
     "probe": "node --env-file=../../.env --import tsx ./src/scripts/probe.ts",
     "score": "node --env-file=../../.env --import tsx ./src/scripts/score.ts",
-    "top": "node --env-file=../../.env --import tsx ./src/scripts/top.ts"
+    "top": "node --env-file=../../.env --import tsx ./src/scripts/top.ts",
+    "poll": "node --env-file=../../.env --import tsx ./src/scripts/poll.ts"
   },
   "engines": {
     "node": ">=20.6.0"
