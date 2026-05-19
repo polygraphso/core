@@ -157,18 +157,26 @@ export function computeRawDimensions(
   );
 
   // ── Adoption ──────────────────────────────────────────────────────────────
-  // Weights renormalized from agentic-talent-app to sum to 1 after pruning
-  // vscode (0.12) + homebrew (0.10) + pulse (0.07) + x402 (0.10) = 0.39.
-  // Remaining 0.61 → divide each by 0.61 to renormalize:
-  //   npm 0.32 → 0.525, pypi 0.08 → 0.131, smithery_use 0.14 → 0.230,
-  //   gh_stars 0.05 → 0.082, velocity*1k 0.07 → 0.115, dependents 0.05 → 0.082
+  // Weights renormalized from agentic-talent-app's mcp-tool formula. Original
+  // baseAdoption weights summed to 1.00 (npm 0.32, pypi 0.08, vscode 0.12,
+  // homebrew 0.10, smithery 0.14, pulse 0.07, gh_stars 0.05, velocity 0.07,
+  // dependents 0.05). We drop vscode + homebrew + pulse (out of mcp-tool
+  // scope) = 0.29; remaining kept-weight sum = 0.71. Renormalization
+  // factor = 1 / 0.71 ≈ 1.408:
+  //   npm 0.32 × 1.408 = 0.451     pypi 0.08 × 1.408 = 0.113
+  //   smithery 0.14 × 1.408 = 0.197    gh_stars 0.05 × 1.408 = 0.070
+  //   velocity 0.07 × 1.408 = 0.099    dependents 0.05 × 1.408 = 0.070
+  // Sum = 1.000 (within rounding). x402 was an outer 0.05+0.05 layered
+  // ON TOP of baseAdoption with a 0.9 multiplier on baseAdoption — not
+  // part of the renormalization base. The previous 0.61 denominator was
+  // wrong and produced weights summing to 1.165, which made
+  // adoptionWithRedistribution emit scale_factor values that double as
+  // a "compress to fit the bogus total" rather than redistribute absence.
   //
-  // Structural-absence normalization: each adopter signal carries a
-  // `present` flag indicating whether the server has any presence on that
-  // source at all (vs. having a zero/low value there). Absent signals'
-  // weights redistribute across present signals per
-  // scoring-brief.md — preserves formula structure while preventing
-  // structurally-absent signals from systematically biasing scores.
+  // Structural-absence normalization: each signal carries a `present`
+  // flag indicating whether the server has any presence on that source
+  // (vs. zero/low). Absent weights redistribute across present signals
+  // per scoring-brief.md.
   const velocityFromWeekly = snap.npm?.weekly_downloads.length
     ? snap.npm.weekly_downloads
     : snap.pypi?.weekly_downloads ?? null;
@@ -180,19 +188,19 @@ export function computeRawDimensions(
   const adoptionSignals: AdoptionSignal[] = [
     {
       name: "npm",
-      weight: 0.525,
+      weight: 0.451,
       value: logScale(snap.npm?.downloads_last_month ?? 0),
       present: snap.npm !== null,
     },
     {
       name: "pypi",
-      weight: 0.131,
+      weight: 0.113,
       value: logScale(snap.pypi?.downloads_last_month ?? 0),
       present: snap.pypi !== null,
     },
     {
       name: "smithery_use_count",
-      weight: 0.230,
+      weight: 0.197,
       value: logScale(snap.smithery?.use_count ?? 0),
       // Structurally absent when the server isn't on Smithery at all.
       // Present-but-zero (rare; would mean Smithery returned the entry
@@ -201,7 +209,7 @@ export function computeRawDimensions(
     },
     {
       name: "gh_stars",
-      weight: 0.082,
+      weight: 0.070,
       value: ghMasked ? 0 : logScale(snap.github?.stars ?? 0),
       // Shared-repo mask still treats github as absent — the mask is exactly
       // the "this signal would mislead us" case, structurally identical to
@@ -210,13 +218,13 @@ export function computeRawDimensions(
     },
     {
       name: "velocity",
-      weight: 0.115,
+      weight: 0.099,
       value: (velocity / 100) * logScale(1000),
       present: velocityPresent,
     },
     {
       name: "depsdev_dependents",
-      weight: 0.082,
+      weight: 0.070,
       value: logScale(snap.depsdev?.dependents_count ?? 0),
       present: snap.depsdev !== null,
     },
