@@ -11,7 +11,7 @@ This is the source-of-truth code repo for **polygraph.so** (formerly `poligrafo.
 
 ## What this product is (one paragraph)
 
-Behavioral evaluation for MCP servers and the agents that use them. Free public grades + a CLI (`npx polygraph check <server>`) that's a sub-second lookup over precomputed grades. Subscriber-pays only. Independence is disclosure-based — material support is allowed if publicly registered, never undisclosed; no graded party gets review or approval rights. Two tiers: dev subscription on a runtime gateway and enterprise vendor-risk scoring. Independence is the moat: frontier labs are too conflicted to grade their own ecosystem, Trustpilot-style ratings are too gameable.
+Behavioral evaluation for MCP servers and the agents that use them. Free public grades + a CLI (`npx polygraphso check <server>`) that's a sub-second lookup over precomputed grades. Subscriber-pays only. Independence is disclosure-based — material support is allowed if publicly registered, never undisclosed; no graded party gets review or approval rights. Two tiers: dev subscription on a runtime gateway and enterprise vendor-risk scoring. Independence is the moat: frontier labs are too conflicted to grade their own ecosystem, Trustpilot-style ratings are too gameable.
 
 ## What we are NOT building
 
