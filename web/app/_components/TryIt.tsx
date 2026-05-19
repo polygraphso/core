@@ -54,7 +54,9 @@ function snippetFor(lang: Lang, ref: string): string {
   }
 }
 
-function tierLabel(t: CheckResult extends { adoption_tier: infer T } ? T : never): string {
+type AdoptionTier = "top10" | "top25" | "top50" | "top100";
+
+function tierLabel(t: AdoptionTier | null): string {
   if (!t) return "unranked";
   return t.replace("top", "top-");
 }
