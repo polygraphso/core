@@ -8,6 +8,18 @@ importers:
 
   .: {}
 
+  packages/cli:
+    devDependencies:
+      '@types/node':
+        specifier: ^20.16.0
+        version: 20.19.41
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@20.19.41)(lightningcss@1.32.0)
+
   packages/core:
     devDependencies:
       typescript:
@@ -44,6 +56,12 @@ importers:
 
   web:
     dependencies:
+      '@polygraph/core':
+        specifier: workspace:*
+        version: link:../packages/core
+      '@supabase/supabase-js':
+        specifier: ^2.45.0
+        version: 2.106.0
       next:
         specifier: 16.2.6
         version: 16.2.6(react-dom@19.2.4(react@19.2.4))(react@19.2.4)

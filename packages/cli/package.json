@@ -1,0 +1,43 @@
+{
+  "name": "polygraphso",
+  "version": "0.1.0",
+  "description": "Look up the polygraph for an MCP server. Independent, lab-evaluated trust grades — see polygraph.so.",
+  "license": "Apache-2.0",
+  "homepage": "https://polygraph.so",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/polygraphso/core.git",
+    "directory": "packages/cli"
+  },
+  "bugs": "https://github.com/polygraphso/core/issues",
+  "keywords": [
+    "polygraph",
+    "mcp",
+    "model-context-protocol",
+    "trust",
+    "ai-agents"
+  ],
+  "type": "module",
+  "bin": {
+    "polygraphso": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.0",
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.0"
+  }
+}
