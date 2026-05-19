@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchGitHub, parseContributorsCount } from "./github.js";
+import { fetchGitHub, parseContributorsCount, computeReleaseCadence } from "./github.js";
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -8,6 +8,47 @@ function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
     ...init,
   });
 }
+
+describe("computeReleaseCadence", () => {
+  const NOW = new Date("2026-06-01T00:00:00Z").getTime();
+  const day = (n: number) => new Date(NOW - n * 24 * 60 * 60 * 1000).toISOString();
+
+  it("counts releases within the last year and averages spacing", () => {
+    // Five releases, 30 days apart each → avg 30 days between, all in last year.
+    const releases = [day(0), day(30), day(60), day(90), day(120)];
+    expect(computeReleaseCadence(releases, NOW)).toEqual({
+      release_count_last_year: 5,
+      avg_days_between_releases: 30,
+    });
+  });
+
+  it("excludes releases older than a year from the count but uses them in the average", () => {
+    const releases = [day(10), day(50), day(380), day(740)]; // last two are >1y old
+    const result = computeReleaseCadence(releases, NOW);
+    expect(result.release_count_last_year).toBe(2);
+    expect(result.avg_days_between_releases).toBeCloseTo(243.33, 1);
+  });
+
+  it("returns null avg when fewer than two releases exist", () => {
+    expect(computeReleaseCadence([], NOW)).toEqual({
+      release_count_last_year: 0,
+      avg_days_between_releases: null,
+    });
+    expect(computeReleaseCadence([day(0)], NOW)).toEqual({
+      release_count_last_year: 1,
+      avg_days_between_releases: null,
+    });
+  });
+
+  it("filters null / invalid entries", () => {
+    expect(
+      computeReleaseCadence([null, undefined, "not-a-date", day(10), day(40)], NOW),
+    ).toEqual({
+      release_count_last_year: 2,
+      avg_days_between_releases: 30,
+    });
+  });
+});
 
 describe("parseContributorsCount", () => {
   it("extracts last-page number from Link header", () => {
@@ -75,6 +116,22 @@ describe("fetchGitHub", () => {
       if (input.endsWith("/stats/commit_activity")) {
         return jsonResponse(Array.from({ length: 52 }, (_, i) => ({ total: i + 1 })));
       }
+      if (input.endsWith("/community/profile")) {
+        return jsonResponse({
+          files: {
+            security: { url: "https://..." },
+            contributing: { url: "https://..." },
+          },
+        });
+      }
+      if (input.includes("/releases?per_page=")) {
+        return jsonResponse([
+          { published_at: "2026-05-01T00:00:00Z" },
+          { published_at: "2026-04-01T00:00:00Z" },
+          { published_at: "2026-03-01T00:00:00Z" },
+          { published_at: "2026-02-01T00:00:00Z" },
+        ]);
+      }
       throw new Error(`Unexpected URL: ${input}`);
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -91,9 +148,13 @@ describe("fetchGitHub", () => {
       created_at: "2024-11-01T00:00:00Z",
       pr_count_open: 87,
       pr_count_closed: 1240,
+      has_security_md: true,
+      has_contributing_md: true,
     });
     expect(result?.commit_activity_last_year).toHaveLength(52);
     expect(result?.commit_activity_last_year[51]).toBe(52);
+    expect(result?.release_count_last_year).toBe(4);
+    expect(result?.avg_days_between_releases).not.toBeNull();
 
     // Sanity-check the token was attached.
     const repoCall = fetchMock.mock.calls.find(([url]) =>
@@ -133,11 +194,21 @@ describe("fetchGitHub", () => {
         if (input.includes("/search/issues")) {
           return jsonResponse({ total_count: 0 });
         }
+        if (input.endsWith("/community/profile")) {
+          return new Response("Not Found", { status: 404 });
+        }
+        if (input.includes("/releases?per_page=")) {
+          return jsonResponse([]);
+        }
         throw new Error(`Unexpected URL: ${input}`);
       }),
     );
 
     const result = await fetchGitHub("x", "y");
     expect(result?.commit_activity_last_year).toEqual([]);
+    expect(result?.has_security_md).toBe(false);
+    expect(result?.has_contributing_md).toBe(false);
+    expect(result?.release_count_last_year).toBe(0);
+    expect(result?.avg_days_between_releases).toBeNull();
   });
 });
