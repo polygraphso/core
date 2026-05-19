@@ -31,6 +31,28 @@ pnpm --filter @polygraph/scoring probe github/modelcontextprotocol/servers
 
 Resolves a `{registry}/{owner}/{name}` ref, runs every available adapter against it, and prints the result. For npm refs, the github adapter chains automatically when npm's `repository` field points at github — same composition the daily loop uses.
 
+## Score — full ranking pass
+
+Runs the orchestrator end-to-end: scrapes every tracked server through its adapters, builds component snapshots, computes raw dimensions, applies the shared-repo mask, normalizes / weights / ranks across the batch, assigns tiers, and writes one `adoption_scores` row per server.
+
+```bash
+pnpm --filter @polygraph/scoring score                        # full run, writes to DB
+pnpm --filter @polygraph/scoring score -- --limit 5           # first 5 servers only
+pnpm --filter @polygraph/scoring score -- --dry-run           # compute + rank, no DB write
+pnpm --filter @polygraph/scoring score -- --limit 10 --dry-run
+```
+
+At 78 servers and ~6 adapters per npm server (sequential across servers, parallel within), expect ~5-10 minutes for a full run. Phase 5 will wrap this in a daily cron.
+
+## Top — read current rankings as JSON
+
+```bash
+pnpm --filter @polygraph/scoring top                          # default top 50, compact JSON
+pnpm --filter @polygraph/scoring top -- --limit 10 --pretty   # top 10, indented
+```
+
+Reads from `adoption_scores`, dedupes by `version_id` (keeping the latest run), sorts by score, joins server identity, returns the top N.
+
 ## Seed sources
 
 `src/seed/servers.yaml` is hand-curated from four verified sources (see the comment block at the top of the file):

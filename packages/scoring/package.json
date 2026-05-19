@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "seed": "node --env-file=../../.env --import tsx ./src/seed/seed.ts",
-    "probe": "node --env-file=../../.env --import tsx ./src/scripts/probe.ts"
+    "probe": "node --env-file=../../.env --import tsx ./src/scripts/probe.ts",
+    "score": "node --env-file=../../.env --import tsx ./src/scripts/score.ts",
+    "top": "node --env-file=../../.env --import tsx ./src/scripts/top.ts"
   },
   "engines": {
     "node": ">=20.6.0"
