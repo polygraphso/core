@@ -11,7 +11,7 @@ core/
 └── .claude/     # local dev tooling (preview launch config, etc.)
 ```
 
-Future siblings (not yet built): `cli/` (the `npx polygraph check` runtime), `probes/` (the litmus-test sandbox + probe pack), `infra/` (deploy plumbing).
+Future siblings (not yet built): `cli/` (the `npx polygraphso check` runtime), `probes/` (the litmus-test sandbox + probe pack), `infra/` (deploy plumbing).
 
 ## Strategy & decision log
 
