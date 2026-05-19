@@ -36,6 +36,14 @@
 
 servers:
 
+  # ── polygraph itself (1) ─────────────────────────────────────────────
+  # Our own MCP server. Dogfooding: it exposes check_server / list_servers
+  # MCP tools that wrap /api/cli/check and /api/cli/list, so agents can
+  # consult polygraphs before recommending or installing other servers.
+  # Subject to the same probes as everything else once the litmus harness
+  # ships — no special treatment.
+  - { registry: npm, owner: "@polygraphso", name: mcp }
+
   # ── @modelcontextprotocol/* reference servers (npm) (12) ─────────────
   - { registry: npm, owner: "@modelcontextprotocol", name: server-filesystem }
   - { registry: npm, owner: "@modelcontextprotocol", name: server-postgres }
