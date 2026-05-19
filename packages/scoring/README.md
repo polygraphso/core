@@ -19,6 +19,18 @@ pnpm --filter @polygraph/scoring seed
 
 The seed script is idempotent — re-running it updates `last_seen` and is a no-op otherwise. Unique key is `(registry, owner, name)` with `nulls not distinct`, so unscoped npm packages (e.g. `npm/lodash`) round-trip correctly.
 
+## Probe — single-server adapter dry run
+
+For ad-hoc debugging ("what does scoring see for X?"), without touching the DB:
+
+```bash
+pnpm --filter @polygraph/scoring probe npm/@modelcontextprotocol/server-filesystem
+pnpm --filter @polygraph/scoring probe npm/lodash
+pnpm --filter @polygraph/scoring probe github/modelcontextprotocol/servers
+```
+
+Resolves a `{registry}/{owner}/{name}` ref, runs every available adapter against it, and prints the result. For npm refs, the github adapter chains automatically when npm's `repository` field points at github — same composition the daily loop uses.
+
 ## Seed sources
 
 `src/seed/servers.yaml` is hand-curated from four verified sources (see the comment block at the top of the file):
