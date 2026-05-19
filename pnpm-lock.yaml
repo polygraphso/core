@@ -56,9 +56,6 @@ importers:
 
   web:
     dependencies:
-      '@polygraph/core':
-        specifier: workspace:*
-        version: link:../packages/core
       '@supabase/supabase-js':
         specifier: ^2.45.0
         version: 2.106.0

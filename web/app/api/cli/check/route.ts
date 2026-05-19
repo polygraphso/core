@@ -14,8 +14,8 @@ import {
   ServerRefParseError,
   parseServerRef,
   serverKey,
-} from "@polygraph/core/identity";
-import type { AdoptionTier } from "@polygraph/core/types";
+  type AdoptionTier,
+} from "@/lib/identity";
 
 interface CheckRequest {
   server_ref?: unknown;
