@@ -7,9 +7,8 @@
  * marker that scans as a line of output, not decoration.
  */
 
+import { NETWORK_FAILURE_LINE, checkUrl } from "./api.js";
 import { RefParseError, canonicalRef, parseRef } from "./identity.js";
-
-const DEFAULT_API_URL = "https://polygraph.so/api/cli/check";
 
 type ApiResponse =
   | {
@@ -29,11 +28,6 @@ const TIER_LABEL: Record<string, string> = {
   top50: "top 50 adoption",
   top100: "top 100 adoption",
 };
-
-function apiUrl(): string {
-  const override = process.env.POLYGRAPH_API_URL;
-  return override && override.length > 0 ? override : DEFAULT_API_URL;
-}
 
 const USAGE_HINT = [
   "polygraphso check requires a registry-prefixed ref.",
@@ -68,14 +62,13 @@ export async function runCheck(args: readonly string[]): Promise<number> {
 
   let res: Response;
   try {
-    res = await fetch(apiUrl(), {
+    res = await fetch(checkUrl(), {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ server_ref: canonical }),
     });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    process.stderr.write(`polygraphso: network error — ${msg}\n`);
+  } catch {
+    process.stderr.write(NETWORK_FAILURE_LINE + "\n");
     return 1;
   }
 
@@ -124,4 +117,4 @@ export async function runCheck(args: readonly string[]): Promise<number> {
   return 1;
 }
 
-export const __testing = { USAGE_HINT, DEFAULT_API_URL };
+export const __testing = { USAGE_HINT };
