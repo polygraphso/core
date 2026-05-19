@@ -10,7 +10,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "seed": "node --env-file=../../.env --import tsx ./src/seed/seed.ts"
+    "seed": "node --env-file=../../.env --import tsx ./src/seed/seed.ts",
+    "probe": "node --env-file=../../.env --import tsx ./src/scripts/probe.ts"
   },
   "engines": {
     "node": ">=20.6.0"
