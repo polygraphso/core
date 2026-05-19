@@ -1,5 +1,3 @@
-const TODAY_ISO = "2026-05-15";
-
 export function Footer() {
   return (
     <footer className="mt-10 border-t hairline">
@@ -138,11 +136,8 @@ export function Footer() {
             />
             v1 in private testing
           </div>
-          <div className="mt-6 font-mono text-[11px] text-ink-faint uppercase tracking-[0.18em]">
-            Updated{" "}
-            <time dateTime={TODAY_ISO} className="tabular">
-              {TODAY_ISO}
-            </time>
+          <div className="mt-6 font-mono text-[11px] text-ink-faint uppercase tracking-[0.18em] tabular">
+            v0.1
           </div>
         </div>
       </div>
