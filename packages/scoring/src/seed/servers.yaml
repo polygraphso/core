@@ -36,6 +36,15 @@
 
 servers:
 
+  # ── polygraph itself (1) ─────────────────────────────────────────────
+  # The CLI we ship. Not an MCP server runtime — a lookup tool over the
+  # public /api/cli/check endpoint — but it lives in the same ecosystem
+  # and the homepage demo (TryIt widget) needs it to resolve as tracked
+  # rather than not_available when a visitor types it. Behavioural probes
+  # don't apply (it doesn't expose MCP tools); the eventual polygraph
+  # field stays null and only the adoption tier is meaningful.
+  - { registry: npm, name: polygraphso }
+
   # ── @modelcontextprotocol/* reference servers (npm) (12) ─────────────
   - { registry: npm, owner: "@modelcontextprotocol", name: server-filesystem }
   - { registry: npm, owner: "@modelcontextprotocol", name: server-postgres }
