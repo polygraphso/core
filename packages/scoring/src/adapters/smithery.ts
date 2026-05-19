@@ -1,11 +1,20 @@
 /**
- * Smithery adapter — JSON API for use_count + verified flag + deploy
- * status. Per brief, Smithery's verified flag is a component (not a
- * weight) in adoption; use_count is an adoption signal.
+ * Smithery adapter — uses the search/list endpoint and filters for an
+ * exact qualifiedName match.
  *
- * Smithery requires a browser-style User-Agent to bypass bot detection.
+ * Smithery's `GET /servers/{qualifiedName}` endpoint does NOT return
+ * `useCount` (confirmed against the live API after the first scoring
+ * run came back with useCount=0 for every server). Only the list /
+ * search endpoint `GET /servers?q={query}` includes it. So we search
+ * by qualifiedName and pick the result whose qualifiedName matches
+ * exactly. No fuzzy fallback — silent false positives are unacceptable
+ * for trust-grading data (per scoring-brief.md).
  *
- * Returns null when the server isn't on Smithery (404).
+ * Smithery requires a browser User-Agent to bypass bot detection.
+ *
+ * Returns null when no result on Smithery matches the exact
+ * qualifiedName (which is most of our seed — only the 8 curated
+ * identities in servers.yaml have Smithery counterparts).
  */
 
 import { fetchWithRetry } from "./fetch.js";
@@ -22,7 +31,7 @@ export interface SmitheryAdapterData {
   smithery_created_at: string | null;
 }
 
-interface SmitheryServer {
+interface SmitheryServerEntry {
   qualifiedName?: string;
   useCount?: number;
   verified?: boolean;
@@ -30,25 +39,33 @@ interface SmitheryServer {
   createdAt?: string;
 }
 
+interface SmitheryListResponse {
+  servers?: SmitheryServerEntry[];
+}
+
 export async function fetchSmithery(
   qualifiedName: string,
 ): Promise<SmitheryAdapterData | null> {
-  const res = await fetchWithRetry(
-    `https://registry.smithery.ai/servers/${encodeURIComponent(qualifiedName)}`,
-    {
-      label: LABEL,
-      passThroughStatuses: [404],
-      headers: { "User-Agent": BROWSER_UA, Accept: "application/json" },
-    },
-  );
-  if (res.status === 404) return null;
+  // Search by qualifiedName. Smithery's search can return up to N results
+  // ordered by their internal relevance — we always look for an exact
+  // qualifiedName match, never accepting a near-miss.
+  const url = `https://registry.smithery.ai/servers?q=${encodeURIComponent(qualifiedName)}&pageSize=10`;
+  const res = await fetchWithRetry(url, {
+    label: LABEL,
+    passThroughStatuses: [404],
+    headers: { "User-Agent": BROWSER_UA, Accept: "application/json" },
+  });
+  if (!res.ok) return null;
 
-  const server = (await res.json()) as SmitheryServer;
+  const body = (await res.json()) as SmitheryListResponse;
+  const match = (body.servers ?? []).find((s) => s.qualifiedName === qualifiedName);
+  if (!match) return null;
+
   return {
-    qualified_name: server.qualifiedName ?? qualifiedName,
-    use_count: server.useCount ?? 0,
-    verified: server.verified ?? false,
-    is_deployed: server.isDeployed ?? false,
-    smithery_created_at: server.createdAt ?? null,
+    qualified_name: match.qualifiedName ?? qualifiedName,
+    use_count: match.useCount ?? 0,
+    verified: match.verified ?? false,
+    is_deployed: match.isDeployed ?? false,
+    smithery_created_at: match.createdAt ?? null,
   };
 }

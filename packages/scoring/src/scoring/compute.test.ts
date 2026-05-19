@@ -56,6 +56,38 @@ describe("advisoryRiskFromSeverities", () => {
   });
 });
 
+describe("adoption weights invariant", () => {
+  // Belt-and-braces: the renormalization math has gotten wrong before
+  // (sum was 1.165 in PR #23, divided by 0.61 instead of 0.71). Lock
+  // the invariant so a future tweak doesn't silently break compute.
+  it("declared adoption-signal weights sum to 1.000 (within rounding)", () => {
+    const result = computeRawDimensions(
+      snap({
+        npm: {
+          package_name: "x",
+          latest_version: "1.0.0",
+          last_publish_date: "2026-05-01T00:00:00Z",
+          deprecated: false,
+          github_owner_repo: null,
+          downloads_last_month: 1000,
+          weekly_downloads: [],
+        },
+        pypi: null,
+        smithery: null,
+        github: null,
+        depsdev: null,
+      }),
+      { shared_github_repos: new Set(), now: new Date("2026-06-01").getTime() },
+    );
+    // With only npm present, scale_factor = 1 / npm_weight.
+    // If npm_weight is 0.451, scale_factor ≈ 2.217.
+    // If the old buggy 0.525 were used, scale_factor ≈ 1.905.
+    const sf = result.redistribution.adoption.scale_factor;
+    expect(sf).not.toBeNull();
+    expect(sf!).toBeCloseTo(1 / 0.451, 2);
+  });
+});
+
 describe("adoptionWithRedistribution", () => {
   it("returns 0 with scale_factor=null when every signal is absent", () => {
     const result = adoptionWithRedistribution([
