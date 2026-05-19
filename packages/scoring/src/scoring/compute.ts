@@ -90,6 +90,48 @@ export function advisoryRiskFromSeverities(severities: readonly AdvisorySeverity
 }
 
 /**
+ * Structural-absence aware weighted sum. Each entry's `present` flag is
+ * the absence check: `true` means the signal exists (even if 0/low),
+ * `false` means the server has no presence on that source at all.
+ *
+ * When some signals are absent, their weights are redistributed
+ * proportionally to the *present* weights — preserving the formula
+ * structure while adapting to the per-server input distribution. Per
+ * scoring-brief.md "Structural-absence normalization."
+ *
+ * Returns the score plus a report of what was redistributed so debug
+ * views can explain tier shifts.
+ */
+export interface AdoptionSignal {
+  name: string;
+  value: number;
+  weight: number;
+  present: boolean;
+}
+
+export function adoptionWithRedistribution(
+  signals: readonly AdoptionSignal[],
+): { score: number; absent: string[]; scale_factor: number | null } {
+  const presentSignals = signals.filter((s) => s.present);
+  const absent = signals.filter((s) => !s.present).map((s) => s.name);
+
+  if (presentSignals.length === 0) {
+    return { score: 0, absent, scale_factor: null };
+  }
+
+  const presentWeightSum = presentSignals.reduce((acc, s) => acc + s.weight, 0);
+  // presentWeightSum is > 0 by construction (caller assigns positive weights
+  // to every signal); guard anyway.
+  const scaleFactor = presentWeightSum > 0 ? 1 / presentWeightSum : 0;
+
+  const score = presentSignals.reduce(
+    (acc, s) => acc + s.value * s.weight * scaleFactor,
+    0,
+  );
+  return { score, absent, scale_factor: scaleFactor };
+}
+
+/**
  * Options for shared-repo masking. When a github repo is shared across
  * multiple servers in the batch (e.g. all `@modelcontextprotocol/server-*`
  * point to `modelcontextprotocol/servers`), github signals get masked to
@@ -116,30 +158,71 @@ export function computeRawDimensions(
 
   // ── Adoption ──────────────────────────────────────────────────────────────
   // Weights renormalized from agentic-talent-app to sum to 1 after pruning
-  // vscode (0.12) + homebrew (0.10) + pulse (0.07) + x402 (0.10) = 0.39
+  // vscode (0.12) + homebrew (0.10) + pulse (0.07) + x402 (0.10) = 0.39.
   // Remaining 0.61 → divide each by 0.61 to renormalize:
   //   npm 0.32 → 0.525, pypi 0.08 → 0.131, smithery_use 0.14 → 0.230,
   //   gh_stars 0.05 → 0.082, velocity*1k 0.07 → 0.115, dependents 0.05 → 0.082
-  // We round to 3 decimals; small drift is fine, math is approximate.
-  const npmDl = logScale(snap.npm?.downloads_last_month ?? 0);
-  const pypiDl = logScale(snap.pypi?.downloads_last_month ?? 0);
-  const smitheryUse = logScale(snap.smithery?.use_count ?? 0);
-  const ghStars = ghMasked ? 0 : logScale(snap.github?.stars ?? 0);
-  const dependents = logScale(snap.depsdev?.dependents_count ?? 0);
-
-  const weekly = snap.npm?.weekly_downloads.length
+  //
+  // Structural-absence normalization: each adopter signal carries a
+  // `present` flag indicating whether the server has any presence on that
+  // source at all (vs. having a zero/low value there). Absent signals'
+  // weights redistribute across present signals per
+  // scoring-brief.md — preserves formula structure while preventing
+  // structurally-absent signals from systematically biasing scores.
+  const velocityFromWeekly = snap.npm?.weekly_downloads.length
     ? snap.npm.weekly_downloads
     : snap.pypi?.weekly_downloads ?? null;
-  const velocity = computeDownloadVelocity(weekly);
-  const velocityTerm = (velocity / 100) * logScale(1000);
+  // velocity is "present" iff we have enough weekly data to actually
+  // compute it (matches the helper's `< 8 weeks` neutral fallback rule).
+  const velocityPresent = Boolean(velocityFromWeekly && velocityFromWeekly.length >= 8);
+  const velocity = computeDownloadVelocity(velocityFromWeekly);
 
-  const adoption =
-    npmDl * 0.525 +
-    pypiDl * 0.131 +
-    smitheryUse * 0.230 +
-    ghStars * 0.082 +
-    velocityTerm * 0.115 +
-    dependents * 0.082;
+  const adoptionSignals: AdoptionSignal[] = [
+    {
+      name: "npm",
+      weight: 0.525,
+      value: logScale(snap.npm?.downloads_last_month ?? 0),
+      present: snap.npm !== null,
+    },
+    {
+      name: "pypi",
+      weight: 0.131,
+      value: logScale(snap.pypi?.downloads_last_month ?? 0),
+      present: snap.pypi !== null,
+    },
+    {
+      name: "smithery_use_count",
+      weight: 0.230,
+      value: logScale(snap.smithery?.use_count ?? 0),
+      // Structurally absent when the server isn't on Smithery at all.
+      // Present-but-zero (rare; would mean Smithery returned the entry
+      // but useCount=0) keeps the weight — the formula's job to penalize.
+      present: snap.smithery !== null,
+    },
+    {
+      name: "gh_stars",
+      weight: 0.082,
+      value: ghMasked ? 0 : logScale(snap.github?.stars ?? 0),
+      // Shared-repo mask still treats github as absent — the mask is exactly
+      // the "this signal would mislead us" case, structurally identical to
+      // "no github repo at all" for the purpose of this server's score.
+      present: snap.github !== null && !ghMasked,
+    },
+    {
+      name: "velocity",
+      weight: 0.115,
+      value: (velocity / 100) * logScale(1000),
+      present: velocityPresent,
+    },
+    {
+      name: "depsdev_dependents",
+      weight: 0.082,
+      value: logScale(snap.depsdev?.dependents_count ?? 0),
+      present: snap.depsdev !== null,
+    },
+  ];
+  const adoptionResult = adoptionWithRedistribution(adoptionSignals);
+  const adoption = adoptionResult.score;
 
   // ── Quality ───────────────────────────────────────────────────────────────
   // Brief excludes Glama grades + Smithery `verified` (components, not weights)
@@ -211,7 +294,19 @@ export function computeRawDimensions(
   if (snap.glama) sources_used.push("glama");
   if (snap.smithery) sources_used.push("smithery");
 
-  return { adoption, quality, consistency, risk, sources_used };
+  return {
+    adoption,
+    quality,
+    consistency,
+    risk,
+    sources_used,
+    redistribution: {
+      adoption: {
+        structurally_absent: adoptionResult.absent,
+        scale_factor: adoptionResult.scale_factor,
+      },
+    },
+  };
 }
 
 /**

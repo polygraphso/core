@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  adoptionWithRedistribution,
   advisoryRiskFromSeverities,
   buildSharedRepoMask,
   computeDownloadVelocity,
@@ -55,6 +56,52 @@ describe("advisoryRiskFromSeverities", () => {
   });
 });
 
+describe("adoptionWithRedistribution", () => {
+  it("returns 0 with scale_factor=null when every signal is absent", () => {
+    const result = adoptionWithRedistribution([
+      { name: "a", weight: 0.5, value: 10, present: false },
+      { name: "b", weight: 0.5, value: 5, present: false },
+    ]);
+    expect(result).toEqual({ score: 0, absent: ["a", "b"], scale_factor: null });
+  });
+
+  it("returns the weighted sum unchanged when every signal is present", () => {
+    const result = adoptionWithRedistribution([
+      { name: "a", weight: 0.6, value: 10, present: true },
+      { name: "b", weight: 0.4, value: 5, present: true },
+    ]);
+    // Sum of weights = 1, scale_factor = 1, score = 10*0.6 + 5*0.4 = 8.
+    expect(result.score).toBe(8);
+    expect(result.absent).toEqual([]);
+    expect(result.scale_factor).toBe(1);
+  });
+
+  it("redistributes absent weight proportionally across present signals", () => {
+    // Three signals, the absent one (0.4 weight) gets split across the
+    // present ones. Present weights: 0.3 + 0.3 = 0.6. Scale = 1/0.6 ≈ 1.667.
+    // Score = 10 * 0.3 * 1.667 + 6 * 0.3 * 1.667 = 5 + 3 = 8.
+    const result = adoptionWithRedistribution([
+      { name: "a", weight: 0.3, value: 10, present: true },
+      { name: "b", weight: 0.4, value: 0, present: false },
+      { name: "c", weight: 0.3, value: 6, present: true },
+    ]);
+    expect(result.score).toBeCloseTo(8, 5);
+    expect(result.absent).toEqual(["b"]);
+    expect(result.scale_factor).toBeCloseTo(1.667, 2);
+  });
+
+  it("preserves the relative weighting between present signals", () => {
+    // High-weight present signal should dominate. a has 4x b's weight.
+    const result = adoptionWithRedistribution([
+      { name: "a", weight: 0.4, value: 10, present: true },
+      { name: "b", weight: 0.1, value: 10, present: true },
+      { name: "absent", weight: 0.5, value: 0, present: false },
+    ]);
+    // Scale 1/0.5 = 2. Score = 10*0.4*2 + 10*0.1*2 = 8 + 2 = 10.
+    expect(result.score).toBeCloseTo(10, 5);
+  });
+});
+
 describe("buildSharedRepoMask", () => {
   it("flags github_repo_key values that appear on 2+ servers", () => {
     const a = snap({ server_id: "a", github_repo_key: "mc/servers" });
@@ -72,22 +119,43 @@ describe("buildSharedRepoMask", () => {
 describe("computeRawDimensions", () => {
   const opts = { shared_github_repos: new Set<string>(), now: new Date("2026-06-01").getTime() };
 
-  it("returns the empty-snapshot signature", () => {
+  it("returns the empty-snapshot signature with all adoption signals flagged absent", () => {
     const result = computeRawDimensions(snap(), opts);
-    // Adoption: only contribution is neutral velocity (no weekly data
-    // → returns 50, the "we don't know yet" sentinel from the lifted
-    // formula). 50/100 × log10(1001) × 0.115 ≈ 0.17.
-    expect(result.adoption).toBeLessThan(1);
+    // Adoption: every signal is structurally absent → score collapses to 0
+    // (no present signals to redistribute weight across).
+    expect(result.adoption).toBe(0);
+    expect(result.redistribution.adoption.scale_factor).toBeNull();
+    expect(result.redistribution.adoption.structurally_absent).toEqual(
+      expect.arrayContaining(["npm", "pypi", "smithery_use_count", "gh_stars", "velocity", "depsdev_dependents"]),
+    );
     // Quality: no PR-merge-rate, no OpenSSF — weightedAverage of all-null
     // returns 0.5 (the neutral fallback).
     expect(result.quality).toBe(0.5);
-    // Consistency: no publish date → freshness 0 (treated as ancient),
-    // no glama/smithery → registry breadth 0. weighted average of two
-    // zeros = 0.
     expect(result.consistency).toBe(0);
-    // Risk: stale (no last_publish → 9999d) adds 40.
     expect(result.risk).toBeGreaterThanOrEqual(40);
     expect(result.sources_used).toEqual([]);
+  });
+
+  it("reports smithery as structurally absent when the adapter returned null", () => {
+    const result = computeRawDimensions(
+      snap({
+        npm: {
+          package_name: "x",
+          latest_version: "1.0.0",
+          last_publish_date: "2026-05-01T00:00:00Z",
+          deprecated: false,
+          github_owner_repo: null,
+          downloads_last_month: 1_000_000,
+          weekly_downloads: [],
+        },
+        smithery: null,
+      }),
+      opts,
+    );
+    expect(result.redistribution.adoption.structurally_absent).toContain("smithery_use_count");
+    expect(result.redistribution.adoption.scale_factor).toBeGreaterThan(1);
+    // Adoption is non-zero because npm is present.
+    expect(result.adoption).toBeGreaterThan(0);
   });
 
   it("scales adoption with npm downloads and stars", () => {
