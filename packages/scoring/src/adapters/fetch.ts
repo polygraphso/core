@@ -58,8 +58,15 @@ export async function fetchWithRetry(
       }
 
       if (res.status === 429 && attempt < retries) {
+        // npm's downloads API returns `Retry-After: 0` even when it's
+        // actively rate-limiting (observed in the 14:50 scoring-run log).
+        // Taking that literally led to retry storms — 3 attempts within
+        // ~250ms that all 429'd. Floor the wait at the exponential
+        // backoff so the retry actually does something.
         const retryAfter = res.headers.get("retry-after");
-        const waitMs = retryAfter ? Number(retryAfter) * 1000 : 2 ** attempt * 1000;
+        const retryAfterMs = retryAfter ? Math.max(0, Number(retryAfter)) * 1000 : 0;
+        const backoffMs = 2 ** attempt * 1000; // 2s, 4s, 8s...
+        const waitMs = Math.max(retryAfterMs, backoffMs);
         console.log(`[${label}] ${url} RETRY (429, waiting ${waitMs}ms)`);
         await sleep(waitMs);
         continue;
