@@ -15,12 +15,14 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { runCheck } from "./check.js";
+import { runList } from "./list.js";
 
 const HELP = [
   "polygraph — independent, lab-evaluated trust grades for AI agents.",
   "",
   "usage:",
   "  polygraphso check <registry>/<owner>/<name>",
+  "  polygraphso list [--json]",
   "  polygraphso --version",
   "  polygraphso --help",
   "",
@@ -28,6 +30,8 @@ const HELP = [
   "  polygraphso check npm/@modelcontextprotocol/server-filesystem",
   "  polygraphso check pypi/mcp-server-git",
   "  polygraphso check github/owner/repo",
+  "  polygraphso list",
+  "  polygraphso list --json",
   "",
   "More at https://polygraph.so",
 ].join("\n");
@@ -53,6 +57,10 @@ async function main(argv: readonly string[]): Promise<number> {
 
   if (argv[0] === "check") {
     return runCheck(argv.slice(1));
+  }
+
+  if (argv[0] === "list") {
+    return runList(argv.slice(1));
   }
 
   process.stderr.write(`polygraphso: unknown command "${argv[0]}".\n\n${HELP}\n`);
