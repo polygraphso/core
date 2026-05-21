@@ -67,8 +67,19 @@ export function Footer() {
       </div>
 
       <div className="border-t hairline">
-        <div className="mx-auto max-w-6xl px-6 py-4 font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-          © {new Date().getFullYear()} polygraph.so
+        <div className="mx-auto max-w-6xl px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
+          <div>© {new Date().getFullYear()} polygraph.so</div>
+          <div className="normal-case tracking-normal font-sans text-[11.5px]">
+            From the team behind{" "}
+            <a
+              className="text-ink-muted hover:text-oxblood transition-colors"
+              href="https://talentprotocol.com"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Talent Protocol
+            </a>
+          </div>
         </div>
       </div>
     </footer>
