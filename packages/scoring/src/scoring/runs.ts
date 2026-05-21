@@ -14,6 +14,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { RunKind } from "@polygraph/core";
 
+/**
+ * Thrown when the unique-index on (kind) WHERE version_id IS NULL AND
+ * status IN ('queued','running') rejects the insert — i.e. another
+ * orchestrator-level run of the same kind is already in flight.
+ */
+export class OrchestratorRunAlreadyActiveError extends Error {
+  readonly kind: RunKind;
+  constructor(kind: RunKind) {
+    super(`An orchestrator run of kind '${kind}' is already queued or running.`);
+    this.name = "OrchestratorRunAlreadyActiveError";
+    this.kind = kind;
+  }
+}
+
 export async function startOrchestratorRun(
   supabase: SupabaseClient,
   kind: RunKind,
@@ -28,7 +42,13 @@ export async function startOrchestratorRun(
     })
     .select("id")
     .single();
-  if (error) throw new Error(`startOrchestratorRun: ${error.message}`);
+  if (error) {
+    // Postgres unique-violation — partial unique index runs_one_active_orchestrator_idx.
+    if (error.code === "23505") {
+      throw new OrchestratorRunAlreadyActiveError(kind);
+    }
+    throw new Error(`startOrchestratorRun: ${error.message}`);
+  }
   return { run_id: data.id as string };
 }
 

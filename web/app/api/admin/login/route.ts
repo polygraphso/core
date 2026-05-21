@@ -28,9 +28,16 @@ export async function POST(request: Request) {
   const next = form.get("next");
   const requestUrl = new URL(request.url);
 
+  // Preserve the requested deep-link across error redirects so a typo
+  // doesn't dump the user back at /admin.
+  const errParams: Record<string, string> = { e: "1" };
+  if (typeof next === "string" && next.startsWith("/admin")) {
+    errParams.next = next;
+  }
+
   if (typeof password !== "string" || password.length === 0) {
     console.warn(`[admin/login] missing password @ ${new Date().toISOString()}`);
-    return loginRedirect(requestUrl, { e: "1" });
+    return loginRedirect(requestUrl, errParams);
   }
 
   let ok: boolean;
@@ -41,7 +48,7 @@ export async function POST(request: Request) {
       "[admin/login] env misconfigured:",
       err instanceof Error ? err.message : String(err),
     );
-    return loginRedirect(requestUrl, { e: "cfg" });
+    return loginRedirect(requestUrl, { ...errParams, e: "cfg" });
   }
 
   if (!ok) {
@@ -50,7 +57,7 @@ export async function POST(request: Request) {
         request.headers.get("x-forwarded-for") ?? "?"
       }`,
     );
-    return loginRedirect(requestUrl, { e: "1" });
+    return loginRedirect(requestUrl, errParams);
   }
 
   // Where to send the user post-login. Only same-origin paths are allowed.

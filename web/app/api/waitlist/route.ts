@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { withApiLogging } from "@/lib/api-logging";
+import { getSupabase } from "@/lib/supabase-server";
 
 // Practical max from RFC 5321; longer addresses are not deliverable in
 // practice and the regex below assumes a bounded input.
@@ -15,19 +15,6 @@ const ALLOWED_ROLES = new Set([
   "researcher",
   "other",
 ]);
-
-function getSupabase() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error(
-      "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set on the server.",
-    );
-  }
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
 
 async function handlePOST(request: Request): Promise<Response> {
   let payload: unknown;
