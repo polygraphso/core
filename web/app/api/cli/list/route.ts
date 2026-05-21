@@ -16,6 +16,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import type { AdoptionTier } from "@/lib/identity";
+import { withApiLogging } from "@/lib/api-logging";
 
 type PolygraphGrade = "A" | "B" | "C" | "D" | "F";
 
@@ -59,7 +60,7 @@ function getSupabase() {
   });
 }
 
-export async function GET() {
+async function handleGET(_request: Request): Promise<Response> {
   const supabase = getSupabase();
 
   const { data: servers, error: serversErr } = await supabase
@@ -153,3 +154,5 @@ export async function GET() {
   const body: ListResponse = { servers: entries, total: entries.length };
   return Response.json(body);
 }
+
+export const GET = withApiLogging("/api/cli/list", handleGET);

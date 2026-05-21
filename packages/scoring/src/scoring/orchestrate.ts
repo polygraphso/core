@@ -28,6 +28,10 @@ import { fetchSmithery } from "../adapters/smithery.js";
 import { buildSharedRepoMask, computeRawDimensions } from "./compute.js";
 import { notifyGradeComputed, notifyVersionDetected } from "./events.js";
 import { rankAndTier, type RankInput } from "./rank.js";
+import {
+  finishOrchestratorRun,
+  startOrchestratorRun,
+} from "./runs.js";
 import type { ComponentSnapshot, ScoredServer } from "./types.js";
 import { writeAdoptionScores } from "./writer.js";
 
@@ -277,6 +281,15 @@ export interface ScoreRunOptions {
     server: ServerRow,
     identities: Partial<Record<IdentitySource, string>>,
   ) => Promise<ServerScrape>;
+  /**
+   * Pre-existing `runs` row id to finalize on success/failure. When the
+   * /admin/rescore route pre-creates the row to return 202 with a run_id,
+   * it passes the id here. Omit (or pass undefined) and a new row is
+   * created at start. Pass `null` to skip runs-table writes entirely
+   * (used by the score CLI script's --dry-run, or callers that already
+   * own the lifecycle).
+   */
+  runId?: string | null;
 }
 
 export async function scoreAllTrackedServers(
@@ -285,6 +298,38 @@ export async function scoreAllTrackedServers(
 ): Promise<ScoreRunResult> {
   const scrape = options.scrape ?? scrapeServer;
 
+  // Resolve the runs row id. null => skip runs writes (dry-run, tests).
+  // undefined => create one. string => finalize an existing row.
+  let runId: string | null = null;
+  if (!options.dryRun && options.runId !== null) {
+    if (typeof options.runId === "string") {
+      runId = options.runId;
+    } else {
+      runId = (await startOrchestratorRun(supabase, "scoring")).run_id;
+    }
+  }
+
+  try {
+    const result = await runScoring(supabase, scrape, options);
+    if (runId) await finishOrchestratorRun(supabase, runId, { status: "completed" });
+    return result;
+  } catch (err) {
+    if (runId) {
+      const e = err as Error;
+      await finishOrchestratorRun(supabase, runId, {
+        status: "failed",
+        error: { message: e?.message ?? String(err), stack: e?.stack },
+      });
+    }
+    throw err;
+  }
+}
+
+async function runScoring(
+  supabase: SupabaseClient,
+  scrape: NonNullable<ScoreRunOptions["scrape"]>,
+  options: ScoreRunOptions,
+): Promise<ScoreRunResult> {
   let query = supabase
     .from("servers")
     .select("id, registry, owner, name, latest_version_id")

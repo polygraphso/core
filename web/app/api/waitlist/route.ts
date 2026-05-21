@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { withApiLogging } from "@/lib/api-logging";
 
 // Practical max from RFC 5321; longer addresses are not deliverable in
 // practice and the regex below assumes a bounded input.
@@ -28,7 +29,7 @@ function getSupabase() {
   });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request): Promise<Response> {
   let payload: unknown;
   try {
     payload = await request.json();
@@ -95,3 +96,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true });
 }
+
+export const POST = withApiLogging("/api/waitlist", handlePOST);

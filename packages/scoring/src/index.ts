@@ -34,6 +34,10 @@ export {
   scoreAllTrackedServers,
   ensureVersionId,
 } from "./scoring/orchestrate.js";
+export {
+  startOrchestratorRun,
+  finishOrchestratorRun,
+} from "./scoring/runs.js";
 export { pollVersions } from "./scoring/poll-versions.js";
 export {
   emit,

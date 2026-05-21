@@ -100,7 +100,8 @@ export interface AdoptionScoreRow {
 
 export interface RunRow {
   id: string;
-  version_id: string;
+  /** Null for orchestrator-level rows (e.g. a whole-population scoring pass). */
+  version_id: string | null;
   kind: RunKind;
   status: RunStatus;
   started_at: string | null;
