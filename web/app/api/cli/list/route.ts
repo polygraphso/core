@@ -14,9 +14,9 @@
  * revisit if the seed grows past ~10k.
  */
 
-import { createClient } from "@supabase/supabase-js";
 import type { AdoptionTier } from "@/lib/identity";
 import { withApiLogging } from "@/lib/api-logging";
+import { getSupabase } from "@/lib/supabase-server";
 
 type PolygraphGrade = "A" | "B" | "C" | "D" | "F";
 
@@ -45,19 +45,6 @@ function tierRank(tier: AdoptionTier | null): number {
 
 function serverRefOf(registry: string, owner: string | null, name: string): string {
   return owner ? `${registry}/${owner}/${name}` : `${registry}/${name}`;
-}
-
-function getSupabase() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error(
-      "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set on the server.",
-    );
-  }
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 }
 
 async function handleGET(_request: Request): Promise<Response> {

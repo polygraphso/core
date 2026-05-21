@@ -37,6 +37,7 @@ export {
 export {
   startOrchestratorRun,
   finishOrchestratorRun,
+  OrchestratorRunAlreadyActiveError,
 } from "./scoring/runs.js";
 export { pollVersions } from "./scoring/poll-versions.js";
 export {

@@ -23,6 +23,7 @@ import { hasValidAdminSession } from "@/lib/admin-auth";
 import { getSupabase } from "@/lib/supabase-server";
 import {
   finishOrchestratorRun,
+  OrchestratorRunAlreadyActiveError,
   scoreAllTrackedServers,
   startOrchestratorRun,
 } from "@polygraph/scoring";
@@ -67,11 +68,34 @@ export async function POST() {
   }
 
   // Pre-create the runs row so the response carries a real id the
-  // dashboard can poll on.
+  // dashboard can poll on. The partial unique index on
+  // runs(kind) WHERE version_id IS NULL AND status IN ('queued','running')
+  // closes the race between the active-check above and this insert.
   let run_id: string;
   try {
     ({ run_id } = await startOrchestratorRun(supabase, "scoring"));
   } catch (err) {
+    if (err instanceof OrchestratorRunAlreadyActiveError) {
+      // Lost the race: another POST won the insert. Re-read the winner so
+      // the dashboard polls the right id.
+      const { data: winner } = await supabase
+        .from("runs")
+        .select("id, started_at")
+        .is("version_id", null)
+        .eq("kind", "scoring")
+        .in("status", ["queued", "running"])
+        .order("started_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return NextResponse.json(
+        {
+          error: "already_running",
+          run_id: winner?.id ?? null,
+          started_at: winner?.started_at ?? null,
+        },
+        { status: 409 },
+      );
+    }
     console.error(
       "[admin/rescore] startOrchestratorRun failed:",
       err instanceof Error ? err.message : String(err),

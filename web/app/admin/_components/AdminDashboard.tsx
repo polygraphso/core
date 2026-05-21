@@ -68,9 +68,10 @@ export function AdminDashboard({ initial }: Props) {
     }
   }, []);
 
-  // Tick the "Xs ago" labels every second.
+  // Tick the "Xs ago" labels. 15s is enough resolution for an admin tool
+  // and avoids re-rendering the whole table every second.
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
+    const t = setInterval(() => setNow(Date.now()), 15000);
     return () => clearInterval(t);
   }, []);
 

@@ -9,7 +9,6 @@
  * Contract: POST /api/cli/check in core-contracts.md.
  */
 
-import { createClient } from "@supabase/supabase-js";
 import {
   ServerRefParseError,
   parseServerRef,
@@ -17,6 +16,7 @@ import {
   type AdoptionTier,
 } from "@/lib/identity";
 import { withApiLogging } from "@/lib/api-logging";
+import { getSupabase } from "@/lib/supabase-server";
 
 interface CheckRequest {
   server_ref?: unknown;
@@ -41,19 +41,6 @@ function notifyUrl(serverRef: string): string {
   // mandates the unencoded form for readability. encodeURIComponent would
   // mangle them into %2F / %40.
   return `${NOTIFY_BASE}?for=${serverRef}`;
-}
-
-function getSupabase() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error(
-      "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set on the server.",
-    );
-  }
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 }
 
 async function handlePOST(request: Request): Promise<Response> {
