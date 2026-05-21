@@ -5,7 +5,7 @@ import { MinimalSignup } from "./MinimalSignup";
 // inside (§04) is pulled until real polygraphs exist.
 export function GradesUpdates() {
   return (
-    <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
+    <section id="updates" className="mx-auto max-w-6xl px-6 py-16 md:py-20">
       <div className="border hairline bg-parchment-50 p-6 md:p-10 grid md:grid-cols-12 gap-6 md:gap-10 items-center">
         <div className="md:col-span-7">
           <h2 className="font-serif text-2xl md:text-3xl leading-tight text-ink">
