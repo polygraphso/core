@@ -16,6 +16,7 @@ import {
   serverKey,
   type AdoptionTier,
 } from "@/lib/identity";
+import { withApiLogging } from "@/lib/api-logging";
 
 interface CheckRequest {
   server_ref?: unknown;
@@ -55,7 +56,7 @@ function getSupabase() {
   });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request): Promise<Response> {
   let body: CheckRequest;
   try {
     body = (await request.json()) as CheckRequest;
@@ -158,3 +159,5 @@ export async function POST(request: Request) {
   };
   return Response.json(body2);
 }
+
+export const POST = withApiLogging("/api/cli/check", handlePOST);
