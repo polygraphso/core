@@ -29,9 +29,11 @@ import {
 } from "@polygraph/scoring";
 
 export const dynamic = "force-dynamic";
-// Best-effort: allow up to 15 minutes on platforms that honour this.
-// (Vercel: hobby caps at 10s, Pro at 60s; self-hosted: uncapped.)
-export const maxDuration = 900;
+// Vercel Pro caps at 300s; anything higher is rejected at deploy time on
+// most plan tiers. The orchestrator takes ~5–10min so this will still be
+// killed mid-run on Vercel — orphaned 'running' rows are a known
+// follow-up. Self-hosted ignores this.
+export const maxDuration = 300;
 
 export async function POST() {
   if (!(await hasValidAdminSession())) {

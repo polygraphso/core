@@ -22,3 +22,4 @@ dist/
 
 # Local Claude tooling (per-machine; keep launch.json out of the repo)
 **/.claude/launch.json
+.vercel
