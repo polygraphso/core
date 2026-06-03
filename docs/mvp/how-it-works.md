@@ -137,7 +137,49 @@ flowchart TD
 - **Fingerprinted** closes the bait-and-switch: pass clean, then serve something malicious → the live fingerprint no longer matches → the agent refuses.
 - **Bonded** makes a false grade *unprofitable* — the disproving re-run slashes the stake.
 
-**Residual limit (stated plainly):** because the methodology is open, a server can recognize the test context and behave during evaluation, then misbehave in production (a "defeat device"). No proof layer fixes this; it is mitigated by randomized canaries, expiring grades, continuous re-checks, and the live-fingerprint gate — not eliminated.
+### Can't I just fake it?
+
+Plain self-mint **is** forgeable — you run and sign it yourself, so you could patch the harness, hand-write a clean bundle, and mint a passing attestation. v1 doesn't pretend otherwise; it makes a fake grade **falsifiable** and **unprofitable**, not impossible:
+
+| Layer | Makes forgery… | Covers | The catch |
+|---|---|---|---|
+| **Reproducibility only** | *falsifiable* — anyone re-runs and disproves it | all probes | no consequence; nobody is obliged to re-run |
+| **USDC challenge bond** — chosen MVP | *unprofitable* — stake slashed on a disproven re-run | all probes | economic, not cryptographic; scales with bond size + challengers |
+| **zkTLS / web-proofs** | *impossible* (responses) | C-01 / C-03 output, remote HTTP only | can't witness egress; no stdio |
+| **TEE / enclave attestation** | *impossible* — hardware signs the run | all probes | needs TEE hardware; trust shifts to the chip vendor |
+| **Independent re-run** (lab model) | *impossible* — subject doesn't run the trust-critical pass | all probes | reintroduces the compute cost self-run avoids |
+
+**Why a fabricated grade doesn't survive:** the attestation pins the `toolDefsFingerprint` (the exact surface graded) and the `reportCID` (the full evidence bundle, content-addressed on IPFS). The trust-critical checks run against the **live server** and are read **on-chain** — never from polygraph's database — so anyone can fetch your evidence, re-run the open harness against your server, and compare. A fake "A" simply doesn't reproduce.
+
+**The bond makes that consequential** — stake at mint, anyone can challenge with a contradicting re-run, the arbiter resolves, and a disproven grade is slashed and revoked:
+
+```mermaid
+sequenceDiagram
+    participant M as Minter
+    participant B as PolygraphBond
+    participant C as Challenger
+    participant AR as Arbiter
+    participant E as EAS attestation
+
+    M->>E: mint grade A
+    M->>B: stake(uid, USDC)
+    Note over B: challenge window opens (e.g. 7 days)
+    C->>B: challenge(uid, counterEvidenceCID) + counter-stake
+    Note over C: counterEvidenceCID = re-run bundle showing F
+    AR->>B: resolve(uid, challengerWins)
+    B-->>C: stake slashed (challenger + treasury)
+    B->>E: revoke
+    Note over E: agents now read "revoked" → refuse
+```
+
+**Honest limits:**
+- **Adjudication is centralized** — whether a re-run disproves a grade can't be decided in the EVM, so v1 uses a trusted `arbiter` (a polygraph multisig). A real centralization point, disclosed.
+- **Economic, not cryptographic** — it deters rational forgery up to the bond size; a well-funded attacker can eat a slash.
+- **Roadmap to "impossible":** zkTLS (remote responses), TEE proof-of-execution (any server), independent / decentralized re-run, and decentralizing the arbiter (Kleros-style court or a TEE re-run oracle).
+
+### The other problem: evasion
+
+Forgery is a *fake* grade; evasion is a *genuine* one the server games. Because the methodology is open, a server can recognize the test context and behave during evaluation, then misbehave in production (a "defeat device"). No proof layer fixes this; it is mitigated by randomized canaries, expiring grades, continuous re-checks, and the live-fingerprint gate — not eliminated.
 
 ---
 
