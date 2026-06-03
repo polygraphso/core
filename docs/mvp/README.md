@@ -17,6 +17,8 @@ Specification and planning for polygraph's first behavioral **litmus test** and 
 
 **Reading order** — for context, start with the pitch. To build: `litmus-test-v1` → `onchain-proof-spec` → `technical-design`.
 
+**How it works** — [`how-it-works.md`](./how-it-works.md) is a diagram-driven walkthrough of the methodology and harness (rendered Mermaid: end-to-end flow, harness ↔ server, the probe map, grading, trust model, agent-gate).
+
 **Pitch deck** — [`deck.html`](./deck.html) is a self-contained 10-slide presentation of the idea (open it in a browser; press `P` to export a PDF).
 
 ## Source-of-truth & consistency rules
