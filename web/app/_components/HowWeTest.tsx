@@ -2,7 +2,8 @@ import { SectionHeader } from "./SectionHeader";
 
 type Probe = {
   code: string;
-  name: string;
+  question: string; // the plain-English title — the question a buyer actually has
+  name: string; // spec name, demoted to the mono subtitle
   body: string;
   probeIds: string[]; // refs to litmus-test-v1.md
   status: "v1" | "v2";
@@ -14,38 +15,37 @@ type Probe = {
 const probes: Probe[] = [
   {
     code: "C-01",
-    name: "Tool-output injection",
-    body: "Does the server's output try to hijack the agent calling it? We feed it inputs that bait it into emitting injection-shaped text, then scan outputs for instruction mimicry, hidden unicode, and markdown tricks.",
+    question: "Does it try to hijack your agent?",
+    name: "tool-output injection",
+    body: "We bait it with inputs designed to make it slip commands into its output, then scan for hijack attempts — lookalike instructions, hidden text, markdown tricks.",
     probeIds: ["1.1", "1.2"],
     status: "v1",
   },
   {
     code: "C-02",
-    name: "Permission overreach",
-    body: "Does it touch more than it claimed? In a no-expected-egress run, we flag any outbound network call. Phone-home detection on a default-deny network namespace.",
+    question: "Does it touch things it shouldn't?",
+    name: "permission overreach",
+    body: "We run it in a sandbox that blocks all network traffic by default, then flag any call it tries to make anyway. Phone-home detection.",
     probeIds: ["2.2"],
     status: "v1",
   },
   {
     code: "C-03",
-    name: "Sensitive data handling",
-    body: "Does your data leave the sandbox when it shouldn't? We plant trackable markers (fake keys, distinctive PII strings) and watch every egress path plus the tool's own outputs back to the agent.",
+    question: "Does it leak your data?",
+    name: "sensitive-data handling",
+    body: "We plant fake secrets — keys, personal details — and watch every path out of the sandbox to see if they leave, including the tool's own replies to the agent.",
     probeIds: ["4.1", "4.2"],
     status: "v1",
   },
   {
     code: "C-04",
-    name: "Adversarial input handling",
-    body: "How does it behave on malformed inputs, oversized payloads, and known jailbreak patterns? Deferred from v1 — the deterministic battery ships first; this category waits for the harness to mature.",
+    question: "How does it handle hostile input?",
+    name: "adversarial input handling",
+    body: "Malformed inputs, oversized payloads, known jailbreak patterns. Deferred to v2 — the deterministic checks ship first.",
     probeIds: [],
     status: "v2",
   },
 ];
-
-const v1ProbeCount = probes
-  .filter((p) => p.status === "v1")
-  .reduce((acc, p) => acc + p.probeIds.length, 0);
-const v1CategoryCount = probes.filter((p) => p.status === "v1").length;
 
 // Grade rubric — mirrors litmus-test-v1.md §5. The scale is A–F; only
 // A / B / D / F are reachable in v1, so C renders as reserved. No E:
@@ -59,28 +59,28 @@ const grades: Array<{
   {
     letter: "A",
     colorVar: "var(--color-grade-a)",
-    when: "All three checks pass inside the sandbox.",
+    when: "Passed every check inside the sandbox.",
   },
   {
     letter: "B",
     colorVar: "var(--color-grade-b)",
-    when: "Injection and data-leak checks pass; egress couldn't be verified (remote target, or no sandbox). Capped by design — unverified is not verified-good.",
+    when: "Passed the hijack and data-leak checks; its network traffic couldn't be verified (remote server, or no sandbox). Capped by design — unverified is not verified-good.",
   },
   {
     letter: "C",
     colorVar: "var(--color-grade-c)",
-    when: "Reserved — no litmus-v1 condition maps to it. Outcomes jump from a capped B to a contained-failure D. Future probe categories (C-04, adversarial input) may claim it.",
+    when: "Reserved — nothing maps to it yet. Results jump from a capped B to a contained-failure D. Future checks may claim it.",
     reserved: true,
   },
   {
     letter: "D",
     colorVar: "var(--color-grade-d)",
-    when: "Unexpected egress (C-02 fail), no injection or leak. Serious, but not necessarily exfiltration.",
+    when: "Made network calls it shouldn't have (C-02 fail), with no hijack or leak. Serious, but not necessarily theft.",
   },
   {
     letter: "F",
     colorVar: "var(--color-grade-f)",
-    when: "Any injection or data leak (C-01 / C-03 fail). Disqualifying — these directly harm the agent that trusted the server.",
+    when: "Tried to hijack the agent, or leaked data (C-01 / C-03 fail). Disqualifying — these directly harm the agent that trusted the server.",
   },
 ];
 
@@ -93,12 +93,12 @@ export function HowWeTest() {
       <SectionHeader
         number="§ 02"
         label="How we polygraph"
-        title={`${v1ProbeCount} probes. ${v1CategoryCount} categories. One sandbox.`}
+        title="How a tool earns its grade."
       >
-        Probes run in a default-deny sandbox where the target allows it, and
-        degrade honestly where it doesn&rsquo;t &mdash; a skipped check is
-        reported as skipped, never passed. Every result is reproducible and
-        ships with the evidence: not a star rating, the actual artifacts.
+        Five probes, three checks, one sandbox that blocks everything by
+        default. A check we can&rsquo;t run is reported as skipped &mdash;
+        never passed &mdash; and every grade ships with the evidence: not a
+        star rating, the actual artifacts.
       </SectionHeader>
 
       <ol className="border-t hairline">
@@ -125,13 +125,13 @@ export function HowWeTest() {
               </div>
               <div className="md:col-span-4">
                 <h3 className="font-serif text-xl md:text-2xl leading-tight text-ink">
-                  {p.name}
+                  {p.question}
                 </h3>
-                {p.probeIds.length > 0 && (
-                  <p className="mt-1.5 font-mono text-[11px] text-ink-faint uppercase tracking-[0.16em]">
-                    {p.probeIds.map((id) => `probe ${id}`).join(" · ")}
-                  </p>
-                )}
+                <p className="mt-1.5 font-mono text-[11px] text-ink-faint uppercase tracking-[0.16em]">
+                  {[p.name, ...p.probeIds.map((id) => `probe ${id}`)].join(
+                    " · ",
+                  )}
+                </p>
               </div>
               <div className="md:col-span-6 text-ink-muted leading-relaxed">
                 {p.body}
@@ -174,11 +174,12 @@ export function HowWeTest() {
       </figure>
 
       <p className="mt-8 max-w-2xl text-ink-muted text-sm leading-relaxed">
-        Every grade certifies an exact tool surface: a sha256{" "}
+        Every grade is pinned to the exact version of the tool we tested: a
+        sha256{" "}
         <span className="font-mono text-[0.92em] text-ink">fingerprint</span>{" "}
-        of the server&rsquo;s canonicalized tool definitions. If the server
-        later changes a tool &mdash; a rug pull &mdash; the fingerprint stops
-        matching and the grade is stale by construction.
+        of its tool definitions. If the server later changes a tool &mdash; a
+        rug pull &mdash; the fingerprint stops matching and the grade goes
+        stale automatically.
       </p>
 
       <p className="mt-4 max-w-2xl text-ink-muted text-sm leading-relaxed">

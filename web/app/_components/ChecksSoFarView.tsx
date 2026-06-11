@@ -88,6 +88,9 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
                     </dl>
                   </div>
                   <p className="px-3 pb-3 font-sans text-[12px] text-ink-faint leading-relaxed">
+                    <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink">
+                      Why {run.grade}:
+                    </span>{" "}
                     {run.rationale}
                   </p>
                 </div>

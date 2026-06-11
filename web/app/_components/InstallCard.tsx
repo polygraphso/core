@@ -36,7 +36,7 @@ export function InstallCard() {
       <div className="p-4">
         <div className="relative">
           <pre
-            className="font-mono text-[13px] leading-6 text-ink bg-parchment border hairline px-4 py-3 pr-20 whitespace-pre-wrap break-all"
+            className="font-mono text-[13px] leading-6 text-ink bg-parchment border hairline px-4 py-3 pr-20 whitespace-pre-wrap break-words"
             aria-label="Install command"
           >
             <span className="text-ink-faint select-none">$ </span>
@@ -68,10 +68,9 @@ export function InstallCard() {
         <p className="mt-5 pt-4 border-t hairline font-mono text-[11px] text-ink-faint leading-relaxed">
           Not yet polygraphed? The CLI returns{" "}
           <span className="text-ink-muted">not available yet</span>{" "}
-          and a notify link for that server.{" "}
-          <span className="text-ink-muted">check</span>{" "}
-          is a lookup over published grades &mdash; the litmus harness that
-          produces them is being opened up so anyone can re-run a grade.
+          plus a notify link &mdash;{" "}
+          <span className="text-ink-muted">check</span> is a lookup over
+          published grades.
         </p>
       </div>
     </div>
