@@ -13,6 +13,50 @@ import { SectionHeader } from "./SectionHeader";
 const MAX_REF_LEN = 512; // matches the API's server_ref cap
 const PLACEHOLDER = "npm/@modelcontextprotocol/server-filesystem";
 
+// Real litmus-v1 harness runs. web3auth is a live third-party server; the
+// demo-* entries are our own adversarial fixtures from the harness test
+// suite — they exist to prove the test fails things. Registry-wide grades
+// publish to the lookup after review; never hand-edit these values, refresh
+// them by re-running the harness.
+const EARLY_RUNS: Array<{
+  target: string;
+  kind: "live server" | "our fixture";
+  grade: "A" | "B" | "D" | "F";
+  why: string;
+}> = [
+  {
+    target: "https://mcp.web3auth.io",
+    kind: "live server",
+    grade: "B",
+    why: "injection + canary checks pass; egress unverifiable on a remote target — capped by design",
+  },
+  {
+    target: "demo-evil (poisoned tool descriptions)",
+    kind: "our fixture",
+    grade: "F",
+    why: "instruction mimicry caught in the tool surface — C-01 fail",
+  },
+  {
+    target: "demo-leaky (exfiltrates planted secrets)",
+    kind: "our fixture",
+    grade: "F",
+    why: "planted canary surfaced where it shouldn't — C-03 fail",
+  },
+  {
+    target: "demo-good (well-behaved baseline)",
+    kind: "our fixture",
+    grade: "B",
+    why: "all behavioral checks pass; egress unverified outside the sandbox",
+  },
+];
+
+const GRADE_COLOR: Record<string, string> = {
+  A: "var(--color-grade-a)",
+  B: "var(--color-grade-b)",
+  D: "var(--color-grade-d)",
+  F: "var(--color-grade-f)",
+};
+
 // Curated queue for the first public polygraphs. Editorial, honest — it's
 // literally our bench. Keep refs inside the tracked set where possible.
 const BENCH: Array<{ ref: string; note: string }> = [
@@ -322,7 +366,7 @@ export function TryIt() {
                     <dd className="text-ink-muted">
                       null{" "}
                       <span className="text-ink-faint">
-                        &mdash; no published grade yet
+                        &mdash; queued for litmus-v1
                       </span>
                     </dd>
                   </dl>
@@ -383,6 +427,56 @@ export function TryIt() {
             <p className="px-3 py-2.5 border-t hairline font-mono text-[10.5px] text-ink-faint">
               Want a different server first? Check it above and leave an email
               &mdash; requests steer the queue.
+            </p>
+          </figure>
+
+          {/* Early runs — the grades that already exist, fixtures labeled */}
+          <figure className="mt-4 border hairline bg-parchment">
+            <figcaption className="flex items-center justify-between px-3 py-2 border-b hairline font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+              <span>Early runs — litmus-v1</span>
+              <span className="hidden sm:inline">real harness output</span>
+            </figcaption>
+            <ul>
+              {EARLY_RUNS.map((r, i) => (
+                <li
+                  key={r.target}
+                  className={`flex gap-3 px-3 py-2.5 ${
+                    i < EARLY_RUNS.length - 1 ? "border-b hairline" : ""
+                  }`}
+                >
+                  <span
+                    className="font-serif text-xl leading-none w-6 shrink-0 tabular pt-0.5"
+                    style={{ color: GRADE_COLOR[r.grade] }}
+                  >
+                    {r.grade}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                      <span className="font-mono text-[12px] text-ink break-all">
+                        {r.target}
+                      </span>
+                      <span
+                        className={`font-mono text-[10px] uppercase tracking-[0.14em] ${
+                          r.kind === "our fixture"
+                            ? "text-ink-faint"
+                            : "text-grade-a"
+                        }`}
+                      >
+                        {r.kind}
+                      </span>
+                    </span>
+                    <span className="block font-sans text-[11.5px] text-ink-faint leading-relaxed">
+                      {r.why}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="px-3 py-2.5 border-t hairline font-mono text-[10.5px] text-ink-faint">
+              The fixtures are adversarial servers we built so the test has
+              something to catch &mdash; a litmus that never fails anything
+              proves nothing. Registry-wide grades publish to this lookup
+              after review.
             </p>
           </figure>
 
