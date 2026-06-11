@@ -1,15 +1,71 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { SectionHeader } from "./SectionHeader";
 
 // Live demo widget for /api/cli/check. Same call the CLI makes; sub-second.
-// Beta — small surface intentionally: one input, one button, one result,
-// copyable snippets. No autocomplete, no telemetry, no debounced auto-fire
-// (button-only keeps the public endpoint quiet and the UX predictable).
+// Small surface intentionally: one input, one button, one result, copyable
+// snippets. Button-only keeps the public endpoint quiet and the UX predictable.
+// Result cards capture email inline via /api/notify (per-server demand signal).
+// The bench below is our curated grading queue — clicking a row runs a real
+// check on it, so the demo path is: click → live result → leave an email.
 
 const MAX_REF_LEN = 512; // matches the API's server_ref cap
 const PLACEHOLDER = "npm/@modelcontextprotocol/server-filesystem";
+
+// Real litmus-v1 harness runs. web3auth is a live third-party server; the
+// demo-* entries are our own adversarial fixtures from the harness test
+// suite — they exist to prove the test fails things. Registry-wide grades
+// publish to the lookup after review; never hand-edit these values, refresh
+// them by re-running the harness.
+const EARLY_RUNS: Array<{
+  target: string;
+  kind: "live server" | "our fixture";
+  grade: "A" | "B" | "D" | "F";
+  why: string;
+}> = [
+  {
+    target: "https://mcp.web3auth.io",
+    kind: "live server",
+    grade: "B",
+    why: "injection + canary checks pass; egress unverifiable on a remote target — capped by design",
+  },
+  {
+    target: "demo-evil (poisoned tool descriptions)",
+    kind: "our fixture",
+    grade: "F",
+    why: "instruction mimicry caught in the tool surface — C-01 fail",
+  },
+  {
+    target: "demo-leaky (exfiltrates planted secrets)",
+    kind: "our fixture",
+    grade: "F",
+    why: "planted canary surfaced where it shouldn't — C-03 fail",
+  },
+  {
+    target: "demo-good (well-behaved baseline)",
+    kind: "our fixture",
+    grade: "B",
+    why: "all behavioral checks pass; egress unverified outside the sandbox",
+  },
+];
+
+const GRADE_COLOR: Record<string, string> = {
+  A: "var(--color-grade-a)",
+  B: "var(--color-grade-b)",
+  D: "var(--color-grade-d)",
+  F: "var(--color-grade-f)",
+};
+
+// Curated queue for the first public polygraphs. Editorial, honest — it's
+// literally our bench. Keep refs inside the tracked set where possible.
+const BENCH: Array<{ ref: string; note: string }> = [
+  { ref: "npm/@modelcontextprotocol/server-filesystem", note: "local file access" },
+  { ref: "npm/@modelcontextprotocol/server-github", note: "repos, issues, PRs" },
+  { ref: "npm/@modelcontextprotocol/server-slack", note: "workspace messages" },
+  { ref: "npm/@modelcontextprotocol/server-puppeteer", note: "headless browser" },
+  { ref: "pypi/mcp-server-git", note: "git operations" },
+];
 
 type Status = "idle" | "checking" | "ok" | "error";
 
@@ -61,23 +117,106 @@ function tierLabel(t: AdoptionTier | null): string {
   return t.replace("top", "top-");
 }
 
+// Inline per-server email capture — posts to the existing /api/notify.
+// One field, no link-out: the result card closes its own loop.
+function NotifyInline({ serverRef }: { serverRef: string }) {
+  const [email, setEmail] = useState("");
+  const [state, setState] = useState<"idle" | "submitting" | "ok" | "error">(
+    "idle",
+  );
+  const [message, setMessage] = useState("");
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setState("submitting");
+    setMessage("");
+    try {
+      const res = await fetch("/api/notify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ server_ref: serverRef, email }),
+      });
+      const body = (await res.json()) as { ok: boolean; message?: string };
+      if (!res.ok || !body.ok) {
+        throw new Error(body.message ?? "Couldn't save your request.");
+      }
+      setState("ok");
+    } catch (err) {
+      setState("error");
+      setMessage(
+        err instanceof Error ? err.message : "Something went wrong. Try again.",
+      );
+    }
+  }
+
+  if (state === "ok") {
+    return (
+      <p className="mt-3 pt-3 border-t hairline font-mono text-[11.5px] text-ink">
+        ✓ One email when this server gets its polygraph. No drip, no
+        newsletter.
+      </p>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={submit}
+      className="mt-3 pt-3 border-t hairline"
+      noValidate
+    >
+      <p className="font-mono text-[11px] text-ink-faint mb-2">
+        Get its polygraph when it lands — one email, nothing else:
+      </p>
+      <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+        <label className="block">
+          <span className="sr-only">Email</span>
+          <input
+            type="email"
+            required
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-parchment-50 border hairline px-3 py-2 font-mono text-[12.5px] text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
+          />
+        </label>
+        <button
+          type="submit"
+          disabled={state === "submitting"}
+          className="inline-flex items-center justify-center bg-ink text-parchment px-3.5 py-2 font-mono text-[12.5px] tracking-wide hover:bg-oxblood transition-colors disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap"
+        >
+          {state === "submitting" ? "…" : "Notify me"}
+        </button>
+      </div>
+      {state === "error" && (
+        <p role="status" className="mt-1.5 font-mono text-[11px] text-oxblood">
+          {message}
+        </p>
+      )}
+    </form>
+  );
+}
+
 export function TryIt() {
   const [ref, setRef] = useState("");
+  const [checkedRef, setCheckedRef] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<CheckResult | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [lang, setLang] = useState<Lang>("curl");
   const [snippetCopied, setSnippetCopied] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const snippet = useMemo(() => snippetFor(lang, ref.trim()), [lang, ref]);
 
-  async function handleCheck(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const trimmed = ref.trim();
+  async function runCheck(trimmed: string) {
     if (!trimmed) {
       setStatus("error");
       setResult(null);
-      setErrorMessage("Enter a server ref (e.g. npm/@modelcontextprotocol/server-filesystem).");
+      setErrorMessage(
+        "Enter a server ref (e.g. npm/@modelcontextprotocol/server-filesystem).",
+      );
       return;
     }
     if (trimmed.length > MAX_REF_LEN) {
@@ -111,6 +250,7 @@ export function TryIt() {
         throw new Error("Unexpected response shape.");
       }
       setResult(body as CheckResult);
+      setCheckedRef(trimmed);
       setStatus("ok");
     } catch (err) {
       setStatus("error");
@@ -119,6 +259,17 @@ export function TryIt() {
         err instanceof Error ? err.message : "Something went wrong. Try again.",
       );
     }
+  }
+
+  async function handleCheck(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    await runCheck(ref.trim());
+  }
+
+  function checkFromBench(benchRef: string) {
+    setRef(benchRef);
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    void runCheck(benchRef);
   }
 
   async function copySnippet() {
@@ -132,27 +283,32 @@ export function TryIt() {
   }
 
   return (
-    <section id="try" className="mx-auto max-w-6xl px-6 py-20 md:py-28">
+    <section id="try" className="mx-auto max-w-6xl px-6 py-20 md:py-28 scroll-mt-12">
       <SectionHeader
-        number="§ 04"
+        number="§ 02"
         label="Try it"
         title="Check a server live."
       >
-        Paste a registry-prefixed server ref. We hit the same endpoint the
-        CLI hits &mdash; sub-second, anonymous, the polygraph is null until
-        the litmus harness ships.
+        Paste a registry-prefixed server ref &mdash; or pick one from the
+        bench below. Same endpoint the CLI hits, sub-second, anonymous.
+        Published grades are rolling out; a server without one returns{" "}
+        <span className="font-mono text-[0.92em] text-ink">
+          polygraph: null
+        </span>{" "}
+        and you can ask to hear when it lands.
       </SectionHeader>
 
       <div className="border hairline bg-parchment-50">
         <div className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
           <span>POST /api/cli/check</span>
-          <span className="hidden sm:inline">beta · lookup only</span>
+          <span className="hidden sm:inline">beta · lookup</span>
         </div>
 
         <div className="p-4 md:p-6">
           <form
+            ref={formRef}
             onSubmit={handleCheck}
-            className="grid gap-3 sm:grid-cols-[1fr_auto]"
+            className="grid gap-3 sm:grid-cols-[1fr_auto] scroll-mt-24"
             aria-describedby="try-status"
             noValidate
           >
@@ -200,26 +356,22 @@ export function TryIt() {
                   <span>status</span>
                   <span className="text-ink">tracked</span>
                 </div>
-                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 px-3 py-3 font-mono text-[12px] text-ink-muted">
-                  <dt className="text-ink-faint">adoption</dt>
-                  <dd className="text-ink">{tierLabel(result.adoption_tier)}</dd>
-                  <dt className="text-ink-faint">polygraph</dt>
-                  <dd className="text-ink-muted">
-                    null{" "}
-                    <span className="text-ink-faint">
-                      &mdash; pending litmus harness
-                    </span>
-                  </dd>
-                  <dt className="text-ink-faint">notify</dt>
-                  <dd className="text-ink break-all">
-                    <a
-                      href={result.notify_url}
-                      className="border-b hairline border-dotted hover:text-oxblood transition-colors"
-                    >
-                      {result.notify_url}
-                    </a>
-                  </dd>
-                </dl>
+                <div className="px-3 py-3">
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 font-mono text-[12px] text-ink-muted">
+                    <dt className="text-ink-faint">adoption</dt>
+                    <dd className="text-ink">
+                      {tierLabel(result.adoption_tier)}
+                    </dd>
+                    <dt className="text-ink-faint">polygraph</dt>
+                    <dd className="text-ink-muted">
+                      null{" "}
+                      <span className="text-ink-faint">
+                        &mdash; queued for litmus-v1
+                      </span>
+                    </dd>
+                  </dl>
+                  <NotifyInline key={checkedRef} serverRef={checkedRef} />
+                </div>
               </div>
             )}
 
@@ -229,19 +381,104 @@ export function TryIt() {
                   <span>status</span>
                   <span className="text-ink">not_available</span>
                 </div>
-                <div className="px-3 py-3 font-mono text-[12px] text-ink-muted">
-                  Not yet polygraphed. Your check bumped its place in our
-                  next-round curation queue.{" "}
-                  <a
-                    href={result.notify_url}
-                    className="text-ink border-b hairline border-dotted hover:text-oxblood transition-colors break-all"
-                  >
-                    {result.notify_url}
-                  </a>
+                <div className="px-3 py-3">
+                  <p className="font-mono text-[12px] text-ink-muted">
+                    Not yet polygraphed. Your check bumped its place in our
+                    next-round curation queue.
+                  </p>
+                  <NotifyInline key={checkedRef} serverRef={checkedRef} />
                 </div>
               </div>
             )}
           </div>
+
+          {/* The bench — curated queue for the first public polygraphs */}
+          <figure className="mt-6 border hairline bg-parchment">
+            <figcaption className="flex items-center justify-between px-3 py-2 border-b hairline font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+              <span>Next on the bench — first public polygraphs</span>
+              <span className="hidden sm:inline">queued · litmus-v1</span>
+            </figcaption>
+            <ul>
+              {BENCH.map((b, i) => (
+                <li
+                  key={b.ref}
+                  className={i < BENCH.length - 1 ? "border-b hairline" : ""}
+                >
+                  <button
+                    type="button"
+                    onClick={() => checkFromBench(b.ref)}
+                    className="w-full flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 px-3 py-2.5 text-left hover:bg-parchment-50 transition-colors group"
+                  >
+                    <span className="font-mono text-[12px] text-ink break-all">
+                      {b.ref}
+                    </span>
+                    <span className="flex items-baseline gap-3">
+                      <span className="font-sans text-[11.5px] text-ink-faint">
+                        {b.note}
+                      </span>
+                      <span className="font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-faint group-hover:text-oxblood transition-colors">
+                        check →
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <p className="px-3 py-2.5 border-t hairline font-mono text-[10.5px] text-ink-faint">
+              Want a different server first? Check it above and leave an email
+              &mdash; requests steer the queue.
+            </p>
+          </figure>
+
+          {/* Early runs — the grades that already exist, fixtures labeled */}
+          <figure className="mt-4 border hairline bg-parchment">
+            <figcaption className="flex items-center justify-between px-3 py-2 border-b hairline font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+              <span>Early runs — litmus-v1</span>
+              <span className="hidden sm:inline">real harness output</span>
+            </figcaption>
+            <ul>
+              {EARLY_RUNS.map((r, i) => (
+                <li
+                  key={r.target}
+                  className={`flex gap-3 px-3 py-2.5 ${
+                    i < EARLY_RUNS.length - 1 ? "border-b hairline" : ""
+                  }`}
+                >
+                  <span
+                    className="font-serif text-xl leading-none w-6 shrink-0 tabular pt-0.5"
+                    style={{ color: GRADE_COLOR[r.grade] }}
+                  >
+                    {r.grade}
+                  </span>
+                  <span className="min-w-0">
+                    <span className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                      <span className="font-mono text-[12px] text-ink break-all">
+                        {r.target}
+                      </span>
+                      <span
+                        className={`font-mono text-[10px] uppercase tracking-[0.14em] ${
+                          r.kind === "our fixture"
+                            ? "text-ink-faint"
+                            : "text-grade-a"
+                        }`}
+                      >
+                        {r.kind}
+                      </span>
+                    </span>
+                    <span className="block font-sans text-[11.5px] text-ink-faint leading-relaxed">
+                      {r.why}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <p className="px-3 py-2.5 border-t hairline font-mono text-[10.5px] text-ink-faint">
+              The fixtures are adversarial servers we built so the test has
+              something to catch &mdash; a litmus that never fails anything
+              proves nothing. Registry-wide grades publish to this lookup
+              after review.
+            </p>
+          </figure>
 
           <div className="mt-6 pt-5 border-t hairline">
             <div className="flex items-center justify-between mb-2">

@@ -47,6 +47,46 @@ const v1ProbeCount = probes
   .reduce((acc, p) => acc + p.probeIds.length, 0);
 const v1CategoryCount = probes.filter((p) => p.status === "v1").length;
 
+// Grade rubric — mirrors litmus-test-v1.md §5 exactly. A / B / D / F; no C.
+const grades: Array<{
+  letter: string;
+  colorVar: string;
+  when: string;
+}> = [
+  {
+    letter: "A",
+    colorVar: "var(--color-grade-a)",
+    when: "All three checks pass inside the sandbox.",
+  },
+  {
+    letter: "B",
+    colorVar: "var(--color-grade-b)",
+    when: "Injection and data-leak checks pass; egress couldn't be verified (remote target, or no sandbox). Capped by design — unverified is not verified-good.",
+  },
+  {
+    letter: "D",
+    colorVar: "var(--color-grade-d)",
+    when: "Unexpected egress (C-02 fail), no injection or leak. Serious, but not necessarily exfiltration.",
+  },
+  {
+    letter: "F",
+    colorVar: "var(--color-grade-f)",
+    when: "Any injection or data leak (C-01 / C-03 fail). Disqualifying — these directly harm the agent that trusted the server.",
+  },
+];
+
+// Real harness output — run against MetaMask Embedded Wallets' hosted MCP
+// server (formerly web3auth) over Streamable HTTP. Values are from an actual
+// litmus-v1 run; refresh by re-running the harness against the same target.
+const specimen = [
+  ["target", "https://mcp.web3auth.io"],
+  ["C-01 tool-output injection", "pass"],
+  ["C-02 permission overreach", "skipped — remote target"],
+  ["C-03 sensitive-data handling", "pass"],
+  ["fingerprint", "0x4cb6…1ecd"],
+  ["grade", "B — egress unverified; capped by design"],
+] as const;
+
 export function HowWeTest() {
   return (
     <section
@@ -54,13 +94,14 @@ export function HowWeTest() {
       className="mx-auto max-w-6xl px-6 py-20 md:py-28 scroll-mt-12"
     >
       <SectionHeader
-        number="§ 02"
+        number="§ 03"
         label="How we polygraph"
         title={`${v1ProbeCount} probes. ${v1CategoryCount} categories. One sandbox.`}
       >
-        Every probe runs in an isolated sandbox. Every result is reproducible
-        and published with the evidence &mdash; not a star rating, the actual
-        artifacts.
+        Probes run in a default-deny sandbox where the target allows it, and
+        degrade honestly where it doesn&rsquo;t &mdash; a skipped check is
+        reported as skipped, never passed. Every result is reproducible and
+        ships with the evidence: not a star rating, the actual artifacts.
       </SectionHeader>
 
       <ol className="border-t hairline">
@@ -82,7 +123,7 @@ export function HowWeTest() {
                     isV2 ? "text-ink-faint" : "text-grade-a"
                   }`}
                 >
-                  {isV2 ? "v2 · deferred" : "shipping v1"}
+                  {isV2 ? "v2 · deferred" : "litmus-v1 · live"}
                 </span>
               </div>
               <div className="md:col-span-4">
@@ -103,14 +144,84 @@ export function HowWeTest() {
         })}
       </ol>
 
+      {/* Grade rubric — litmus-test-v1.md §5 */}
+      <div className="mt-12 grid md:grid-cols-12 gap-8 md:gap-10">
+        <figure className="md:col-span-7 border hairline bg-parchment-50">
+          <figcaption className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
+            <span>Table 2 — Grade rubric · litmus-v1</span>
+            <span className="hidden sm:inline">no C grade</span>
+          </figcaption>
+          <ul>
+            {grades.map((g, i) => (
+              <li
+                key={g.letter}
+                className={`flex gap-4 px-4 py-4 ${
+                  i < grades.length - 1 ? "border-b hairline" : ""
+                }`}
+              >
+                <span
+                  className="font-serif text-2xl leading-none w-7 shrink-0 tabular"
+                  style={{ color: g.colorVar }}
+                >
+                  {g.letter}
+                </span>
+                <span className="text-ink-muted text-sm leading-relaxed">
+                  {g.when}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </figure>
+
+        {/* Specimen — real harness output */}
+        <figure className="md:col-span-5 border hairline bg-parchment-50 self-start">
+          <figcaption className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
+            <span>Fig. 1 — Specimen run</span>
+            <span className="hidden sm:inline">remote target</span>
+          </figcaption>
+          <dl className="px-4 py-4 space-y-1.5 font-mono text-[11.5px] leading-relaxed">
+            {specimen.map(([k, v]) => (
+              <div key={k} className="grid grid-cols-[auto_1fr] gap-x-3">
+                <dt className="text-ink-faint">{k}</dt>
+                <dd className="text-ink break-all text-right">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="px-4 pb-3 font-sans text-[11.5px] text-ink-faint leading-relaxed">
+            A real run against a hosted MCP server. Remote targets
+            can&rsquo;t be egress-sandboxed, so C-02 is skipped and the grade
+            caps at B &mdash; a property of remote targets, not a finding.
+          </p>
+          <p className="px-4 pb-4 font-mono text-[10.5px] text-ink-faint">
+            New runs publish as the queue clears.{" "}
+            <a
+              href="#updates"
+              className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+            >
+              Follow new polygraphs →
+            </a>
+          </p>
+        </figure>
+      </div>
+
       <p className="mt-8 max-w-2xl text-ink-muted text-sm leading-relaxed">
+        Every grade certifies an exact tool surface: a sha256{" "}
+        <span className="font-mono text-[0.92em] text-ink">fingerprint</span>{" "}
+        of the server&rsquo;s canonicalized tool definitions. If the server
+        later changes a tool &mdash; a rug pull &mdash; the fingerprint stops
+        matching and the grade is stale by construction.
+      </p>
+
+      <p className="mt-4 max-w-2xl text-ink-muted text-sm leading-relaxed">
         Probes evolve as agents do &mdash; new failure modes get new probes.
-        The methodology is versioned and public. Read{" "}
+        The methodology is versioned;{" "}
+        <span className="font-mono text-[0.92em] text-ink">litmus-v1</span>{" "}
+        travels with every grade it produced. Read{" "}
         <a
-          href="#"
+          href="/methodology"
           className="text-ink border-b hairline border-dotted hover:text-oxblood transition-colors"
         >
-          the v1 spec
+          the full spec
         </a>
         .
       </p>

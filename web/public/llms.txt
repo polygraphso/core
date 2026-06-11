@@ -1,24 +1,35 @@
 # polygraph.so
 
-> Independent, lab-evaluated polygraphs for AI agents. We test MCP servers under adversarial conditions in our own sandbox and publish the result — not vendor self-claims, not gameable user reviews. Free public polygraphs, plus a CLI for runtime checks. Vendors never pay us; that's how the polygraph stays independent.
+> Independent behavioral polygraphs for AI agents and MCP servers. We run MCP servers through the litmus test — a reproducible behavioral harness that connects like an agent and watches what the server actually does — and publish the grade with the evidence. Not vendor self-claims, not gameable user reviews. No graded party pays us or gets review or approval rights over their grade.
 
 ## What we produce
 
-For each MCP server we track, we issue a **polygraph**: an A–F **grade** backed by **probe** results (the individual behavioral tests) and **evidence** (the run artifacts a reader can inspect). Each polygraph is paired with an **adoption tier** — `top10`, `top25`, `top50`, or `top100` — describing where the server sits on the popularity axis.
+For each MCP server we track, we issue a **polygraph**: a **grade** (A, B, D, or F — there is deliberately no C) backed by **probe** results and **evidence**, tied to a **fingerprint** — a sha256 hash of the server's canonicalized tool surface. The grade certifies that exact surface; if the server later changes a tool, the fingerprint stops matching and the grade is stale by construction. Each polygraph is paired with an **adoption tier** — `top10`, `top25`, `top50`, or `top100` — describing where the server sits on the popularity axis. The axes are never averaged.
 
-Behavioral grading is rolling out with the v1 litmus harness; in the meantime, `polygraph` is reported as `null` on tracked servers and the adoption tier is what's live.
+Published behavioral grades are rolling out. Until a server's grade is published, `polygraph` is reported as `null` and the adoption tier is what's live.
+
+## The litmus test (methodologyVersion: litmus-v1)
+
+Five probes across three checks:
+
+- **C-01 Tool-output injection** — do the server's descriptions or outputs try to hijack the calling agent? Scans for instruction mimicry, hidden unicode, markdown/link tricks. Fail → grade F.
+- **C-02 Permission overreach** — any outbound network attempt in a default-deny sandbox during a no-expected-egress run. Fail → grade D. For remote servers (or without Docker) this check is recorded as `skipped` — not a pass — and the grade caps at B.
+- **C-03 Sensitive-data handling** — planted canaries (fake keys, PII strings, bearer tokens) must not surface in outputs or egress. Fail → grade F.
+
+All three pass in the sandbox → A. Full spec: https://polygraph.so/methodology
 
 ## Vocabulary
 
 - **Polygraph** — the deliverable. The result we issue for an MCP server.
-- **Grade** — the A–F letter inside the polygraph.
+- **Grade** — the letter inside the polygraph: A, B, D, or F. No C.
 - **Probe** — an individual behavioral test in the harness.
+- **Fingerprint** — sha256 of the canonicalized tool surface the grade certifies.
 - **Adoption tier** — `top10` / `top25` / `top50` / `top100`, by adoption.
 - **Server ref** — registry-prefixed identifier for an MCP server (format below).
 
 ## How to query
 
-The fast path is the CLI. Lookups are sub-second against precomputed grades:
+The fast path is the CLI. Lookups are sub-second against published grades:
 
 ```
 npx polygraphso check npm/@modelcontextprotocol/server-filesystem
@@ -45,12 +56,15 @@ Three variants, matching each registry's native namespace shape:
 
 Version is optional. Lookups are versionless: two CLI calls for `1.0.0` and `1.0.1` of the same package resolve to the same server record.
 
-## Independence
+## Proof & funding
 
-No undisclosed financial relationship with anyone we grade. Material support — payments, credits, gifts, free access, discounts, in-kind — is publicly recorded in the disclosures registry. No graded party gets review or approval rights over their polygraph.
+Grades publish as EAS attestations on Base — server ref, fingerprint, per-check results, grade, methodology version, timestamp — with the full evidence bundle pinned to IPFS (live on testnet today). Roadmap: writing a grade onchain burns $POLYGRAPH, and TEE-verified runs let third parties prove a grade came from the real harness.
+
+Polygraph is funded by dev fees from $POLYGRAPH, a token the Bankr community launched around the project — we didn't issue it. The claim is public and pays for keeping the harness, the grades, and the evidence free and open. No graded party pays us. No graded party gets review or approval rights over their grade. The token funds the work; it doesn't move a grade.
 
 ## Where to learn more
 
+- Methodology spec: https://polygraph.so/methodology
 - API documentation: https://polygraph.so/docs/api
 - Landing: https://polygraph.so
-- Methodology spec: publishing alongside the v1 litmus harness.
+- X: https://x.com/polygraphso
