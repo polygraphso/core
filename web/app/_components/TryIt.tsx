@@ -139,8 +139,12 @@ export function TryIt() {
         title="Check a server live."
       >
         Paste a registry-prefixed server ref. We hit the same endpoint the
-        CLI hits &mdash; sub-second, anonymous, the polygraph is null until
-        the litmus harness ships.
+        CLI hits &mdash; sub-second, anonymous. Published grades are rolling
+        out; a server without one returns{" "}
+        <span className="font-mono text-[0.92em] text-ink">
+          polygraph: null
+        </span>
+        .
       </SectionHeader>
 
       <div className="border hairline bg-parchment-50">
@@ -207,7 +211,7 @@ export function TryIt() {
                   <dd className="text-ink-muted">
                     null{" "}
                     <span className="text-ink-faint">
-                      &mdash; pending litmus harness
+                      &mdash; no published grade yet
                     </span>
                   </dd>
                   <dt className="text-ink-faint">notify</dt>

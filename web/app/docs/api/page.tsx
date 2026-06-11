@@ -76,7 +76,7 @@ export default function ApiDocsPage() {
             <a href="/" className="hover:text-ink transition-colors">
               Home
             </a>
-            <a href="/#how-we-test" className="hover:text-ink transition-colors">
+            <a href="/methodology" className="hover:text-ink transition-colors">
               Methodology
             </a>
           </nav>
@@ -181,8 +181,9 @@ pypi/mcp-server-fetch`}
           <p className="text-sm">
             <span className="text-ink-faint">Note · </span>
             <Inline>polygraph</Inline> is <Inline>null</Inline> on every
-            tracked server today. Behavioral grades land with the v1 litmus
-            harness; until then, adoption tier is the live signal.{" "}
+            tracked server today. Published litmus-v1 grades are rolling out;
+            until a server&rsquo;s grade lands, adoption tier is the live
+            signal.{" "}
             <Inline>adoption_tier</Inline> is one of{" "}
             <Inline>top10</Inline>, <Inline>top25</Inline>,{" "}
             <Inline>top50</Inline>, <Inline>top100</Inline>, or{" "}
@@ -255,10 +256,17 @@ pypi/mcp-server-fetch`}
           </Code>
           <p className="text-sm">
             <Inline>polygraph</Inline> is <Inline>null</Inline> today on every
-            row. Once the litmus harness runs, it becomes one of{" "}
-            <Inline>"A"</Inline>, <Inline>"B"</Inline>, <Inline>"C"</Inline>,{" "}
-            <Inline>"D"</Inline>, <Inline>"F"</Inline>, or the sentinel{" "}
-            <Inline>"pending"</Inline> while a run is scheduled.
+            row. As published grades roll out, it becomes one of{" "}
+            <Inline>"A"</Inline>, <Inline>"B"</Inline>, <Inline>"D"</Inline>,{" "}
+            <Inline>"F"</Inline> (there is no C — see the{" "}
+            <a
+              href="/methodology"
+              className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
+            >
+              rubric
+            </a>
+            ), or the sentinel <Inline>"pending"</Inline> while a run is
+            scheduled.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">curl</h3>
@@ -289,9 +297,15 @@ pypi/mcp-server-fetch`}
             funnel writes to.
           </p>
           <p>
-            What isn't stable yet: the cadence of behavioral grade publication.
-            That will firm up with the v1 litmus harness and we'll document it
-            on a methodology page alongside the rubric.
+            What isn't stable yet: the cadence of behavioral grade
+            publication. The methodology and rubric are documented at{" "}
+            <a
+              href="/methodology"
+              className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
+            >
+              /methodology
+            </a>
+            .
           </p>
         </Section>
 

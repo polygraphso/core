@@ -30,6 +30,14 @@ export function Footer() {
                 API docs →
               </a>
             </p>
+            <p className="mt-1.5 font-sans text-[11.5px] leading-relaxed">
+              <a
+                className="text-ink hover:text-oxblood transition-colors"
+                href="/methodology"
+              >
+                Methodology →
+              </a>
+            </p>
           </div>
 
           <div>
@@ -55,13 +63,23 @@ export function Footer() {
                   @polygraphso
                 </a>
               </li>
+              <li>
+                <a
+                  className="text-ink hover:text-oxblood transition-colors"
+                  href="https://bankr.bot/discover/0x2878cfc54aabdadd9bb5d70dd24d6b91485afba3"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  $POLYGRAPH on Bankr
+                </a>
+              </li>
             </ul>
           </div>
         </nav>
 
         <div className="md:col-span-3 md:text-right">
           <div className="font-mono text-[11px] text-ink-faint uppercase tracking-[0.18em] tabular">
-            v0.2
+            v0.3
           </div>
         </div>
       </div>

@@ -62,10 +62,11 @@ export function Hero() {
           </h1>
 
           <p className="mt-8 max-w-xl text-ink-muted text-lg leading-relaxed">
-            Independent, lab-evaluated polygraphs for MCP servers and the
-            agents that use them. Free public polygraphs.{" "}
+            Independent behavioral polygraphs for MCP servers and the agents
+            that use them &mdash; a grade backed by evidence anyone can re-run.
+            Free and public.{" "}
             <span className="font-mono text-base text-ink">CLI</span> for
-            runtime checks.
+            sub-second checks.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
@@ -79,7 +80,7 @@ export function Hero() {
               <span>Install the CLI</span>
             </a>
             <a
-              href="#how-we-test"
+              href="/methodology"
               className="font-mono text-xs text-ink-faint border-b hairline border-dotted hover:text-ink transition-colors"
             >
               Read the methodology →

@@ -25,11 +25,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://polygraph.so"),
   title: {
     default:
-      "polygraph.so — independent, lab-evaluated polygraphs for AI agents",
+      "polygraph.so — independent behavioral polygraphs for AI agents",
     template: "%s · polygraph.so",
   },
   description:
-    "We polygraph AI agents so you don't have to. Behavioral evaluation for MCP servers and the agents that use them. Free public polygraphs. CLI for runtime checks.",
+    "We polygraph AI agents so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run. Free public polygraphs. CLI for sub-second checks.",
   applicationName: "polygraph",
   keywords: [
     "MCP",
@@ -42,9 +42,9 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title:
-      "polygraph.so — independent, lab-evaluated polygraphs for AI agents",
+      "polygraph.so — independent behavioral polygraphs for AI agents",
     description:
-      "We polygraph AI agents so you don't have to. Free public polygraphs plus a CLI for runtime checks of MCP servers.",
+      "We polygraph AI agents so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run.",
     url: "https://polygraph.so",
     siteName: "polygraph.so",
     locale: "en_US",
@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "polygraph.so",
     description:
-      "Independent, lab-evaluated polygraphs for AI agents and MCP servers.",
+      "Independent behavioral polygraphs for AI agents and MCP servers.",
   },
   robots: { index: true, follow: true },
 };
