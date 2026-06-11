@@ -36,7 +36,7 @@ export function InstallCard() {
       <div className="p-4">
         <div className="relative">
           <pre
-            className="font-mono text-[13px] leading-6 text-ink bg-parchment border hairline px-4 py-3 pr-14 whitespace-pre-wrap break-all"
+            className="font-mono text-[13px] leading-6 text-ink bg-parchment border hairline px-4 py-3 pr-20 whitespace-pre-wrap break-all"
             aria-label="Install command"
           >
             <span className="text-ink-faint select-none">$ </span>
