@@ -14,8 +14,8 @@
  * revisit if the seed grows past ~10k.
  */
 
-import { createClient } from "@supabase/supabase-js";
 import type { AdoptionTier } from "@/lib/identity";
+import { getSupabaseAdmin } from "@/lib/supabase";
 
 type PolygraphGrade = "A" | "B" | "C" | "D" | "F";
 
@@ -46,21 +46,12 @@ function serverRefOf(registry: string, owner: string | null, name: string): stri
   return owner ? `${registry}/${owner}/${name}` : `${registry}/${name}`;
 }
 
-function getSupabase() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error(
-      "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set on the server.",
-    );
-  }
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
-
 export async function GET() {
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    console.error("[cli/list] Supabase is not configured");
+    return Response.json({ error: "Lookup failed." }, { status: 500 });
+  }
 
   const { data: servers, error: serversErr } = await supabase
     .from("servers")
