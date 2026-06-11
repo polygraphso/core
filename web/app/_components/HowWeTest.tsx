@@ -47,11 +47,14 @@ const v1ProbeCount = probes
   .reduce((acc, p) => acc + p.probeIds.length, 0);
 const v1CategoryCount = probes.filter((p) => p.status === "v1").length;
 
-// Grade rubric — mirrors litmus-test-v1.md §5 exactly. A / B / D / F; no C.
+// Grade rubric — mirrors litmus-test-v1.md §5. The scale is A–F; only
+// A / B / D / F are reachable in v1, so C renders as reserved. No E:
+// letter scales jump D → F by convention.
 const grades: Array<{
   letter: string;
   colorVar: string;
   when: string;
+  reserved?: boolean;
 }> = [
   {
     letter: "A",
@@ -62,6 +65,12 @@ const grades: Array<{
     letter: "B",
     colorVar: "var(--color-grade-b)",
     when: "Injection and data-leak checks pass; egress couldn't be verified (remote target, or no sandbox). Capped by design — unverified is not verified-good.",
+  },
+  {
+    letter: "C",
+    colorVar: "var(--color-grade-c)",
+    when: "Reserved — no litmus-v1 condition maps to it. Outcomes jump from a capped B to a contained-failure D. Future probe categories (C-04, adversarial input) may claim it.",
+    reserved: true,
   },
   {
     letter: "D",
@@ -136,14 +145,14 @@ export function HowWeTest() {
       <figure className="mt-12 border hairline bg-parchment-50 max-w-3xl">
         <figcaption className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
           <span>Table 1 — Grade rubric · litmus-v1</span>
-          <span className="hidden sm:inline">no C grade</span>
+          <span className="hidden sm:inline">scale a–f</span>
         </figcaption>
         <ul>
-          {grades.map((g, i) => (
+          {grades.map((g) => (
             <li
               key={g.letter}
-              className={`flex gap-4 px-4 py-4 ${
-                i < grades.length - 1 ? "border-b hairline" : ""
+              className={`flex gap-4 px-4 py-4 border-b hairline ${
+                g.reserved ? "opacity-60" : ""
               }`}
             >
               <span
@@ -158,6 +167,10 @@ export function HowWeTest() {
             </li>
           ))}
         </ul>
+        <p className="px-4 py-3 font-mono text-[11px] text-ink-faint leading-relaxed">
+          There is no E &mdash; the scale runs A to F, skipping E as letter
+          grades conventionally do.
+        </p>
       </figure>
 
       <p className="mt-8 max-w-2xl text-ink-muted text-sm leading-relaxed">
