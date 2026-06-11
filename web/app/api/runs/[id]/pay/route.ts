@@ -235,6 +235,11 @@ export async function POST(
     .update({
       status: "queued",
       payment_tx: verifiedTx,
+      // Rail-agnostic columns (20260611220000 migration): the open
+      // Stripe-vs-onchain decision lands here as a new provider value,
+      // not a schema change.
+      payment_provider: pay.mode === "onchain" ? "usdc_base" : null,
+      payment_ref: verifiedTx,
       payer_address: payer,
       paid_at: new Date().toISOString(),
     })
