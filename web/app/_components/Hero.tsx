@@ -22,10 +22,10 @@ export function Hero() {
               Install
             </a>
             <a
-              href="#try"
+              href="#checks"
               className="hover:text-ink transition-colors"
             >
-              Try it
+              Checks
             </a>
             <a
               href="/methodology"
@@ -86,10 +86,10 @@ export function Hero() {
               <span>Install the CLI</span>
             </a>
             <a
-              href="#try"
+              href="#checks"
               className="font-mono text-xs text-ink-faint border-b hairline border-dotted hover:text-ink transition-colors"
             >
-              Try it live ↓
+              See completed checks ↓
             </a>
           </div>
         </div>

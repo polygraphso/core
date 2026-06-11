@@ -56,11 +56,11 @@ Three variants, matching each registry's native namespace shape:
 
 Version is optional. Lookups are versionless: two CLI calls for `1.0.0` and `1.0.1` of the same package resolve to the same server record.
 
-## Proof & funding
+## Independence & roadmap
 
-Grades publish as EAS attestations on Base — server ref, fingerprint, per-check results, grade, methodology version, timestamp — with the full evidence bundle pinned to IPFS (live on testnet today). Roadmap: writing a grade onchain burns $POLYGRAPH, and TEE-verified runs let third parties prove a grade came from the real harness.
+No graded party pays us. No graded party gets review or approval rights over their grade. Significant failures go to the vendor before they go public.
 
-Polygraph is funded by dev fees from $POLYGRAPH, a token the Bankr community launched around the project — we didn't issue it. The claim is public and pays for keeping the harness, the grades, and the evidence free and open. No graded party pays us. No graded party gets review or approval rights over their grade. The token funds the work; it doesn't move a grade.
+Sequenced roadmap (no dates promised): litmus-v1 harness (live) → first public grades on registry servers (publishing after review) → timestamped, independently verifiable grade records with evidence attached → hardware-attested runs so third parties can verify a grade came from the real harness.
 
 ## Where to learn more
 
