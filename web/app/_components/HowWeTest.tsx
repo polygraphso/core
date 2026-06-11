@@ -94,7 +94,7 @@ export function HowWeTest() {
       className="mx-auto max-w-6xl px-6 py-20 md:py-28 scroll-mt-12"
     >
       <SectionHeader
-        number="§ 02"
+        number="§ 03"
         label="How we polygraph"
         title={`${v1ProbeCount} probes. ${v1CategoryCount} categories. One sandbox.`}
       >
@@ -187,10 +187,19 @@ export function HowWeTest() {
               </div>
             ))}
           </dl>
-          <p className="px-4 pb-4 font-sans text-[11.5px] text-ink-faint leading-relaxed">
+          <p className="px-4 pb-3 font-sans text-[11.5px] text-ink-faint leading-relaxed">
             A real run against a hosted MCP server. Remote targets
             can&rsquo;t be egress-sandboxed, so C-02 is skipped and the grade
             caps at B &mdash; a property of remote targets, not a finding.
+          </p>
+          <p className="px-4 pb-4 font-mono text-[10.5px] text-ink-faint">
+            New runs publish as the queue clears.{" "}
+            <a
+              href="#updates"
+              className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+            >
+              Follow new polygraphs →
+            </a>
           </p>
         </figure>
       </div>

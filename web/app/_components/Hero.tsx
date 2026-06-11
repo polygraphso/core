@@ -22,7 +22,13 @@ export function Hero() {
               Install
             </a>
             <a
-              href="#how-we-test"
+              href="#try"
+              className="hover:text-ink transition-colors"
+            >
+              Try it
+            </a>
+            <a
+              href="/methodology"
               className="hover:text-ink transition-colors"
             >
               Methodology
@@ -80,10 +86,10 @@ export function Hero() {
               <span>Install the CLI</span>
             </a>
             <a
-              href="/methodology"
+              href="#try"
               className="font-mono text-xs text-ink-faint border-b hairline border-dotted hover:text-ink transition-colors"
             >
-              Read the methodology →
+              Try it live ↓
             </a>
           </div>
         </div>

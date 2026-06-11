@@ -25,7 +25,7 @@ export function WhereWeSit() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-20 md:py-28">
       <SectionHeader
-        number="§ 03"
+        number="§ 04"
         label="Where we sit"
         title="Three orthogonal axes. Never averaged."
       >

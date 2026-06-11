@@ -12,9 +12,9 @@ export default function Home() {
     <main className="flex-1">
       <Hero />
       <Problem />
+      <TryIt />
       <HowWeTest />
       <WhereWeSit />
-      <TryIt />
       <ProofAndFunding />
       <GradesUpdates />
       <Footer />
