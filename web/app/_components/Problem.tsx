@@ -6,14 +6,13 @@ export function Problem() {
       <SectionHeader number="§ 01" label="The problem" />
       <div className="grid md:grid-cols-12 gap-10 md:gap-16">
         <div className="md:col-span-8">
+          {/* The hero subhead now states the problem — this section keeps
+              only the headline and the three sharp points beside it. */}
           <p className="font-serif text-2xl md:text-[28px] leading-snug text-ink max-w-3xl">
             The MCP ecosystem grew faster than anyone&rsquo;s ability to polygraph it.
           </p>
           <p className="mt-6 text-ink-muted text-lg leading-relaxed max-w-2xl">
-            Adoption metrics and dependency scans don&rsquo;t tell you whether a
-            server will exfiltrate your data or hijack the agent calling it.
-            Frontier labs won&rsquo;t independently polygraph the ecosystem
-            they&rsquo;re building on. You need an outside opinion.
+            You need an outside opinion.
           </p>
         </div>
         <aside className="md:col-span-4">
