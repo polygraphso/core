@@ -28,6 +28,12 @@ export function Hero() {
               Checks
             </a>
             <a
+              href="/run"
+              className="hover:text-ink transition-colors"
+            >
+              Run
+            </a>
+            <a
               href="/methodology"
               className="hover:text-ink transition-colors"
             >
