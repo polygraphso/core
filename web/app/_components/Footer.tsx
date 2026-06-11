@@ -63,16 +63,6 @@ export function Footer() {
                   @polygraphso
                 </a>
               </li>
-              <li>
-                <a
-                  className="text-ink hover:text-oxblood transition-colors"
-                  href="https://bankr.bot/discover/0x2878cfc54aabdadd9bb5d70dd24d6b91485afba3"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  $POLYGRAPH on Bankr
-                </a>
-              </li>
             </ul>
           </div>
         </nav>

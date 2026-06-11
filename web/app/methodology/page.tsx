@@ -312,9 +312,9 @@ export default function MethodologyPage() {
               Forgeability — can the runner fake the result?
             </strong>{" "}
             Fixed by the proof layer, not the methodology. Reproducibility
-            makes a lie falsifiable; the roadmap layers — onchain attestation,
-            and later TEE-verified runs — make it progressively unprofitable,
-            then impossible.
+            makes a lie falsifiable; the roadmap layers — independently
+            verifiable grade records, and later hardware-attested runs — make
+            it progressively unprofitable, then impossible.
           </p>
           <p>
             <strong className="text-ink">
