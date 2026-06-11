@@ -78,11 +78,11 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
                     >
                       {run.grade}
                     </span>
-                    <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 font-mono text-[12px] text-ink-muted min-w-0">
+                    <dl className="flex-1 grid grid-cols-1 gap-y-2 sm:grid-cols-[auto_1fr] sm:gap-x-4 sm:gap-y-1 font-mono text-[12px] text-ink-muted min-w-0">
                       {run.rows.map(([k, v]) => (
-                        <div key={k} className="contents">
+                        <div key={k} className="sm:contents">
                           <dt className="text-ink-faint">{k}</dt>
-                          <dd className="text-ink break-all">{v}</dd>
+                          <dd className="text-ink break-words">{v}</dd>
                         </div>
                       ))}
                     </dl>
