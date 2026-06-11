@@ -57,6 +57,12 @@ const STATUS_LABEL: Record<RunStatus, string> = {
   failed: "failed",
 };
 
+/** Insert zero-width break opportunities after / and . so long refs and
+ *  URLs wrap at path boundaries instead of mid-word. */
+function breakable(s: string): string {
+  return s.replace(/([/.])/g, "$1​");
+}
+
 const CHECK_LABELS: Array<[keyof PublicRun, string]> = [
   ["c01", "C-01 tool-output injection"],
   ["c02", "C-02 permission overreach"],
@@ -116,11 +122,14 @@ export function RunView({ runId }: { runId: string }) {
   return (
     <div>
       <header className="mb-10">
-        <p className="section-label mb-4">
-          Hosted run · {STATUS_LABEL[run.status]}
-        </p>
-        <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight leading-[1.1] break-all">
-          {run.target}
+        <div className="flex items-baseline justify-between gap-4 mb-4">
+          <p className="section-label">
+            Hosted run · {STATUS_LABEL[run.status]}
+          </p>
+          <CopyLink />
+        </div>
+        <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight leading-[1.1]">
+          {breakable(run.target)}
         </h1>
         <p className="mt-3 font-mono text-[11px] text-ink-faint uppercase tracking-[0.16em]">
           {run.target_kind === "remote_url"
@@ -165,6 +174,30 @@ export function RunView({ runId }: { runId: string }) {
 
       {run.status === "complete" && run.grade && <Report run={run} />}
     </div>
+  );
+}
+
+// The report URL is the artifact — make keeping it one click. Falls
+// back silently if the clipboard is blocked (URL stays in the bar).
+function CopyLink() {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      // clipboard blocked — nothing to do, the address bar has the URL
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={copy}
+      className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-ink-faint hover:text-ink border-b hairline border-dotted transition-colors whitespace-nowrap"
+    >
+      {copied ? "copied ✓" : "copy link"}
+    </button>
   );
 }
 

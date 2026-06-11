@@ -1,10 +1,6 @@
 import { ImageResponse } from "next/og";
 import { OG_SIZE, og, ogFonts } from "@/lib/og";
-import {
-  getRunsSupabase,
-  RUN_SELECT_COLUMNS,
-  type HostedRunRow,
-} from "@/lib/runs";
+import { fetchRunForDisplay } from "@/lib/runs";
 
 // Per-run OG card — the shareable grade card. A completed run renders
 // the grade + per-check outcomes; an in-flight run renders its status.
@@ -16,9 +12,6 @@ export const alt = "polygraph.so — hosted litmus run report";
 export const size = OG_SIZE;
 export const contentType = "image/png";
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 const STATUS_LABEL: Record<string, string> = {
   created: "awaiting payment",
   paid: "paid",
@@ -27,48 +20,6 @@ const STATUS_LABEL: Record<string, string> = {
   complete: "complete",
   failed: "run failed",
 };
-
-async function loadRun(id: string): Promise<HostedRunRow | null> {
-  if (!UUID_RE.test(id)) return null;
-  // Dev-only design preview: /run/facade00-…/opengraph-image renders a
-  // specimen grade card without a DB. Never active in production.
-  if (
-    process.env.NODE_ENV === "development" &&
-    id.toLowerCase().startsWith("facade00")
-  ) {
-    return {
-      id,
-      target: "npm/@modelcontextprotocol/server-filesystem",
-      target_kind: "registry_ref",
-      status: "complete",
-      created_at: "2026-06-11T00:00:00Z",
-      paid_at: "2026-06-11T00:00:00Z",
-      payment_tx: "0xabc",
-      grade: "A",
-      c01: "pass",
-      c02: "pass",
-      c03: "pass",
-      tool_defs_fingerprint:
-        "0x4cb6aa00000000000000000000000000000000000000000000000000001ecd",
-      methodology_version: "litmus-v1",
-      rationale: "All three categories pass inside the sandbox.",
-      failure_reason: null,
-      ran_at: "2026-06-11T00:00:00Z",
-      completed_at: "2026-06-11T00:00:00Z",
-    };
-  }
-  try {
-    const supabase = getRunsSupabase();
-    const { data } = await supabase
-      .from("hosted_runs")
-      .select(RUN_SELECT_COLUMNS)
-      .eq("id", id)
-      .maybeSingle();
-    return (data as HostedRunRow) ?? null;
-  } catch {
-    return null;
-  }
-}
 
 function Chrome({ children }: { children: React.ReactNode }) {
   return (
@@ -130,7 +81,7 @@ export default async function Image({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const run = await loadRun(id);
+  const run = await fetchRunForDisplay(id);
   const fonts = await ogFonts();
 
   if (!run) {

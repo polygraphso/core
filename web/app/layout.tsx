@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
@@ -57,6 +57,11 @@ export const metadata: Metadata = {
       "Independent behavioral polygraphs for AI agents and MCP servers.",
   },
   robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  // Parchment — keeps mobile browser chrome on-palette.
+  themeColor: "#f5f1e5",
 };
 
 export default function RootLayout({
