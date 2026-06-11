@@ -97,7 +97,8 @@ export function ProofAndFunding() {
               the grades, and the evidence stay free and public.
             </p>
             <p className="mt-4 font-serif text-lg md:text-xl text-ink leading-snug">
-              No graded party pays us. No graded party gets review or approval
+              Nobody can pay for a grade. Hosted runs are paid &mdash; the
+              results aren&rsquo;t. No graded party gets review or approval
               rights over their grade.
             </p>
           </div>

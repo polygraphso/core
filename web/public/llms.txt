@@ -1,6 +1,6 @@
 # polygraph.so
 
-> Independent behavioral polygraphs for AI agents and MCP servers. We run MCP servers through the litmus test — a reproducible behavioral harness that connects like an agent and watches what the server actually does — and publish the grade with the evidence. Not vendor self-claims, not gameable user reviews. No graded party pays us or gets review or approval rights over their grade.
+> Independent behavioral polygraphs for AI agents and MCP servers. We run MCP servers through the litmus test — a reproducible behavioral harness that connects like an agent and watches what the server actually does — and publish the grade with the evidence. Not vendor self-claims, not gameable user reviews. Nobody can pay for a grade: hosted runs are paid, results aren't negotiable, and no graded party gets review or approval rights.
 
 ## What we produce
 
@@ -56,9 +56,13 @@ Three variants, matching each registry's native namespace shape:
 
 Version is optional. Lookups are versionless: two CLI calls for `1.0.0` and `1.0.1` of the same package resolve to the same server record.
 
+## Hosted runs
+
+Don't want to run the harness yourself? Submit a server at https://polygraph.so/run — a registry ref (npm/…, pypi/…, github/…) or a remote https:// MCP URL — pay in USDC on Base, and the litmus-v1 battery runs in our sandbox. The report (grade, per-check results, fingerprint, evidence, payment disclosure) lives at a permanent URL. Remote URLs cap at grade B by design (egress unverifiable); registry packages run in the full sandbox where A is reachable.
+
 ## Independence & roadmap
 
-No graded party pays us. No graded party gets review or approval rights over their grade. Significant failures go to the vendor before they go public.
+Nobody can pay for a grade. Hosted runs are paid — the results aren't: a paid run publishes pass or fail, the payment is disclosed on the report, and a failing grade is not refundable or retractable. No graded party gets review or approval rights over their grade. Significant failures on servers the requester doesn't own go to the vendor before they go public.
 
 Sequenced roadmap (no dates promised): litmus-v1 harness (live) → first public grades on registry servers (publishing after review) → timestamped, independently verifiable grade records with evidence attached → hardware-attested runs so third parties can verify a grade came from the real harness.
 
