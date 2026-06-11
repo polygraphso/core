@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { WalletPay } from "./WalletPay";
 
 // One component carries the whole post-submit lifecycle:
 //   created  → payment instructions + tx-hash form
@@ -179,31 +180,68 @@ function PaymentStep({
   const [txHash, setTxHash] = useState("");
   const [state, setState] = useState<"idle" | "submitting" | "error">("idle");
   const [message, setMessage] = useState("");
+  // Guards the retry loop across re-renders and unmount.
+  const cancelled = useRef(false);
+  useEffect(() => {
+    cancelled.current = false;
+    return () => {
+      cancelled.current = true;
+    };
+  }, []);
 
   const mode = payment?.mode ?? "disabled";
 
-  async function submit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setState("submitting");
-    setMessage("");
-    try {
-      const res = await fetch(`/api/runs/${run.id}/pay`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ tx_hash: txHash.trim() }),
-      });
-      const body = (await res.json()) as { ok: boolean; message?: string };
-      if (!res.ok || !body.ok) {
-        throw new Error(body.message ?? "Payment verification failed.");
+  // Submit a tx hash to the server, polling through the confirmation
+  // window (the server demands MIN_CONFIRMATIONS; a fresh receipt has 1).
+  const submitHash = useCallback(
+    async (hash: string) => {
+      setState("submitting");
+      setMessage("");
+      for (let attempt = 0; attempt < 24; attempt++) {
+        if (cancelled.current) return;
+        try {
+          const res = await fetch(`/api/runs/${run.id}/pay`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ tx_hash: hash }),
+          });
+          const body = (await res.json()) as {
+            ok: boolean;
+            message?: string;
+            retryable?: boolean;
+          };
+          if (res.ok && body.ok) {
+            setState("idle");
+            onPaid();
+            return;
+          }
+          if (res.status === 402 && body.retryable) {
+            setMessage(body.message ?? "Waiting for confirmations…");
+            await new Promise((r) => setTimeout(r, 5_000));
+            continue;
+          }
+          throw new Error(body.message ?? "Payment verification failed.");
+        } catch (err) {
+          setState("error");
+          setMessage(
+            err instanceof Error
+              ? err.message
+              : "Something went wrong. Try again.",
+          );
+          return;
+        }
       }
-      setState("idle");
-      onPaid();
-    } catch (err) {
       setState("error");
       setMessage(
-        err instanceof Error ? err.message : "Something went wrong. Try again.",
+        "Still unconfirmed after two minutes. Keep this page open and retry, or email hello@polygraph.so with your tx hash.",
       );
-    }
+    },
+    [run.id, onPaid],
+  );
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    await submitHash(txHash.trim());
   }
 
   if (mode === "disabled") {
@@ -227,44 +265,54 @@ function PaymentStep({
         <span>{payment?.price_display ?? ""}</span>
       </div>
       <div className="p-4 md:p-6 space-y-4">
-        {mode === "onchain" ? (
+        {mode === "onchain" &&
+        payment?.treasury &&
+        payment.price_units &&
+        payment.price_display ? (
           <>
-            <ol className="space-y-2 font-mono text-[12px] text-ink-muted">
-              <li className="flex gap-3">
-                <span className="text-ink-faint shrink-0">01 →</span>
-                <span>
-                  Send{" "}
-                  <span className="text-ink">{payment?.price_display}</span>{" "}
-                  (USDC, Base network) from any wallet to:
-                </span>
-              </li>
-            </ol>
-            <pre className="font-mono text-[12px] leading-6 text-ink bg-parchment border hairline px-4 py-3 whitespace-pre-wrap break-all">
-              {payment?.treasury}
-            </pre>
-            <form onSubmit={submit} className="space-y-3" noValidate>
-              <label className="block">
-                <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
-                  02 → paste the transaction hash
-                </span>
-                <input
-                  type="text"
-                  autoComplete="off"
-                  spellCheck={false}
-                  placeholder="0x…"
-                  value={txHash}
-                  onChange={(e) => setTxHash(e.target.value)}
-                  className="w-full bg-parchment border hairline px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={state === "submitting"}
-                className="inline-flex items-center justify-center bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-              >
-                {state === "submitting" ? "Verifying…" : "Verify payment"}
-              </button>
-            </form>
+            <WalletPay
+              treasury={payment.treasury}
+              priceUnits={payment.price_units}
+              priceDisplay={payment.price_display}
+              busy={state === "submitting"}
+              onTxConfirmed={(hash) => void submitHash(hash)}
+            />
+
+            <div className="pt-4 border-t hairline space-y-3">
+              <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
+                or — send manually from any wallet
+              </p>
+              <p className="font-mono text-[12px] text-ink-muted">
+                Send <span className="text-ink">{payment.price_display}</span>{" "}
+                (USDC, Base network) to:
+              </p>
+              <pre className="font-mono text-[12px] leading-6 text-ink bg-parchment border hairline px-4 py-3 whitespace-pre-wrap break-all">
+                {payment.treasury}
+              </pre>
+              <form onSubmit={submit} className="space-y-3" noValidate>
+                <label className="block">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
+                    then paste the transaction hash
+                  </span>
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    spellCheck={false}
+                    placeholder="0x…"
+                    value={txHash}
+                    onChange={(e) => setTxHash(e.target.value)}
+                    className="w-full bg-parchment border hairline px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={state === "submitting"}
+                  className="inline-flex items-center justify-center bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {state === "submitting" ? "Verifying…" : "Verify payment"}
+                </button>
+              </form>
+            </div>
           </>
         ) : (
           <form onSubmit={submit} noValidate>
@@ -277,8 +325,13 @@ function PaymentStep({
             </button>
           </form>
         )}
-        {state === "error" && (
-          <p role="status" className="font-mono text-[12px] text-oxblood">
+        {message && (
+          <p
+            role="status"
+            className={`font-mono text-[12px] ${
+              state === "error" ? "text-oxblood" : "text-ink-muted"
+            }`}
+          >
             {message}
           </p>
         )}

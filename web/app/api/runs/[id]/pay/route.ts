@@ -66,23 +66,28 @@ function topicToAddress(topic: string): string {
   return ("0x" + topic.slice(-40)).toLowerCase();
 }
 
-/** Returns the payer address on success, or a refusal reason string. */
+/** Returns the payer address on success, or a refusal. `retryable` marks
+ *  refusals that resolve by waiting (pending tx, confirmation window) so
+ *  the client can poll instead of surfacing an error. */
 async function verifyOnchain(
   rpcUrl: string,
   txHash: string,
   treasury: string,
   priceUnits: bigint,
-): Promise<{ payer: string } | { refusal: string }> {
+): Promise<{ payer: string } | { refusal: string; retryable: boolean }> {
   const receipt = await rpc<RpcReceipt | null>(
     rpcUrl,
     "eth_getTransactionReceipt",
     [txHash],
   );
   if (!receipt) {
-    return { refusal: "Transaction not found yet — wait for it to confirm and retry." };
+    return {
+      refusal: "Transaction not found yet — wait for it to confirm and retry.",
+      retryable: true,
+    };
   }
   if (receipt.status !== "0x1") {
-    return { refusal: "Transaction reverted on-chain." };
+    return { refusal: "Transaction reverted on-chain.", retryable: false };
   }
 
   const treasuryLower = treasury.toLowerCase();
@@ -98,6 +103,7 @@ async function verifyOnchain(
     return {
       refusal:
         "No USDC transfer to the treasury address covering the price was found in that transaction.",
+      retryable: false,
     };
   }
 
@@ -107,6 +113,7 @@ async function verifyOnchain(
   if (confirmations < MIN_CONFIRMATIONS) {
     return {
       refusal: `Waiting for confirmations (${confirmations}/${MIN_CONFIRMATIONS}) — retry in a few seconds.`,
+      retryable: true,
     };
   }
 
@@ -202,7 +209,7 @@ export async function POST(
       );
       if ("refusal" in result) {
         return NextResponse.json(
-          { ok: false, message: result.refusal },
+          { ok: false, message: result.refusal, retryable: result.retryable },
           { status: 402 },
         );
       }
