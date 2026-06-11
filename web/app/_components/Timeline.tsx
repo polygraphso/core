@@ -11,7 +11,7 @@ const steps: Array<{
   {
     status: "now",
     title: "litmus-v1 harness",
-    body: "The behavioral test battery is built and running: five probes, three checks, a grade from A to F with the evidence attached, and a fingerprint of the exact tool surface each grade certifies.",
+    body: "Built and running: five probes, a grade from A to F, evidence attached.",
   },
   {
     status: "now",
@@ -21,17 +21,17 @@ const steps: Array<{
   {
     status: "next",
     title: "First public grades",
-    body: "First on the bench: filesystem, github, slack, puppeteer, git. Grades publish to the free lookup and the CLI after review — significant failures go to the vendor before they go public.",
+    body: "First on the bench: filesystem, github, slack, puppeteer, git. Vendors hear about significant failures before the public does.",
   },
   {
     status: "later",
     title: "Verifiable proof",
-    body: "Each grade published as a timestamped, independently verifiable record with its full evidence bundle attached — so a grade can be checked without trusting us.",
+    body: "Grades published as timestamped records anyone can check without trusting us.",
   },
   {
     status: "later",
     title: "Verified runs",
-    body: "Hardware-attested execution, so a third party can prove a specific grade came from the real harness run against the real server.",
+    body: "Hardware-attested runs, so a third party can prove a grade is real.",
   },
 ];
 

@@ -215,8 +215,10 @@ export default function MethodologyPage() {
 
         <Section num="04" label="Grading rubric" id="rubric">
           <p>
-            A single letter, always accompanied by a rationale string — never
-            a bare grade. There is no C.
+            A single letter A&ndash;F, always accompanied by a rationale
+            string — never a bare grade. Only four grades are reachable in
+            v1: C is reserved (no condition maps to it), and the scale skips
+            E, as letter grades conventionally do.
           </p>
           <figure className="border hairline bg-parchment-50 mt-2">
             <figcaption className="px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
@@ -240,6 +242,13 @@ export default function MethodologyPage() {
                     C-01 and C-03 pass; C-02 <Inline>skipped</Inline> (no
                     sandbox or remote target). Egress was not verified —
                     capped by design.
+                  </td>
+                </tr>
+                <tr className="border-b hairline align-top opacity-60">
+                  <td className="px-4 py-3 font-serif text-xl text-grade-c">C</td>
+                  <td className="px-4 py-3">
+                    Reserved — no litmus-v1 condition maps to it. Future probe
+                    categories may claim it.
                   </td>
                 </tr>
                 <tr className="border-b hairline align-top">

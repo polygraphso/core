@@ -1,5 +1,26 @@
 import { PolygraphTrace } from "./PolygraphTrace";
 import { InstallCard } from "./InstallCard";
+import { HeroPolygraph } from "./HeroPolygraph";
+
+// The skim skeleton: the whole model in three beats, for readers who won't
+// go past the fold. Each section below expands one beat.
+const BEATS: Array<[string, string, string]> = [
+  [
+    "01",
+    "We test it",
+    "Adversarial probes in a sandbox — does it hijack the agent, overreach, or leak?",
+  ],
+  [
+    "02",
+    "We grade it",
+    "A letter grade, A to F, published free with the evidence attached.",
+  ],
+  [
+    "03",
+    "You check it",
+    "One command before your agent installs anything.",
+  ],
+];
 
 export function Hero() {
   return (
@@ -73,12 +94,17 @@ export function Hero() {
             .
           </h1>
 
+          {/* Subhead v0.4 — concrete-first for cold readers; the insider
+              terms (MCP, re-runnable) drop to the mono line below. */}
           <p className="mt-8 max-w-xl text-ink-muted text-lg leading-relaxed">
-            Independent behavioral polygraphs for MCP servers and the agents
-            that use them &mdash; a grade backed by evidence anyone can re-run.
-            Free and public.{" "}
-            <span className="font-mono text-base text-ink">CLI</span> for
-            sub-second checks.
+            AI agents plug into third-party tools that can hijack them or
+            leak your data. We run those tools through an adversarial test
+            and publish a letter grade &mdash; free, public, evidence
+            attached.
+          </p>
+          <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
+            independent grades for MCP servers &middot; anyone can re-run the
+            test
           </p>
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
@@ -104,7 +130,25 @@ export function Hero() {
           className="md:col-span-5 fade-up"
           style={{ animationDelay: "120ms" }}
         >
+          <HeroPolygraph />
           <InstallCard />
+        </div>
+      </div>
+
+      {/* Skim strip — the three-beat model for readers who stop here */}
+      <div className="border-t hairline bg-parchment-50/40">
+        <div className="mx-auto max-w-6xl px-6 py-6 grid sm:grid-cols-3 gap-5 sm:gap-8">
+          {BEATS.map(([num, beat, line]) => (
+            <div key={num} className="flex items-baseline gap-3">
+              <span className="font-mono text-[11px] text-ink-faint tabular shrink-0">
+                {num}
+              </span>
+              <p className="text-sm leading-relaxed text-ink-muted">
+                <span className="font-serif text-base text-ink">{beat}.</span>{" "}
+                {line}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
 
