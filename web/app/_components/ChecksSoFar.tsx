@@ -167,7 +167,14 @@ export function ChecksSoFar() {
             >
               Subscribe below
             </a>{" "}
-            &mdash; one email per publishing drop, nothing else.
+            &mdash; or skip the queue:{" "}
+            <a
+              href="/run"
+              className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+            >
+              pay for a hosted run
+            </a>
+            . Payment buys the run, never the grade.
           </p>
         </div>
       </div>

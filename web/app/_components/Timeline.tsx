@@ -14,6 +14,11 @@ const steps: Array<{
     body: "The behavioral test battery is built and running: five probes, three checks, a grade from A to F with the evidence attached, and a fingerprint of the exact tool surface each grade certifies.",
   },
   {
+    status: "now",
+    title: "Hosted runs",
+    body: "Don't want to run the harness yourself? Submit a server at /run and we execute litmus-v1 in our sandbox. Payment buys the run, never the grade — results publish pass or fail.",
+  },
+  {
     status: "next",
     title: "First public grades",
     body: "First on the bench: filesystem, github, slack, puppeteer, git. Grades publish to the free lookup and the CLI after review — significant failures go to the vendor before they go public.",
