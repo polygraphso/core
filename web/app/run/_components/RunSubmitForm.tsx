@@ -6,6 +6,32 @@ import { useRouter } from "next/navigation";
 // Submit step of the hosted-run flow: target + email → POST /api/runs →
 // redirect to /run/[id], which carries payment + status + report.
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+// Live hint as the user types — surfaces the remote-URL B-cap BEFORE
+// payment instead of burying it in fine print. Mirrors the server's
+// parseTarget split; the server stays authoritative.
+function targetHint(raw: string): { text: string; warn: boolean } | null {
+  const t = raw.trim();
+  if (!t) return null;
+  if (t.startsWith("https://")) {
+    return {
+      text: "remote server — egress can't be verified, grade ceiling is B",
+      warn: true,
+    };
+  }
+  if (t.startsWith("http://")) {
+    return { text: "https:// only — plain http isn't accepted", warn: true };
+  }
+  if (/^(npm|pypi|github)\//.test(t)) {
+    return {
+      text: "registry package — runs in the full sandbox, A is reachable",
+      warn: false,
+    };
+  }
+  return null;
+}
+
 export function RunSubmitForm() {
   const router = useRouter();
   const [target, setTarget] = useState("");
@@ -15,6 +41,17 @@ export function RunSubmitForm() {
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // Instant feedback for the two cheap checks; the server re-validates.
+    if (!target.trim()) {
+      setState("error");
+      setMessage("Enter a server — a registry ref or an https:// MCP URL.");
+      return;
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      setState("error");
+      setMessage("Enter a valid email — it's where the report link goes.");
+      return;
+    }
     setState("submitting");
     setMessage("");
     try {
@@ -64,6 +101,19 @@ export function RunSubmitForm() {
             onChange={(e) => setTarget(e.target.value)}
             className="w-full bg-parchment border hairline px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
           />
+          {(() => {
+            const hint = targetHint(target);
+            return (
+              <span
+                aria-live="polite"
+                className={`block mt-1.5 font-mono text-[10.5px] min-h-4 transition-opacity ${
+                  hint ? "opacity-100" : "opacity-0"
+                } ${hint?.warn ? "text-terracotta" : "text-grade-a"}`}
+              >
+                {hint ? `→ ${hint.text}` : "—"}
+              </span>
+            );
+          })()}
         </label>
 
         <label className="block">

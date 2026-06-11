@@ -12,26 +12,37 @@
 
 import { NextResponse } from "next/server";
 import {
+  fetchRunForDisplay,
   getRunsSupabase,
   paymentConfig,
   publicRun,
   RUN_SELECT_COLUMNS,
+  RUN_UUID_RE,
   type HostedRunRow,
 } from "@/lib/runs";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
-  if (!UUID_RE.test(id)) {
+  if (!RUN_UUID_RE.test(id)) {
     return NextResponse.json(
       { ok: false, message: "Invalid run id." },
       { status: 400 },
     );
+  }
+
+  // Dev-only specimen (facade00-…) — keeps the whole /run/[id] surface
+  // (page, metadata, OG card, this API) renderable without a DB.
+  if (
+    process.env.NODE_ENV === "development" &&
+    id.toLowerCase().startsWith("facade00")
+  ) {
+    const facade = await fetchRunForDisplay(id);
+    if (facade) {
+      return NextResponse.json({ ok: true, run: publicRun(facade), payment: null });
+    }
   }
 
   try {

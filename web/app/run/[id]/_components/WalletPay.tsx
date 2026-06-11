@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   WagmiProvider,
   createConfig,
@@ -76,12 +76,16 @@ function WalletPayInner({
     query: { enabled: Boolean(txHash) },
   });
 
-  // Receipt landed → hand off to the server exactly once.
-  const [handedOff, setHandedOff] = useState(false);
-  if (receipt.isSuccess && txHash && !handedOff) {
-    setHandedOff(true);
-    onTxConfirmed(txHash);
-  }
+  // Receipt landed → hand off to the server exactly once. Effect, not
+  // render-time: calling the parent's setState during render is a React
+  // error and could double-fire under strict mode.
+  const handedOff = useRef(false);
+  useEffect(() => {
+    if (receipt.isSuccess && txHash && !handedOff.current) {
+      handedOff.current = true;
+      onTxConfirmed(txHash);
+    }
+  }, [receipt.isSuccess, txHash, onTxConfirmed]);
 
   // Dedupe connectors by name (injected can shadow specific wallets).
   const visibleConnectors = useMemo(() => {
@@ -133,7 +137,9 @@ function WalletPayInner({
               onClick={() => connect({ connector: c })}
               className="inline-flex items-center justify-center bg-ink text-parchment px-4 py-2.5 font-mono text-[12.5px] tracking-wide hover:bg-oxblood transition-colors disabled:opacity-60"
             >
-              {connecting ? "Connecting…" : `Connect ${c.name}`}
+              {connecting
+                ? "Connecting…"
+                : `Connect ${c.name === "Injected" ? "browser wallet" : c.name}`}
             </button>
           ))}
         </div>

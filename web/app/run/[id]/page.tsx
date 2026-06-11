@@ -1,14 +1,44 @@
 import type { Metadata } from "next";
+import { fetchRunForDisplay } from "@/lib/runs";
 import { RunView } from "./_components/RunView";
 
 // Status + payment + report page for a hosted run. The client component
 // fetches /api/runs/:id and polls while the run is in flight, so this
-// page is a thin shell — the run id is the only server-side input.
+// page is a thin shell — but share metadata is resolved server-side so
+// a tweeted report link carries the grade in its title, matching the
+// OG card.
 
-export const metadata: Metadata = {
-  title: "Run report",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const run = await fetchRunForDisplay(id);
+
+  const base: Metadata = {
+    robots: { index: false, follow: false },
+  };
+
+  if (!run) {
+    return { ...base, title: "Run report" };
+  }
+  if (run.status === "complete" && run.grade) {
+    return {
+      ...base,
+      title: `${run.grade} · ${run.target}`,
+      description:
+        run.rationale ??
+        `litmus-v1 hosted run — grade ${run.grade}. Evidence and per-check results at this URL.`,
+    };
+  }
+  return {
+    ...base,
+    title: `${run.target} — hosted run`,
+    description:
+      "A behavioral litmus run on an MCP server. The report publishes at this URL when the run completes.",
+  };
+}
 
 export default async function RunReportPage({
   params,
