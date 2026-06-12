@@ -9,7 +9,7 @@ const COMMAND = "npx polygraphso check <mcp-server>";
 // subcommand (run the probes yourself) ships once the harness is published.
 const STEPS: Array<{ id: string; label: string }> = [
   { id: "01", label: "fetches the polygraph from polygraph.so" },
-  { id: "02", label: "returns grade (A/B/D/F) + tool-surface fingerprint" },
+  { id: "02", label: "returns grade (A–F) + tool-surface fingerprint" },
   { id: "03", label: "links to the full evidence bundle" },
 ];
 

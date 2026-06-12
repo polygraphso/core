@@ -12,7 +12,7 @@ export function Problem() {
             The MCP ecosystem grew faster than anyone&rsquo;s ability to polygraph it.
           </p>
           <p className="mt-6 text-ink-muted text-lg leading-relaxed max-w-2xl">
-            You need an outside opinion.
+            You need evidence anyone can check.
           </p>
         </div>
         <aside className="md:col-span-4">
