@@ -104,7 +104,7 @@ export function Hero() {
             attached.
           </p>
           <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
-            grades for MCP servers &middot; no graded party pays us &middot;
+            grades for MCP servers &middot; nobody can pay for a grade &middot;
             anyone can re-run the test
           </p>
 

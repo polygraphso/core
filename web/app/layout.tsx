@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: "%s · polygraph.so",
   },
   description:
-    "We polygraph AI agents so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run. No graded party pays us. Free public polygraphs; CLI for sub-second checks.",
+    "We polygraph AI agents so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run. Nobody can pay for a grade. Free public polygraphs; CLI for sub-second checks.",
   applicationName: "polygraph",
   keywords: [
     "MCP",
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "polygraph.so",
     description:
-      "Behavioral polygraphs for AI agents and MCP servers — grades anyone can re-run. No graded party pays us.",
+      "Behavioral polygraphs for AI agents and MCP servers — grades anyone can re-run. Nobody can pay for a grade.",
   },
   robots: { index: true, follow: true },
 };
