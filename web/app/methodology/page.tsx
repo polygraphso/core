@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Methodology — litmus-v1",
   description:
-    "The litmus test, v1: a behavioral evaluation of MCP servers. Three checks — tool-output injection, permission overreach, sensitive-data handling — graded A/B/D/F with reproducible evidence.",
+    "The litmus test, v1: a behavioral evaluation of MCP servers. Three checks — tool-output injection, permission overreach, sensitive-data handling — graded A–F with reproducible evidence.",
   alternates: { canonical: "/methodology" },
 };
 

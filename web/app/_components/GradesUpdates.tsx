@@ -19,12 +19,12 @@ export function GradesUpdates() {
         <div className="md:col-span-5">
           <MinimalSignup source="grades-updates" cta="Notify me" />
           <p className="mt-3 font-mono text-[11px] text-ink-faint leading-relaxed">
-            Looking for a specific MCP server?{" "}
+            Waiting on a specific server?{" "}
             <a
               href="/notify"
               className="text-ink-muted border-b hairline border-dotted hover:text-ink transition-colors"
             >
-              polygraph.so/notify →
+              Get an email when its grade publishes →
             </a>
           </p>
         </div>
