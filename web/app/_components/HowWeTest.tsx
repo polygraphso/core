@@ -25,7 +25,7 @@ const probes: Probe[] = [
     code: "C-02",
     question: "Does it touch things it shouldn't?",
     name: "permission overreach",
-    body: "We run it in a sandbox that blocks all network traffic by default, then flag any call it tries to make anyway. Phone-home detection.",
+    body: "We run local tools in a sandbox that blocks all network traffic by default, then flag any call they try to make anyway. Remote servers can't be sandboxed — there this check is marked skipped, never assumed.",
     probeIds: ["2.2"],
     status: "v1",
   },
@@ -95,10 +95,11 @@ export function HowWeTest() {
         label="How we polygraph"
         title="How a tool earns its grade."
       >
-        Five probes, three checks, one sandbox that blocks everything by
-        default. A check we can&rsquo;t run is reported as skipped &mdash;
-        never passed &mdash; and every grade ships with the evidence: not a
-        star rating, the actual artifacts.
+        Five probes, three live checks &mdash; a fourth deferred to v2 &mdash;
+        and one sandbox that blocks everything by default. A check we
+        can&rsquo;t run is reported as skipped &mdash; never passed &mdash;
+        and every grade ships with the evidence: not a star rating, the
+        actual artifacts.
       </SectionHeader>
 
       <ol className="border-t hairline">
