@@ -61,7 +61,8 @@ export function Hero() {
       <div className="mx-auto max-w-6xl px-6 pt-16 pb-24 md:pt-24 md:pb-32 grid md:grid-cols-12 gap-10 md:gap-16">
         <div className="md:col-span-7 fade-up">
           <p className="font-serif italic text-ink-muted text-xl md:text-2xl mb-7 max-w-xl leading-snug">
-            Catch the agents you can&rsquo;t trust before they touch your data.
+            Catch the tools your agent can&rsquo;t trust before they touch
+            your data.
           </p>
           <h1 className="font-serif text-[44px] leading-[1.04] tracking-tight md:text-[68px] md:leading-[1.04] text-ink">
             We polygraph
@@ -93,12 +94,12 @@ export function Hero() {
           <p className="mt-8 max-w-xl text-ink-muted text-lg leading-relaxed">
             AI agents plug into third-party tools that can hijack them or
             leak your data. We run those tools through an adversarial test
-            and publish a letter grade &mdash; free, public, evidence
+            and publish a letter grade &mdash; free to read, public, evidence
             attached.
           </p>
           <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
-            independent grades for MCP servers &middot; anyone can re-run the
-            test
+            grades for MCP servers &middot; no graded party pays us &middot;
+            anyone can re-run the test
           </p>
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
