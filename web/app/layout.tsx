@@ -24,12 +24,11 @@ const sourceSerif = Source_Serif_4({
 export const metadata: Metadata = {
   metadataBase: new URL("https://polygraph.so"),
   title: {
-    default:
-      "polygraph.so — independent behavioral polygraphs for AI agents",
+    default: "polygraph.so — behavioral polygraphs for AI agents",
     template: "%s · polygraph.so",
   },
   description:
-    "We polygraph AI agents so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run. Free public polygraphs. CLI for sub-second checks.",
+    "We polygraph AI agents so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run. No graded party pays us. Free public polygraphs; CLI for sub-second checks.",
   applicationName: "polygraph",
   keywords: [
     "MCP",
@@ -41,8 +40,7 @@ export const metadata: Metadata = {
     "polygraph",
   ],
   openGraph: {
-    title:
-      "polygraph.so — independent behavioral polygraphs for AI agents",
+    title: "polygraph.so — behavioral polygraphs for AI agents",
     description:
       "We polygraph AI agents so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run.",
     url: "https://polygraph.so",
@@ -54,7 +52,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "polygraph.so",
     description:
-      "Independent behavioral polygraphs for AI agents and MCP servers.",
+      "Behavioral polygraphs for AI agents and MCP servers — grades anyone can re-run. No graded party pays us.",
   },
   robots: { index: true, follow: true },
 };

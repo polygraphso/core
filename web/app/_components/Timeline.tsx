@@ -20,8 +20,8 @@ const steps: Array<{
   },
   {
     status: "next",
-    title: "First public grades",
-    body: "First on the bench: filesystem, github, slack, puppeteer, git. Vendors hear about significant failures before the public does.",
+    title: "More public grades",
+    body: "Next on the bench: filesystem, github, slack, puppeteer, git. Vendors hear about significant failures before the public does.",
   },
   {
     status: "later",
