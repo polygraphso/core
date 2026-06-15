@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: "%s · polygraph.so",
   },
   description:
-    "We polygraph AI agents so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run. No graded party pays us. Free public polygraphs; CLI for sub-second checks.",
+    "We polygraph AI tools so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run. No graded party pays us. Free public polygraphs; CLI for sub-second checks.",
   applicationName: "polygraph",
   keywords: [
     "MCP",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "polygraph.so — behavioral polygraphs for AI agents",
     description:
-      "We polygraph AI agents so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run.",
+      "We polygraph AI tools so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run.",
     url: "https://polygraph.so",
     siteName: "polygraph.so",
     locale: "en_US",

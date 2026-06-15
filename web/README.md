@@ -51,7 +51,7 @@ Aesthetic target: arXiv-preprint / lab-report **for the chrome**, product-page *
 
 ## Launch posture
 
-Page is built for **launch-with-product**. Hero leads with the tagline ("We polygraph AI agents so you don't have to."), positioning sits as the sub-headline ("Independent, lab-evaluated trust grades for MCP servers and the agents that use them. Free public grades. CLI for runtime checks."). The single primary CTA is **Install the CLI**. The waitlist demotes to a single-field "notify me when grades publish" tile down-page. "PREPRINT V0.1 / DEPOSITED" framing is off the main landing.
+Page is built for **launch-with-product**. Hero leads with the tagline ("We polygraph AI tools so you don't have to."), positioning sits as the sub-headline ("Independent, lab-evaluated trust grades for MCP servers and the agents that use them. Free public grades. CLI for runtime checks."). The single primary CTA is **Install the CLI**. The waitlist demotes to a single-field "notify me when grades publish" tile down-page. "PREPRINT V0.1 / DEPOSITED" framing is off the main landing.
 
 The `Hero` includes a copy of `npx polygraphso check <mcp-server>` plus a three-step explanation of what the CLI does. Per pivot's three-layer model: **the CLI is a thin lookup over precomputed grades (layer 3) — it does not run probes locally.** If a server isn't yet evaluated, the CLI returns `queued, position #N` and notifies on completion.
 
