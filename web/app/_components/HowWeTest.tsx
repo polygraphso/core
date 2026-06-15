@@ -10,8 +10,9 @@ type Probe = {
 };
 
 // Source of truth: litmus-test-v1.md.
-// v1 = probes 1.1, 1.2, 2.2, 4.1, 4.2 — five probes across three categories.
-// Adversarial input handling (category 3) is deferred to v2.
+// Live = probes 1.1, 1.2, 2.1, 2.2, 4.1, 4.2 — six probes across three categories.
+// (2.1 declared-permission honesty was added in litmus-v2.)
+// Adversarial input handling (category 3) is deferred.
 const probes: Probe[] = [
   {
     code: "C-01",
@@ -25,8 +26,8 @@ const probes: Probe[] = [
     code: "C-02",
     question: "Does it touch things it shouldn't?",
     name: "permission overreach",
-    body: "We run local tools in a sandbox that blocks all network traffic by default, then flag any call they try to make anyway. Remote servers can't be sandboxed — there this check is marked skipped, never assumed.",
-    probeIds: ["2.2"],
+    body: "We run local tools in a sandbox that blocks all network traffic by default, then flag any call they try to make anyway. Remote servers can't be sandboxed — there this check is marked skipped, never assumed. We also flag a tool that labels itself read-only while its name plainly mutates — a permission lie your agent would otherwise trust.",
+    probeIds: ["2.1", "2.2"],
     status: "v1",
   },
   {
@@ -75,7 +76,7 @@ const grades: Array<{
   {
     letter: "D",
     colorVar: "var(--color-grade-d)",
-    when: "Made network calls it shouldn't have (C-02 fail), with no hijack or leak. Serious, but not necessarily theft.",
+    when: "Made network calls it shouldn't have, or lied about a tool being read-only (C-02 fail), with no hijack or leak. Serious, but not necessarily theft.",
   },
   {
     letter: "F",
@@ -95,7 +96,7 @@ export function HowWeTest() {
         label="How we polygraph"
         title="How a tool earns its grade."
       >
-        Five probes, three live checks &mdash; a fourth deferred to v2 &mdash;
+        Six probes, three live checks &mdash; a fourth deferred to v2 &mdash;
         and one sandbox that blocks everything by default. A check we
         can&rsquo;t run is reported as skipped &mdash; never passed &mdash;
         and every grade ships with the evidence: not a star rating, the
@@ -121,7 +122,7 @@ export function HowWeTest() {
                     isV2 ? "text-ink-faint" : "text-grade-a"
                   }`}
                 >
-                  {isV2 ? "v2 · deferred" : "litmus-v1 · live"}
+                  {isV2 ? "deferred" : "litmus-v2 · live"}
                 </span>
               </div>
               <div className="md:col-span-4">
@@ -145,7 +146,7 @@ export function HowWeTest() {
       {/* Grade rubric — litmus-test-v1.md §5 */}
       <figure className="mt-12 border hairline bg-parchment-50 max-w-3xl">
         <figcaption className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-          <span>Table 1 — Grade rubric · litmus-v1</span>
+          <span>Table 1 — Grade rubric · litmus-v2</span>
           <span className="hidden sm:inline">scale a–f</span>
         </figcaption>
         <ul>
@@ -186,7 +187,7 @@ export function HowWeTest() {
       <p className="mt-4 max-w-2xl text-ink-muted text-sm leading-relaxed">
         Probes evolve as agents do &mdash; new failure modes get new probes.
         The methodology is versioned;{" "}
-        <span className="font-mono text-[0.92em] text-ink">litmus-v1</span>{" "}
+        <span className="font-mono text-[0.92em] text-ink">litmus-v2</span>{" "}
         travels with every grade it produced. Read{" "}
         <a
           href="/methodology"

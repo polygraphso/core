@@ -26,14 +26,14 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
         label="Completed checks"
         title="Browse the checks we've run."
       >
-        Every entry is a real litmus-v1 harness run against a live server we
+        Every entry is a real litmus-v2 harness run against a live server we
         exercised the way an agent would — graded, fingerprinted, and published
         here as we go.
       </SectionHeader>
 
       <div className="border hairline bg-parchment-50 max-w-3xl">
         <div className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-          <span>litmus-v1 · harness output</span>
+          <span>litmus-v2 · harness output</span>
           <span className="hidden sm:inline">
             {runs.length > 0 ? `${runs.length} runs` : "no runs yet"}
           </span>
@@ -68,7 +68,7 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
                 <div className="mt-4 border hairline bg-parchment">
                   <div className="flex items-center justify-between px-3 py-1.5 border-b hairline font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
                     <span>{run.kind}</span>
-                    <span className="text-ink">litmus-v1</span>
+                    <span className="text-ink">litmus-v2</span>
                   </div>
                   <div className="px-3 py-3 flex gap-4">
                     <span
