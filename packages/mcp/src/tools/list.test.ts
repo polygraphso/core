@@ -22,8 +22,7 @@ describe("handleList", () => {
         servers: [
           {
             server_ref: "npm/@modelcontextprotocol/server-filesystem",
-            adoption_tier: "top10",
-            polygraph: null,
+            polygraph: "A",
           },
         ],
         total: 1,

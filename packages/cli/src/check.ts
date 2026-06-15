@@ -12,8 +12,7 @@ import { RefParseError, canonicalRef, parseRef } from "./identity.js";
 
 type ApiResponse =
   | {
-      status: "tracked";
-      adoption_tier: "top10" | "top25" | "top50" | "top100" | null;
+      status: "graded";
       polygraph: unknown;
       polygraph_detail?: {
         methodology_version?: string;
@@ -28,13 +27,6 @@ type ApiResponse =
     };
 
 const GRADES = new Set(["A", "B", "C", "D", "F"]);
-
-const TIER_LABEL: Record<string, string> = {
-  top10: "top 10 adoption",
-  top25: "top 25 adoption",
-  top50: "top 50 adoption",
-  top100: "top 100 adoption",
-};
 
 const USAGE_HINT = [
   "polygraphso check requires a registry-prefixed ref.",
@@ -103,25 +95,16 @@ export async function runCheck(args: readonly string[]): Promise<number> {
   // display. The API still returns the canonical https:// form.
   const displayUrl = body.notify_url.replace(/^https?:\/\//, "");
 
-  if (body.status === "tracked") {
-    const tierLine = body.adoption_tier
-      ? `→ tracked · ${TIER_LABEL[body.adoption_tier]}`
-      : "→ tracked";
-
-    let polyLine = "→ polygraph: not yet available";
-    let tailLine = `→ notify me → ${displayUrl}`;
-    if (typeof body.polygraph === "string" && GRADES.has(body.polygraph)) {
-      const detail = body.polygraph_detail ?? null;
-      const method = detail?.methodology_version ?? "litmus";
-      const date = detail?.computed_at ? detail.computed_at.slice(0, 10) : null;
-      polyLine = `→ polygraph: ${body.polygraph} · ${method}${date ? ` · ${date}` : ""}`;
-      const evidence = detail?.evidence_url;
-      tailLine = evidence
-        ? `→ evidence → ${evidence.replace(/^https?:\/\//, "")}`
-        : `→ details → polygraph.so/#checks`;
-    }
-
-    process.stdout.write(`${tierLine}\n${polyLine}\n${tailLine}\n`);
+  if (body.status === "graded" && typeof body.polygraph === "string" && GRADES.has(body.polygraph)) {
+    const detail = body.polygraph_detail ?? null;
+    const method = detail?.methodology_version ?? "litmus";
+    const date = detail?.computed_at ? detail.computed_at.slice(0, 10) : null;
+    const polyLine = `→ polygraph: ${body.polygraph} · ${method}${date ? ` · ${date}` : ""}`;
+    const evidence = detail?.evidence_url;
+    const tailLine = evidence
+      ? `→ evidence → ${evidence.replace(/^https?:\/\//, "")}`
+      : `→ details → polygraph.so/#checks`;
+    process.stdout.write(`${polyLine}\n${tailLine}\n`);
     return 0;
   }
 
