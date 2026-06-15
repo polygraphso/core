@@ -1,6 +1,6 @@
 {
   "name": "polygraphso",
-  "version": "0.4.0",
+  "version": "0.3.0",
   "description": "Look up the polygraph for an MCP server. Independent, lab-evaluated trust grades — see polygraph.so.",
   "license": "Apache-2.0",
   "homepage": "https://polygraph.so",
