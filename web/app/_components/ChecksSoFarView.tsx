@@ -51,17 +51,26 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
                 <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
                   Select a run
                 </span>
-                <select
-                  value={selectedId}
-                  onChange={(e) => setSelectedId(e.target.value)}
-                  className="w-full bg-parchment border hairline px-3.5 py-2.5 font-mono text-sm text-ink focus:outline-none focus:border-ink transition-colors appearance-none cursor-pointer"
-                >
-                  {runs.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
+                <span className="relative block">
+                  <select
+                    value={selectedId}
+                    onChange={(e) => setSelectedId(e.target.value)}
+                    className="w-full bg-parchment border hairline pl-3.5 pr-10 py-2.5 font-mono text-sm text-ink focus:outline-none focus:border-ink transition-colors appearance-none cursor-pointer"
+                  >
+                    {runs.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
+                  {/* appearance-none drops the native arrow; restore the affordance */}
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 font-mono text-[11px] text-ink-faint"
+                  >
+                    ▾
+                  </span>
+                </span>
               </label>
 
               {run ? (
@@ -106,7 +115,14 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
             >
               Subscribe below
             </a>{" "}
-            &mdash; one email per publishing drop, nothing else.
+            &mdash; or skip the queue:{" "}
+            <a
+              href="/run"
+              className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+            >
+              pay for a hosted run
+            </a>
+            . Payment buys the run, never the grade.
           </p>
         </div>
       </div>

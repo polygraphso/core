@@ -14,6 +14,11 @@ const steps: Array<{
     body: "Built and running: six probes, a grade from A to F, evidence attached.",
   },
   {
+    status: "now",
+    title: "Hosted runs",
+    body: "Don't want to run the harness yourself? Submit a server at /run and we execute the litmus battery in our sandbox. Payment buys the run, never the grade — results publish pass or fail.",
+  },
+  {
     status: "next",
     title: "More public grades",
     body: "Next on the bench: filesystem, github, slack, puppeteer, git. Vendors hear about significant failures before the public does.",

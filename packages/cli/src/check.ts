@@ -15,12 +15,19 @@ type ApiResponse =
       status: "tracked";
       adoption_tier: "top10" | "top25" | "top50" | "top100" | null;
       polygraph: unknown;
+      polygraph_detail?: {
+        methodology_version?: string;
+        computed_at?: string;
+        evidence_url?: string | null;
+      } | null;
       notify_url: string;
     }
   | {
       status: "not_available";
       notify_url: string;
     };
+
+const GRADES = new Set(["A", "B", "D", "F"]);
 
 const TIER_LABEL: Record<string, string> = {
   top10: "top 10 adoption",
@@ -100,9 +107,21 @@ export async function runCheck(args: readonly string[]): Promise<number> {
     const tierLine = body.adoption_tier
       ? `→ tracked · ${TIER_LABEL[body.adoption_tier]}`
       : "→ tracked";
-    const polyLine = "→ polygraph: not yet available";
-    const notifyLine = `→ notify me → ${displayUrl}`;
-    process.stdout.write(`${tierLine}\n${polyLine}\n${notifyLine}\n`);
+
+    let polyLine = "→ polygraph: not yet available";
+    let extraLines = `→ notify me → ${displayUrl}`;
+    if (typeof body.polygraph === "string" && GRADES.has(body.polygraph)) {
+      const detail = body.polygraph_detail ?? null;
+      const method = detail?.methodology_version ?? "litmus-v2";
+      const date = detail?.computed_at ? detail.computed_at.slice(0, 10) : null;
+      polyLine = `→ polygraph: ${body.polygraph} · ${method}${date ? ` · ${date}` : ""}`;
+      const evidence = detail?.evidence_url;
+      extraLines = evidence
+        ? `→ evidence → ${evidence.replace(/^https?:\/\//, "")}`
+        : `→ updates → ${displayUrl}`;
+    }
+
+    process.stdout.write(`${tierLine}\n${polyLine}\n${extraLines}\n`);
     return 0;
   }
 
