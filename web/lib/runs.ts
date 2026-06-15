@@ -4,7 +4,7 @@
  * The hosted_runs table is the web ↔ infra contract; see
  * packages/core/supabase/migrations/20260611200000_hosted_runs.sql and
  * hosted-service-brief.md (strategy folder). Web owns: create → verify
- * payment → queue. The infra worker owns: claim → run litmus-v1 → write
+ * payment → queue. The infra worker owns: claim → run litmus → write
  * results.
  *
  * Independence rule, enforced by what's NOT here: there is no API to
@@ -154,7 +154,7 @@ export async function fetchRunForDisplay(
       c03: "pass",
       tool_defs_fingerprint:
         "0x4cb6aa00000000000000000000000000000000000000000000000000001ecd",
-      methodology_version: "litmus-v1",
+      methodology_version: "litmus-v2",
       rationale: "All three categories pass inside the sandbox.",
       failure_reason: null,
       ran_at: "2026-06-11T00:00:00Z",

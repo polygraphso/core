@@ -29,7 +29,7 @@ export async function generateMetadata({
       title: `${run.grade} · ${run.target}`,
       description:
         run.rationale ??
-        `litmus-v1 hosted run — grade ${run.grade}. Evidence and per-check results at this URL.`,
+        `${run.methodology_version ?? "litmus"} hosted run — grade ${run.grade}. Evidence and per-check results at this URL.`,
     };
   }
   return {

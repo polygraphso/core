@@ -5,7 +5,7 @@
  * Claims ONE queued run using the exact claim semantics the real worker
  * must use (single atomic claim; here via compare-and-set on status),
  * waits a few seconds to simulate the harness, and writes plausible
- * litmus-v1 results: remote_url targets get the honest B-cap shape,
+ * litmus results: remote_url targets get the honest B-cap shape,
  * registry_ref targets get a full-sandbox A.
  *
  * Usage (needs the service-role env, same as the web app):
@@ -76,7 +76,7 @@ async function main() {
   }
 
   console.log(`claimed ${claimed.id} → ${claimed.target} (${claimed.target_kind})`);
-  console.log("simulating litmus-v1 run (8s)…");
+  console.log("simulating litmus run (8s)…");
   await new Promise((r) => setTimeout(r, 8_000));
 
   if (simulateFailure) {
@@ -125,7 +125,7 @@ async function main() {
       c02,
       c03,
       tool_defs_fingerprint: fingerprint,
-      methodology_version: "litmus-v1",
+      methodology_version: "litmus-v2",
       rationale,
       evidence: {
         mock: true,

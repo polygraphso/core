@@ -52,7 +52,7 @@ const STATUS_LABEL: Record<RunStatus, string> = {
   created: "awaiting payment",
   paid: "paid",
   queued: "queued",
-  running: "running litmus-v1",
+  running: "running litmus",
   complete: "complete",
   failed: "failed",
 };
@@ -148,7 +148,7 @@ export function RunView({ runId }: { runId: string }) {
               : "Paid and queued."}
           </p>
           <p className="mt-2 text-ink-muted text-sm leading-relaxed">
-            litmus-v1 runs take minutes once started. This page updates
+            litmus runs take minutes once started. This page updates
             itself — and the report lives at this URL permanently, so it&rsquo;s
             safe to close and come back.
           </p>
@@ -382,7 +382,7 @@ function Report({ run }: { run: PublicRun }) {
     <div className="space-y-6">
       <div className="border hairline bg-parchment-50">
         <div className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-          <span>Report · {run.methodology_version ?? "litmus-v1"}</span>
+          <span>Report · {run.methodology_version ?? "litmus-v2"}</span>
           <span>{run.ran_at ? new Date(run.ran_at).toISOString().slice(0, 10) : ""}</span>
         </div>
         <div className="p-5 md:p-7 flex gap-6">
@@ -439,7 +439,7 @@ function Report({ run }: { run: PublicRun }) {
           href="/methodology"
           className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
         >
-          Read the litmus-v1 spec →
+          Read the litmus spec →
         </a>
       </p>
     </div>

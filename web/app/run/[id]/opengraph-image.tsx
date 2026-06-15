@@ -16,7 +16,7 @@ const STATUS_LABEL: Record<string, string> = {
   created: "awaiting payment",
   paid: "paid",
   queued: "queued",
-  running: "running litmus-v1",
+  running: "running litmus",
   complete: "complete",
   failed: "run failed",
 };
@@ -54,7 +54,7 @@ function Chrome({ children }: { children: React.ReactNode }) {
           />
           <span style={{ color: og.ink }}>polygraph.so</span>
         </div>
-        <span>hosted run · litmus-v1</span>
+        <span>hosted run · litmus</span>
       </div>
       {children}
       <div
@@ -209,7 +209,7 @@ export default async function Image({
               <div style={{ fontSize: 22, color: og.inkFaint, display: "flex" }}>
                 {run.tool_defs_fingerprint.slice(0, 10)}…
                 {run.tool_defs_fingerprint.slice(-4)} ·{" "}
-                {run.methodology_version ?? "litmus-v1"}
+                {run.methodology_version ?? "litmus-v2"}
                 {run.ran_at ? ` · ${run.ran_at.slice(0, 10)}` : ""}
               </div>
             )}
