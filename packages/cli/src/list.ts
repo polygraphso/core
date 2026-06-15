@@ -16,7 +16,10 @@ import { NETWORK_FAILURE_LINE, listUrl } from "./api.js";
 interface ListEntry {
   server_ref: string;
   adoption_tier: "top10" | "top25" | "top50" | "top100" | null;
-  polygraph: null | "pending" | "A" | "B" | "C" | "D" | "F";
+  polygraph: null | "pending" | "A" | "B" | "D" | "F";
+  // Surfaced in --json for tooling; the human table stays a tight overview
+  // (the per-server methodology version shows in `check`).
+  methodology_version?: string | null;
 }
 
 interface ListResponse {
