@@ -67,7 +67,7 @@ export function Hero() {
           <h1 className="font-serif text-[44px] leading-[1.04] tracking-tight md:text-[68px] md:leading-[1.04] text-ink">
             We polygraph
             <br />
-            AI agents so you
+            AI tools so you
             <br />
             <span className="relative inline-block">
               don&rsquo;t have to
@@ -96,10 +96,6 @@ export function Hero() {
             leak your data. We run those tools through an adversarial test
             and publish a letter grade &mdash; free to read, public, evidence
             attached.
-          </p>
-          <p className="mt-3 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
-            grades for MCP servers &middot; no graded party pays us &middot;
-            anyone can re-run the test
           </p>
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
