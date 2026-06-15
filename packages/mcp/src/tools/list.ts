@@ -23,7 +23,8 @@ export const LIST_TOOL_DESCRIPTION = [
   "Each entry includes:",
   "  - server_ref: the canonical registry-prefixed identifier",
   "  - adoption_tier: 'top10' | 'top25' | 'top50' | 'top100' | null",
-  "  - polygraph: null (no grade yet) | 'pending' | 'A' | 'B' | 'C' | 'D' | 'F'",
+  "  - polygraph: the published grade 'A' | 'B' | 'D' | 'F' (no C), or null",
+  "    if not graded yet",
   "",
   "Returns `{ servers: [...], total: number }`. No input parameters.",
 ].join("\n");
