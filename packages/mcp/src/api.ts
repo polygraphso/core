@@ -6,7 +6,7 @@
  *   2. Default — https://polygraph.so
  *
  * Endpoints (already shipped; see web/app/api/cli/):
- *   POST /api/cli/check  → { server_ref } → tracked | not_available
+ *   POST /api/cli/check  → { server_ref } → graded | not_available
  *   GET  /api/cli/list   → { servers, total }
  *
  * Network failures throw `PolygraphApiError` with a stable `kind` so the
@@ -35,13 +35,11 @@ export function apiBaseUrl(): string {
   return override.replace(/\/+$/, "");
 }
 
-export interface CheckResponseTracked {
-  status: "tracked";
-  adoption_tier: "top10" | "top25" | "top50" | "top100" | null;
-  // Published grade or null. The richer polygraph_detail (per-check
-  // results, fingerprint, methodology version) rides alongside when a
-  // grade exists; passed through to the caller verbatim.
-  polygraph: null | "A" | "B" | "C" | "D" | "F";
+export interface CheckResponseGraded {
+  status: "graded";
+  // The published grade. polygraph_detail carries the per-check results,
+  // fingerprint, and methodology version; passed through verbatim.
+  polygraph: "A" | "B" | "C" | "D" | "F";
   polygraph_detail?: unknown;
   notify_url: string;
 }
@@ -51,12 +49,11 @@ export interface CheckResponseNotAvailable {
   notify_url: string;
 }
 
-export type CheckResponse = CheckResponseTracked | CheckResponseNotAvailable;
+export type CheckResponse = CheckResponseGraded | CheckResponseNotAvailable;
 
 export interface ListEntry {
   server_ref: string;
-  adoption_tier: "top10" | "top25" | "top50" | "top100" | null;
-  polygraph: null | "A" | "B" | "C" | "D" | "F";
+  polygraph: "A" | "B" | "C" | "D" | "F";
 }
 
 export interface ListResponse {

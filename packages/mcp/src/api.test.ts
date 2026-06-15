@@ -32,11 +32,10 @@ describe("postCheck", () => {
     vi.unstubAllGlobals();
   });
 
-  it("returns the tracked payload on 200", async () => {
+  it("returns the graded payload on 200", async () => {
     const payload = {
-      status: "tracked" as const,
-      adoption_tier: "top10" as const,
-      polygraph: null,
+      status: "graded" as const,
+      polygraph: "A" as const,
       notify_url: "https://polygraph.so/notify?for=npm/lodash",
     };
     fetchMock.mockResolvedValueOnce({
@@ -125,8 +124,7 @@ describe("getList", () => {
       servers: [
         {
           server_ref: "npm/@modelcontextprotocol/server-filesystem",
-          adoption_tier: "top10" as const,
-          polygraph: null,
+          polygraph: "A" as const,
         },
       ],
       total: 1,
