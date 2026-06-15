@@ -14,14 +14,13 @@ describe("handleCheck", () => {
     vi.unstubAllGlobals();
   });
 
-  it("returns a JSON content block with the tracked payload", async () => {
+  it("returns a JSON content block with the graded payload", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
       json: async () => ({
-        status: "tracked",
-        adoption_tier: "top25",
-        polygraph: null,
+        status: "graded",
+        polygraph: "A",
         notify_url: "https://polygraph.so/notify?for=npm/lodash",
       }),
     } as Response);
@@ -31,8 +30,8 @@ describe("handleCheck", () => {
     expect(result.content).toHaveLength(1);
     expect(result.content[0]!.type).toBe("text");
     const body = JSON.parse(result.content[0]!.text);
-    expect(body.status).toBe("tracked");
-    expect(body.adoption_tier).toBe("top25");
+    expect(body.status).toBe("graded");
+    expect(body.polygraph).toBe("A");
     expect(result.structuredContent).toEqual(body);
   });
 
