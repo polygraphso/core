@@ -10,21 +10,18 @@ import { PolygraphApiError, getList } from "../api.js";
 
 export const LIST_TOOL_NAME = "list_servers";
 
-export const LIST_TOOL_TITLE = "List MCP servers tracked by polygraph";
+export const LIST_TOOL_TITLE = "List MCP servers graded by polygraph";
 
 export const LIST_TOOL_DESCRIPTION = [
-  "List every MCP server currently tracked by polygraph.so, sorted by",
-  "adoption tier (Top 10 → Top 25 → Top 50 → Top 100 → unranked).",
+  "List every MCP server polygraph.so has published a grade for, sorted by",
+  "grade (A first).",
   "",
-  "Use this tool to discover which servers polygraph has evaluated, to find",
-  "trustworthy options before recommending one, or to check whether a given",
-  "server is in the evaluation set without doing a per-server lookup.",
+  "Use this tool to discover which servers have been graded, or to find",
+  "well-graded options before recommending one.",
   "",
   "Each entry includes:",
   "  - server_ref: the canonical registry-prefixed identifier",
-  "  - adoption_tier: 'top10' | 'top25' | 'top50' | 'top100' | null",
-  "  - polygraph: the published grade 'A' | 'B' | 'D' | 'F' (no C), or null",
-  "    if not graded yet",
+  "  - polygraph: the published grade 'A' | 'B' | 'D' | 'F' (no C)",
   "",
   "Returns `{ servers: [...], total: number }`. No input parameters.",
 ].join("\n");
