@@ -193,7 +193,7 @@ export async function POST(request: Request) {
           tool_defs_fingerprint:
             (gradeRow.tool_defs_fingerprint as string | null) ?? null,
           methodology_version:
-            (gradeRow.methodology_version as string) ?? "litmus-v1",
+            (gradeRow.methodology_version as string) ?? "litmus-v2",
           rationale: (gradeRow.rationale as string | null) ?? null,
           evidence_url: (gradeRow.evidence_url as string | null) ?? null,
           computed_at: gradeRow.computed_at as string,

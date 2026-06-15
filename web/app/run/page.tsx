@@ -4,7 +4,7 @@ import { RunSubmitForm } from "./_components/RunSubmitForm";
 export const metadata: Metadata = {
   title: "Run a polygraph",
   description:
-    "Submit an MCP server and we run the litmus-v1 battery in our sandbox — grade, per-check evidence, and fingerprint at a permanent URL. Payment buys the run, never the grade.",
+    "Submit an MCP server and we run the litmus battery in our sandbox — grade, per-check evidence, and fingerprint at a permanent URL. Payment buys the run, never the grade.",
   alternates: { canonical: "/run" },
 };
 
@@ -33,13 +33,13 @@ export default function RunPage() {
 
       <div className="mx-auto max-w-3xl px-6 pt-14 pb-24 md:pt-20 md:pb-32">
         <header className="mb-10">
-          <p className="section-label mb-4">Hosted run · litmus-v1</p>
+          <p className="section-label mb-4">Hosted run · litmus</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             Run a polygraph.
           </h1>
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug">
             Don&rsquo;t want to run the harness yourself? Submit a server and
-            we run the full litmus-v1 battery in our sandbox &mdash; grade,
+            we run the full litmus battery in our sandbox &mdash; grade,
             per-check evidence, and fingerprint at a permanent URL.
           </p>
         </header>

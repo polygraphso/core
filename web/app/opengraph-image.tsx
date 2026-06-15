@@ -120,7 +120,7 @@ export default async function Image() {
             </span>
           </div>
           <span style={{ fontSize: 20, color: og.inkFaint, letterSpacing: 2 }}>
-            litmus-v1
+            litmus-v2
           </span>
         </div>
       </div>

@@ -112,7 +112,7 @@ export async function runCheck(args: readonly string[]): Promise<number> {
     let extraLines = `→ notify me → ${displayUrl}`;
     if (typeof body.polygraph === "string" && GRADES.has(body.polygraph)) {
       const detail = body.polygraph_detail ?? null;
-      const method = detail?.methodology_version ?? "litmus-v1";
+      const method = detail?.methodology_version ?? "litmus-v2";
       const date = detail?.computed_at ? detail.computed_at.slice(0, 10) : null;
       polyLine = `→ polygraph: ${body.polygraph} · ${method}${date ? ` · ${date}` : ""}`;
       const evidence = detail?.evidence_url;
