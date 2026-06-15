@@ -14,6 +14,8 @@ export type Run = {
   grade: LitmusGrade;
   rows: Array<[string, string]>;
   rationale: string;
+  /** The methodology version this grade was produced under (e.g. "litmus-v2"). */
+  methodologyVersion: string;
 };
 
 export interface HostedRunRow {
@@ -51,6 +53,8 @@ interface EvidenceBundle {
   target: TargetDescriptor;
   toolDefsFingerprint: string;
   categories: CategoryResult[];
+  /** The methodology version the grade was produced under (e.g. "litmus-v2"). */
+  methodologyVersion: string;
 }
 
 type StoredEvidence = EvidenceBundle & { displayLabel?: string };
@@ -144,5 +148,6 @@ export function rowToRun(row: HostedRunRow): Run {
     grade: row.grade,
     rows: bundleToRows(bundle),
     rationale: row.rationale,
+    methodologyVersion: bundle.methodologyVersion,
   };
 }
