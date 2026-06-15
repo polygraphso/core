@@ -181,7 +181,7 @@ pypi/mcp-server-fetch`}
           <p className="text-sm">
             <span className="text-ink-faint">Note · </span>
             <Inline>polygraph</Inline> is <Inline>null</Inline> on every
-            tracked server today. Published litmus-v1 grades are rolling out;
+            tracked server today. Published litmus-v2 grades are rolling out;
             until a server&rsquo;s grade lands, adoption tier is the live
             signal.{" "}
             <Inline>adoption_tier</Inline> is one of{" "}
