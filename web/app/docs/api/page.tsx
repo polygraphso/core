@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "API",
   description:
-    "Public HTTP endpoints behind the polygraphso CLI. POST /api/cli/check looks up a server; GET /api/cli/list returns every tracked server with its adoption tier and polygraph.",
+    "Public HTTP endpoints behind the polygraphso CLI. POST /api/cli/check looks up a server's polygraph grade; GET /api/cli/list returns every graded server.",
   alternates: { canonical: "/docs/api" },
 };
 
@@ -66,23 +66,6 @@ function Method({ verb, path }: { verb: string; path: string }) {
 export default function ApiDocsPage() {
   return (
     <main className="flex-1">
-      <div className="border-b hairline">
-        <div className="mx-auto max-w-6xl px-6 py-3 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
-          <a href="/" className="flex items-center gap-3 hover:text-ink transition-colors">
-            <span aria-hidden className="inline-block w-1.5 h-1.5 bg-oxblood" />
-            <span className="text-ink">polygraph.so</span>
-          </a>
-          <nav className="hidden sm:flex items-center gap-5">
-            <a href="/" className="hover:text-ink transition-colors">
-              Home
-            </a>
-            <a href="/methodology" className="hover:text-ink transition-colors">
-              Methodology
-            </a>
-          </nav>
-        </div>
-      </div>
-
       <article className="mx-auto max-w-3xl px-6 pt-14 pb-24 md:pt-20 md:pb-32">
         <header className="mb-14">
           <p className="section-label mb-4">Docs · API · v0</p>
@@ -138,7 +121,7 @@ export default function ApiDocsPage() {
 pypi/<name>@<version>             flat — no owner segment
 github/<owner>/<repo>@<version>   owner required`}
           </Code>
-          <p>Real examples from the tracked set:</p>
+          <p>Real examples:</p>
           <Code>
 {`npm/@modelcontextprotocol/server-filesystem
 npm/@notionhq/notion-mcp-server
@@ -146,18 +129,17 @@ pypi/mcp-server-git
 pypi/mcp-server-fetch`}
           </Code>
           <p>
-            The version segment is optional. Server lookups are versionless —{" "}
+            The version segment is optional. Lookups are versionless —{" "}
             <Inline>1.0.0</Inline> and <Inline>1.0.1</Inline> of the same
-            package resolve to the same server record. Adoption tier and
-            polygraph are reported for the latest tracked version.
+            package resolve to the same grade.
           </p>
         </Section>
 
         <Section num="03" label="Check a server" id="check">
           <Method verb="POST" path="/api/cli/check" />
           <p>
-            Looks up one server. Returns its adoption tier and polygraph if we
-            track it, or a notify URL if we don't.
+            Looks up one server&rsquo;s published polygraph grade, or a notify
+            URL if it hasn&rsquo;t been graded yet.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">Request</h3>
@@ -168,30 +150,42 @@ pypi/mcp-server-fetch`}
           </Code>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">
-            Response · tracked
+            Response · graded
           </h3>
           <Code>
 {`{
-  "status": "tracked",
-  "adoption_tier": "top10",
-  "polygraph": null,
+  "status": "graded",
+  "polygraph": "A",
+  "polygraph_detail": {
+    "grade": "A",
+    "c01": "pass",
+    "c02": "pass",
+    "c03": "pass",
+    "tool_defs_fingerprint": "0x256a…66db6",
+    "methodology_version": "litmus-v2",
+    "rationale": "All three categories passed.",
+    "computed_at": "2026-06-11T14:14:04Z"
+  },
   "notify_url": "${NOTIFY_URL}"
 }`}
           </Code>
           <p className="text-sm">
             <span className="text-ink-faint">Note · </span>
-            <Inline>polygraph</Inline> is <Inline>null</Inline> on every
-            tracked server today. Published litmus-v2 grades are rolling out;
-            until a server&rsquo;s grade lands, adoption tier is the live
-            signal.{" "}
-            <Inline>adoption_tier</Inline> is one of{" "}
-            <Inline>top10</Inline>, <Inline>top25</Inline>,{" "}
-            <Inline>top50</Inline>, <Inline>top100</Inline>, or{" "}
-            <Inline>null</Inline> (tracked but unranked).
+            <Inline>polygraph</Inline> is one of <Inline>"A"</Inline>,{" "}
+            <Inline>"B"</Inline>, <Inline>"D"</Inline>, <Inline>"F"</Inline>{" "}
+            (there is no C — see the{" "}
+            <a
+              href="/methodology"
+              className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
+            >
+              rubric
+            </a>
+            ). <Inline>polygraph_detail</Inline> carries the per-check results,
+            tool-surface fingerprint, and methodology version.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">
-            Response · not tracked
+            Response · not graded
           </h3>
           <Code>
 {`{
@@ -200,9 +194,9 @@ pypi/mcp-server-fetch`}
 }`}
           </Code>
           <p className="text-sm">
-            A miss bumps an anonymous counter so we can see which untracked
-            servers are most in demand. No request body is logged beyond the
-            ref itself.
+            A miss bumps an anonymous demand counter so we can see which
+            ungraded servers are most in demand. No request body is logged
+            beyond the ref itself.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">curl</h3>
@@ -225,13 +219,13 @@ pypi/mcp-server-fetch`}
           </ul>
         </Section>
 
-        <Section num="04" label="List every tracked server" id="list">
+        <Section num="04" label="List graded servers" id="list">
           <Method verb="GET" path="/api/cli/list" />
           <p>
-            Returns every server we currently track, sorted by adoption tier
-            (top10 first), then alphabetically within tier. No pagination in
-            v0 — the tracked set is small and the payload is well under a
-            megabyte. We'll add pagination here if the list grows past that.
+            Returns every server with a published polygraph grade, sorted by
+            grade (A first), then alphabetically. No pagination in v0 — the
+            graded set is small and the payload is well under a megabyte. We'll
+            add pagination here if it grows past that.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">
@@ -242,31 +236,28 @@ pypi/mcp-server-fetch`}
   "servers": [
     {
       "server_ref": "npm/@modelcontextprotocol/server-filesystem",
-      "adoption_tier": "top10",
-      "polygraph": null
+      "polygraph": "A"
     },
     {
-      "server_ref": "pypi/mcp-server-git",
-      "adoption_tier": "top25",
-      "polygraph": null
+      "server_ref": "npm/@upstash/context7-mcp",
+      "polygraph": "D"
     }
   ],
-  "total": 78
+  "total": 6
 }`}
           </Code>
           <p className="text-sm">
-            <Inline>polygraph</Inline> is <Inline>null</Inline> today on every
-            row. As published grades roll out, it becomes one of{" "}
-            <Inline>"A"</Inline>, <Inline>"B"</Inline>, <Inline>"D"</Inline>,{" "}
-            <Inline>"F"</Inline> (there is no C — see the{" "}
+            <Inline>polygraph</Inline> is one of <Inline>"A"</Inline>,{" "}
+            <Inline>"B"</Inline>, <Inline>"D"</Inline>, <Inline>"F"</Inline>{" "}
+            (there is no C — see the{" "}
             <a
               href="/methodology"
               className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
             >
               rubric
             </a>
-            ), or the sentinel <Inline>"pending"</Inline> while a run is
-            scheduled.
+            ). Only graded servers appear; check a specific ungraded server
+            with <Inline>/api/cli/check</Inline>.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">curl</h3>

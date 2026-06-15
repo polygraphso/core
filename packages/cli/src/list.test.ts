@@ -12,23 +12,21 @@ describe("chooseRefWidth", () => {
 
   it("caps at the MAX_WIDTH (100) budget on very wide terminals", () => {
     const huge = "npm/" + "x".repeat(120);
-    // fixedTail = 4 + 8 + 4 + 9 = 25; cap = 100 - 25 = 75
-    expect(chooseRefWidth([huge], 200)).toBe(75);
+    // fixedTail = GAP(4) + POLY_COL_WIDTH(5) = 9; cap = 100 - 9 = 91
+    expect(chooseRefWidth([huge], 200)).toBe(91);
   });
 
   it("respects narrow terminals (80 cols)", () => {
     const longest = "npm/@modelcontextprotocol/server-filesystem";
     const refs = [longest, "npm/lodash"];
-    // fixedTail = 25; cap = 80 - 25 = 55. longest fits, so we pick its length.
+    // fixedTail = 9; cap = 80 - 9 = 71. longest (43) fits, so pick its length.
     expect(chooseRefWidth(refs, 80)).toBe(longest.length);
   });
 
   it("never goes below the MIN_REF_WIDTH floor on very narrow terminals", () => {
     const refs = ["npm/x"];
-    // Terminal is 30 cols, fixedTail = 25, so naive cap would be 5,
-    // but the floor is 30. Pick 5 (since longest is shorter), but cap
-    // is still computed via floor: max(30, min(30, 100) - 25) = 30.
-    // longest = 5, so result is min(5, 30) = 5.
+    // Terminal 30 cols, fixedTail = 9 → cap = max(30, min(30,100) - 9) = 30
+    // (MIN_REF_WIDTH floor). longest = 5, so result is min(5, 30) = 5.
     expect(chooseRefWidth(refs, 30)).toBe(5);
   });
 });

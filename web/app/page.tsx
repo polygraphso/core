@@ -5,7 +5,6 @@ import { ChecksSoFar } from "./_components/ChecksSoFar";
 import { Timeline } from "./_components/Timeline";
 import { TokenNote } from "./_components/TokenNote";
 import { GradesUpdates } from "./_components/GradesUpdates";
-import { Footer } from "./_components/Footer";
 
 export default function Home() {
   return (
@@ -17,7 +16,6 @@ export default function Home() {
       <Timeline />
       <TokenNote />
       <GradesUpdates />
-      <Footer />
     </main>
   );
 }
