@@ -6,7 +6,7 @@ type Probe = {
   name: string; // spec name, demoted to the mono subtitle
   body: string;
   probeIds: string[]; // refs to litmus-test-v1.md
-  status: "v1" | "v2";
+  state: "live" | "deferred"; // shipped in the current methodology, or deferred
 };
 
 // Source of truth: litmus-test-v1.md.
@@ -20,7 +20,7 @@ const probes: Probe[] = [
     name: "tool-output injection",
     body: "We bait it with inputs designed to make it slip commands into its output, then scan for hijack attempts — lookalike instructions, hidden text, markdown tricks.",
     probeIds: ["1.1", "1.2"],
-    status: "v1",
+    state: "live",
   },
   {
     code: "C-02",
@@ -28,7 +28,7 @@ const probes: Probe[] = [
     name: "permission overreach",
     body: "We run local tools in a sandbox that blocks all network traffic by default, then flag any call they try to make anyway. Remote servers can't be sandboxed — there this check is marked skipped, never assumed. We also flag a tool that labels itself read-only while its name plainly mutates — a permission lie your agent would otherwise trust.",
     probeIds: ["2.1", "2.2"],
-    status: "v1",
+    state: "live",
   },
   {
     code: "C-03",
@@ -36,7 +36,7 @@ const probes: Probe[] = [
     name: "sensitive-data handling",
     body: "We plant fake secrets — keys, personal details — and watch every path out of the sandbox to see if they leave, including the tool's own replies to the agent.",
     probeIds: ["4.1", "4.2"],
-    status: "v1",
+    state: "live",
   },
   {
     code: "C-04",
@@ -44,7 +44,7 @@ const probes: Probe[] = [
     name: "adversarial input handling",
     body: "Malformed inputs, oversized payloads, known jailbreak patterns. Deferred to v2 — the deterministic checks ship first.",
     probeIds: [],
-    status: "v2",
+    state: "deferred",
   },
 ];
 
@@ -105,12 +105,12 @@ export function HowWeTest() {
 
       <ol className="border-t hairline">
         {probes.map((p) => {
-          const isV2 = p.status === "v2";
+          const isDeferred = p.state === "deferred";
           return (
             <li
               key={p.code}
               className={`grid md:grid-cols-12 gap-6 md:gap-10 border-b hairline py-7 ${
-                isV2 ? "opacity-70" : ""
+                isDeferred ? "opacity-70" : ""
               }`}
             >
               <div className="md:col-span-2 flex md:flex-col items-baseline md:items-start justify-between md:justify-start gap-2">
@@ -119,10 +119,10 @@ export function HowWeTest() {
                 </span>
                 <span
                   className={`font-mono text-[11px] uppercase tracking-[0.18em] ${
-                    isV2 ? "text-ink-faint" : "text-grade-a"
+                    isDeferred ? "text-ink-faint" : "text-grade-a"
                   }`}
                 >
-                  {isV2 ? "deferred" : "litmus-v2 · live"}
+                  {isDeferred ? "deferred" : "litmus-v2 · live"}
                 </span>
               </div>
               <div className="md:col-span-4">
