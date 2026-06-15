@@ -17,13 +17,16 @@
 import type { AdoptionTier } from "@/lib/identity";
 import { getSupabaseAdmin } from "@/lib/supabase";
 
-type PolygraphGrade = "A" | "B" | "C" | "D" | "F";
+// litmus rubric is A/B/D/F — C is reserved (nothing maps to it), no E.
+type PolygraphGrade = "A" | "B" | "D" | "F";
 
 interface ListEntry {
   server_ref: string;
   adoption_tier: AdoptionTier | null;
-  /** null = no polygraph yet (v0 default); 'pending' = run scheduled; A–F = result. */
+  /** null = no polygraph yet; 'pending' = run scheduled; A/B/D/F = result. */
   polygraph: null | "pending" | PolygraphGrade;
+  /** methodology version the grade was produced under (e.g. "litmus-v2"); null when no grade. */
+  methodology_version: string | null;
 }
 
 interface ListResponse {
@@ -96,11 +99,14 @@ export async function GET() {
   // behavioral_grades is empty in v0 — keep the query so the shape is
   // forward-compatible. If/when grades land, the CLI's "pending" rendering
   // becomes "A"/"B"/etc.
-  const gradeByVersion = new Map<string, PolygraphGrade>();
+  const gradeByVersion = new Map<
+    string,
+    { grade: PolygraphGrade; methodology_version: string }
+  >();
   if (versionIds.length > 0) {
     const { data: grades, error: gradesErr } = await supabase
       .from("behavioral_grades")
-      .select("version_id, grade, computed_at")
+      .select("version_id, grade, methodology_version, computed_at")
       .in("version_id", versionIds)
       .order("computed_at", { ascending: false });
     // Don't 500 the whole endpoint if behavioral_grades doesn't exist yet
@@ -112,8 +118,11 @@ export async function GET() {
         const vid = row.version_id as string;
         if (gradeByVersion.has(vid)) continue;
         const g = row.grade as string | null;
-        if (g === "A" || g === "B" || g === "C" || g === "D" || g === "F") {
-          gradeByVersion.set(vid, g);
+        if (g === "A" || g === "B" || g === "D" || g === "F") {
+          gradeByVersion.set(vid, {
+            grade: g,
+            methodology_version: (row.methodology_version as string | null) ?? "litmus-v2",
+          });
         }
       }
     }
@@ -125,13 +134,12 @@ export async function GET() {
     const name = s.name as string;
     const vid = s.latest_version_id as string | null;
     const adoption_tier = vid ? tierByVersion.get(vid) ?? null : null;
-    const polygraph: ListEntry["polygraph"] = vid
-      ? gradeByVersion.get(vid) ?? null
-      : null;
+    const graded = vid ? gradeByVersion.get(vid) ?? null : null;
     return {
       server_ref: serverRefOf(registry, owner, name),
       adoption_tier,
-      polygraph,
+      polygraph: graded?.grade ?? null,
+      methodology_version: graded?.methodology_version ?? null,
     };
   });
 
