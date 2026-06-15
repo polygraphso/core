@@ -66,23 +66,6 @@ function Method({ verb, path }: { verb: string; path: string }) {
 export default function ApiDocsPage() {
   return (
     <main className="flex-1">
-      <div className="border-b hairline">
-        <div className="mx-auto max-w-6xl px-6 py-3 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
-          <a href="/" className="flex items-center gap-3 hover:text-ink transition-colors">
-            <span aria-hidden className="inline-block w-1.5 h-1.5 bg-oxblood" />
-            <span className="text-ink">polygraph.so</span>
-          </a>
-          <nav className="hidden sm:flex items-center gap-5">
-            <a href="/" className="hover:text-ink transition-colors">
-              Home
-            </a>
-            <a href="/methodology" className="hover:text-ink transition-colors">
-              Methodology
-            </a>
-          </nav>
-        </div>
-      </div>
-
       <article className="mx-auto max-w-3xl px-6 pt-14 pb-24 md:pt-20 md:pb-32">
         <header className="mb-14">
           <p className="section-label mb-4">Docs · API · v0</p>
@@ -146,10 +129,9 @@ pypi/mcp-server-git
 pypi/mcp-server-fetch`}
           </Code>
           <p>
-            The version segment is optional. Server lookups are versionless —{" "}
+            The version segment is optional. Lookups are versionless —{" "}
             <Inline>1.0.0</Inline> and <Inline>1.0.1</Inline> of the same
-            package resolve to the same server record. Adoption tier and
-            polygraph are reported for the latest tracked version.
+            package resolve to the same grade.
           </p>
         </Section>
 

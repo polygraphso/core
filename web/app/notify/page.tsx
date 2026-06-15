@@ -46,27 +46,6 @@ export default async function NotifyPage({
 
   return (
     <main className="flex-1">
-      {/* Compact nav — same chrome as the landing hero */}
-      <div className="border-b hairline">
-        <div className="mx-auto max-w-6xl px-6 py-3 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
-          <Link href="/" className="flex items-center gap-3 hover:text-ink transition-colors">
-            <span
-              className="inline-block w-1.5 h-1.5 bg-oxblood pulse-soft"
-              aria-hidden
-            />
-            <span className="text-ink">polygraph.so</span>
-          </Link>
-          <nav className="hidden sm:flex items-center gap-5">
-            <Link href="/#install" className="hover:text-ink transition-colors">
-              Install
-            </Link>
-            <Link href="/#how-we-test" className="hover:text-ink transition-colors">
-              Methodology
-            </Link>
-          </nav>
-        </div>
-      </div>
-
       <section className="mx-auto max-w-3xl px-6 pt-20 pb-24 md:pt-24 md:pb-32">
         <div className="border-t hairline pt-6 mb-10">
           <div className="flex items-baseline gap-4">
