@@ -97,6 +97,7 @@ export async function GET() {
   // empty map so the list still returns the catalog + adoption tiers.
   const gradeByRef = await fetchPublishedGradeMap(supabase);
 
+  const seen = new Set<string>();
   const entries: ListEntry[] = servers.map((s) => {
     const registry = s.registry as string;
     const owner = s.owner as string | null;
@@ -104,12 +105,21 @@ export async function GET() {
     const vid = s.latest_version_id as string | null;
     const adoption_tier = vid ? tierByVersion.get(vid) ?? null : null;
     const server_ref = serverRefOf(registry, owner, name);
+    seen.add(server_ref);
     return {
       server_ref,
       adoption_tier,
       polygraph: gradeByRef.get(server_ref) ?? null,
     };
   });
+
+  // Graded but not in the adoption catalog (e.g. requested + graded ahead
+  // of the scoring seed). Surface them so `list` matches the website,
+  // which lists every published run. Adoption tier is null for these.
+  for (const [server_ref, grade] of gradeByRef) {
+    if (seen.has(server_ref)) continue;
+    entries.push({ server_ref, adoption_tier: null, polygraph: grade });
+  }
 
   entries.sort((a, b) => {
     const r = tierRank(a.adoption_tier) - tierRank(b.adoption_tier);

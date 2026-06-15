@@ -108,8 +108,15 @@ export async function POST(request: Request) {
     return Response.json({ error: "Lookup failed." }, { status: 500 });
   }
 
-  if (!server) {
-    // Untracked — bump the counter and return the notify URL.
+  // Published grade from hosted_runs (same source the website reads) — a
+  // server can be graded without being in the adoption `servers` catalog
+  // (e.g. requested + graded but not yet in the scoring seed), so this is
+  // looked up independently of the catalog membership.
+  const published = await fetchPublishedGrade(supabase, refKey);
+
+  // Untracked AND ungraded → genuinely no data. Bump demand, return the
+  // notify outlet. (A grade alone is enough to count as tracked.)
+  if (!server && !published) {
     const { error: bumpErr } = await supabase.rpc("bump_untracked_demand", {
       p_server_ref: refKey,
     });
@@ -125,10 +132,10 @@ export async function POST(request: Request) {
     return Response.json(body);
   }
 
-  // Tracked. Pull the latest adoption_scores row (one per scoring run; the
-  // most recent computed_at wins).
+  // Adoption tier, when the server is in the catalog. Latest scoring run
+  // wins (most recent computed_at). Null when graded-but-uncatalogued.
   let tier: AdoptionTier | null = null;
-  if (server.latest_version_id) {
+  if (server?.latest_version_id) {
     const { data: score, error: scoreErr } = await supabase
       .from("adoption_scores")
       .select("tier")
@@ -144,10 +151,6 @@ export async function POST(request: Request) {
       tier = score.tier as AdoptionTier;
     }
   }
-
-  // Latest published grade from hosted_runs (same source the website
-  // reads). Null until a registry run for this ref is published.
-  const published = await fetchPublishedGrade(supabase, refKey);
 
   const body2: TrackedResponse = {
     status: "tracked",
