@@ -49,6 +49,12 @@ export function Hero() {
               Checks
             </a>
             <a
+              href="/request"
+              className="hover:text-ink transition-colors"
+            >
+              Request
+            </a>
+            <a
               href="/methodology"
               className="hover:text-ink transition-colors"
             >

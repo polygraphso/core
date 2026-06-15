@@ -99,14 +99,21 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
           )}
 
           <p className="mt-4 font-mono text-[11px] text-ink-faint leading-relaxed">
-            Public registry servers are next on the bench.{" "}
+            Want a specific server graded?{" "}
+            <a
+              href="/request"
+              className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+            >
+              Add it to the queue
+            </a>{" "}
+            &mdash; free. Or{" "}
             <a
               href="#updates"
               className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
             >
-              Subscribe below
+              subscribe below
             </a>{" "}
-            &mdash; one email per publishing drop, nothing else.
+            for one email per publishing drop.
           </p>
         </div>
       </div>
