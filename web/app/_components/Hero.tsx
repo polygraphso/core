@@ -25,39 +25,6 @@ const BEATS: Array<[string, string, string]> = [
 export function Hero() {
   return (
     <section className="relative">
-      {/* Minimal product nav — preprint framing retired per landing-brief v1 */}
-      <div className="border-b hairline">
-        <div className="mx-auto max-w-6xl px-6 py-3 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
-          <div className="flex items-center gap-3">
-            <span
-              className="inline-block w-1.5 h-1.5 bg-oxblood pulse-soft"
-              aria-hidden
-            />
-            <span className="text-ink">polygraph.so</span>
-          </div>
-          <nav className="hidden sm:flex items-center gap-5">
-            <a
-              href="#install"
-              className="hover:text-ink transition-colors"
-            >
-              Install
-            </a>
-            <a
-              href="#checks"
-              className="hover:text-ink transition-colors"
-            >
-              Checks
-            </a>
-            <a
-              href="/methodology"
-              className="hover:text-ink transition-colors"
-            >
-              Methodology
-            </a>
-          </nav>
-        </div>
-      </div>
-
       <div className="mx-auto max-w-6xl px-6 pt-16 pb-24 md:pt-24 md:pb-32 grid md:grid-cols-12 gap-10 md:gap-16">
         <div className="md:col-span-7 fade-up">
           <p className="font-serif italic text-ink-muted text-xl md:text-2xl mb-7 max-w-xl leading-snug">

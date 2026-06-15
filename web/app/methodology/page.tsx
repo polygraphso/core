@@ -56,26 +56,6 @@ function SubHead({ children }: { children: React.ReactNode }) {
 export default function MethodologyPage() {
   return (
     <main className="flex-1">
-      <div className="border-b hairline">
-        <div className="mx-auto max-w-6xl px-6 py-3 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
-          <a
-            href="/"
-            className="flex items-center gap-3 hover:text-ink transition-colors"
-          >
-            <span aria-hidden className="inline-block w-1.5 h-1.5 bg-oxblood" />
-            <span className="text-ink">polygraph.so</span>
-          </a>
-          <nav className="hidden sm:flex items-center gap-5">
-            <a href="/" className="hover:text-ink transition-colors">
-              Home
-            </a>
-            <a href="/docs/api" className="hover:text-ink transition-colors">
-              API
-            </a>
-          </nav>
-        </div>
-      </div>
-
       <article className="mx-auto max-w-3xl px-6 pt-14 pb-24 md:pt-20 md:pb-32">
         <header className="mb-14">
           <p className="section-label mb-4">
@@ -107,9 +87,8 @@ export default function MethodologyPage() {
           </p>
           <p>
             It does not measure popularity, code quality, maintenance, or
-            licensing — those live on a separate adoption axis, never averaged
-            in. The litmus grade is the behavioral half of a server&rsquo;s
-            polygraph.
+            licensing — this is a behavioral grade, not a quality or
+            popularity score.
           </p>
           <SubHead>What a passing grade does — and does not — claim</SubHead>
           <p>
