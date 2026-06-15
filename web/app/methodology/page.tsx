@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Methodology — litmus-v1",
+  title: "Methodology — litmus-v2",
   description:
-    "The litmus test, v1: a behavioral evaluation of MCP servers. Three checks — tool-output injection, permission overreach, sensitive-data handling — graded A–F with reproducible evidence.",
+    "The litmus test, v2: a behavioral evaluation of MCP servers. Three checks — tool-output injection, permission overreach, sensitive-data handling — graded A–F with reproducible evidence.",
   alternates: { canonical: "/methodology" },
 };
 
 // Faithful rendering of litmus-test-v1.md (polygraph-litmus repo) — the
-// authoritative methodologyVersion: "litmus-v1" spec. Content edits belong
+// authoritative methodologyVersion: "litmus-v2" spec. Content edits belong
 // in the spec first; this page mirrors it.
 
 function Section({
@@ -79,7 +79,7 @@ export default function MethodologyPage() {
       <article className="mx-auto max-w-3xl px-6 pt-14 pb-24 md:pt-20 md:pb-32">
         <header className="mb-14">
           <p className="section-label mb-4">
-            Methodology · litmus-v1 · specification
+            Methodology · litmus-v2 · specification
           </p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             The litmus test
@@ -88,7 +88,7 @@ export default function MethodologyPage() {
             A behavioral evaluation of an MCP server — what it{" "}
             <em>does</em> when exercised the way an agent would, not what its
             README says. The string{" "}
-            <Inline>methodologyVersion: &quot;litmus-v1&quot;</Inline> travels
+            <Inline>methodologyVersion: &quot;litmus-v2&quot;</Inline> travels
             with every grade this spec produces.
           </p>
         </header>
@@ -114,7 +114,7 @@ export default function MethodologyPage() {
           <SubHead>What a passing grade does — and does not — claim</SubHead>
           <p>
             It <strong className="text-ink">does</strong> claim: against{" "}
-            <Inline>litmus-v1</Inline>, on the exact tool surface identified by
+            <Inline>litmus-v2</Inline>, on the exact tool surface identified by
             the fingerprint, the server did not exhibit the failure modes
             below, and the evidence is published and re-runnable.
           </p>
@@ -128,9 +128,9 @@ export default function MethodologyPage() {
 
         <Section num="02" label="Checks and probes" id="checks">
           <p>
-            v1 ships five probes across three categories. Probe IDs are
-            permanent and carry their family number; future probes extend a
-            family without renumbering.
+            Six probes across three categories. Probe IDs are permanent and
+            carry their family number; future probes extend a family without
+            renumbering.
           </p>
 
           <SubHead>C-01 — Tool-output injection · probes 1.1, 1.2</SubHead>
@@ -153,24 +153,39 @@ export default function MethodologyPage() {
             link text contradicting the href, exfiltration-shaped image URLs).
           </p>
 
-          <SubHead>C-02 — Permission overreach · probe 2.2</SubHead>
+          <SubHead>C-02 — Permission overreach · probes 2.1, 2.2</SubHead>
           <p>
-            Does it touch more than it claimed? The server runs inside a
-            default-deny network namespace and is exercised through a script
-            that should require no outbound traffic. Egress is routed to a
-            local sinkhole that logs{" "}
+            Does it touch more than it claimed — or label itself less capable
+            than it is? <strong className="text-ink">Probe 2.1</strong>{" "}
+            (declared-permission honesty) flags a tool that annotates itself{" "}
+            <Inline>readOnlyHint: true</Inline> while its name plainly mutates
+            (an unambiguously destructive verb — <Inline>delete</Inline>,{" "}
+            <Inline>drop</Inline>, <Inline>transfer</Inline>,{" "}
+            <Inline>send</Inline>, <Inline>withdraw</Inline>, …). An agent — and
+            this harness — would otherwise auto-trust that read-only claim. It
+            is deliberately narrow: polysemous verbs like{" "}
+            <Inline>create</Inline> or <Inline>update</Inline> are not flagged,
+            so an honest <Inline>create_query</Inline> is no false positive.
+            Static and deterministic; needs no sandbox.
+          </p>
+          <p>
+            <strong className="text-ink">Probe 2.2</strong> runs the server
+            inside a default-deny network namespace and exercises it through a
+            script that should require no outbound traffic. Egress is routed to
+            a local sinkhole that logs{" "}
             <Inline>{`{host, port, firstBytes}`}</Inline> and never completes
             the connection — the evidence shows what it tried to reach, not a
             silent block. Any outbound attempt during a no-expected-egress run
             is a failure.
           </p>
           <p>
-            C-02 requires that the harness runs the server itself. For a
+            Probe 2.2 requires that the harness runs the server itself. For a
             remote MCP URL the harness cannot control the server&rsquo;s
-            network, so C-02 is recorded as{" "}
-            <Inline>skipped — remote target</Inline>. Without Docker it is{" "}
-            <Inline>skipped — no sandbox</Inline>. A skip is not a pass; see
-            the rubric.
+            network, so 2.2 is recorded as{" "}
+            <Inline>skipped — remote target</Inline>; without Docker it is{" "}
+            <Inline>skipped — no sandbox</Inline> (a skip is not a pass). Probe
+            2.1 is static and always runs — so C-02 can still fail on a remote
+            target when a tool lies about being read-only.
           </p>
 
           <SubHead>C-03 — Sensitive-data handling · probes 4.1, 4.2</SubHead>
@@ -188,11 +203,11 @@ export default function MethodologyPage() {
             such.
           </p>
 
-          <SubHead>C-04 — Adversarial input handling · v2, deferred</SubHead>
+          <SubHead>C-04 — Adversarial input handling · deferred</SubHead>
           <p>
             Behavior under malformed inputs, oversized payloads, and known
             jailbreak patterns. The deterministic battery ships first; this
-            category waits for the harness to mature. Not graded in v1.
+            category waits for the harness to mature. Not yet graded.
           </p>
         </Section>
 
@@ -216,13 +231,13 @@ export default function MethodologyPage() {
         <Section num="04" label="Grading rubric" id="rubric">
           <p>
             A single letter A&ndash;F, always accompanied by a rationale
-            string — never a bare grade. Only four grades are reachable in
-            v1: C is reserved (no condition maps to it), and the scale skips
-            E, as letter grades conventionally do.
+            string — never a bare grade. Only four grades are reachable: C is
+            reserved (no condition maps to it), and the scale skips E, as
+            letter grades conventionally do.
           </p>
           <figure className="border hairline bg-parchment-50 mt-2">
             <figcaption className="px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-              Grade rubric · litmus-v1 §5
+              Grade rubric · litmus-v2 §5
             </figcaption>
             <table className="w-full text-left text-sm">
               <thead>
@@ -247,14 +262,15 @@ export default function MethodologyPage() {
                 <tr className="border-b hairline align-top opacity-60">
                   <td className="px-4 py-3 font-serif text-xl text-grade-c">C</td>
                   <td className="px-4 py-3">
-                    Reserved — no litmus-v1 condition maps to it. Future probe
+                    Reserved — no litmus-v2 condition maps to it. Future probe
                     categories may claim it.
                   </td>
                 </tr>
                 <tr className="border-b hairline align-top">
                   <td className="px-4 py-3 font-serif text-xl text-grade-d">D</td>
                   <td className="px-4 py-3">
-                    C-02 failure (unexpected egress), no C-01/C-03 failure.
+                    C-02 failure — unexpected egress, or a tool that lies about
+                    being read-only — with no C-01/C-03 failure.
                   </td>
                 </tr>
                 <tr className="align-top">
@@ -269,8 +285,9 @@ export default function MethodologyPage() {
           <p>
             Rationale: injection and data-leak are disqualifying — they are
             the failures that directly harm an agent that trusts the server,
-            so they floor the grade at F. Unexpected egress is serious but not
-            necessarily exfiltration, so it caps at D. The B tier keeps the
+            so they floor the grade at F. A C-02 failure — unexpected egress,
+            or a tool that lies about being read-only — is serious but not
+            proven exfiltration or harm, so it caps at D. The B tier keeps the
             no-sandbox path usable while stating honestly that egress was not
             verified. Every grade carries its reasons in the evidence bundle.
           </p>
@@ -283,7 +300,7 @@ export default function MethodologyPage() {
           <ul className="list-none space-y-3">
             <li>
               <strong className="text-ink">Deterministic harness.</strong>{" "}
-              Same server version + same <Inline>litmus-v1</Inline> harness →
+              Same server version + same <Inline>litmus-v2</Inline> harness →
               same findings. No randomness in probe verdicts; timestamps and
               environment are recorded, not baked in.
             </li>
@@ -304,7 +321,7 @@ export default function MethodologyPage() {
             <li>
               <strong className="text-ink">Re-runnable.</strong> Anyone — a
               skeptic, a counterparty, a future independent verifier — can
-              re-run <Inline>litmus-v1</Inline> against the same server and
+              re-run <Inline>litmus-v2</Inline> against the same server and
               compare fingerprint and grade. A false grade is falsifiable, not
               merely disputable.
             </li>
@@ -371,22 +388,28 @@ export default function MethodologyPage() {
 
         <Section num="07" label="Versioning" id="versioning">
           <p>
-            This page documents <Inline>litmus-v1</Inline>. Probes evolve as
+            This page documents <Inline>litmus-v2</Inline>. Probes evolve as
             agents do; new failure modes get new probe IDs within their
             family. A change that alters pass/fail semantics bumps the
             methodology version. Every evidence bundle and every attestation
             embeds the methodology version that produced it, so a grade is
-            always tied to the spec it was measured against.
+            always tied to the spec it was measured against — existing{" "}
+            <Inline>litmus-v1</Inline> grades stay valid as v1 results.
           </p>
           <p className="text-sm">
             <span className="text-ink-faint">Changelog · </span>
+            <Inline>litmus-v2</Inline> adds C-02 probe 2.1 (declared-permission
+            honesty): a tool annotated read-only whose name plainly mutates
+            fails C-02, capping the grade at D — a new fail condition, so the
+            methodology version bumps. <Inline>litmus-v1.3</Inline> enumerates
+            the full tool surface across pagination before grading and fails
+            closed past the gradable cap, closing a gap where a tool hidden
+            behind a cursor escaped both the grade and the fingerprint.{" "}
             <Inline>litmus-v1.1</Inline> hardened the harness within v1
-            semantics: obfuscated-canary detection (whitespace-split,
-            base64/hex/url), canaries seeded into a throwaway working
-            directory, varied bait pools, erroring tools recorded as
-            unevaluated rather than silently passed, and bare imperatives in
-            tool docs downgraded to medium severity so legitimate
-            documentation phrasing no longer false-floors C-01.
+            semantics: obfuscated-canary detection, canaries seeded into a
+            throwaway working directory, varied bait pools, erroring tools
+            recorded as unevaluated, and bare imperatives downgraded to medium
+            severity so legitimate phrasing no longer false-floors C-01.
           </p>
         </Section>
 
