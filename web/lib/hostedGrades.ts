@@ -27,6 +27,10 @@ interface EvidenceBundle {
   toolDefsFingerprint?: string;
   categories?: EvidenceCategory[];
   methodologyVersion?: string;
+  // The grader writes the rationale into the bundle as `gradeRationale`;
+  // the flat `rationale` column may or may not be populated, so we fall
+  // back to this. (Confirmed against a live web3auth evidence bundle.)
+  gradeRationale?: string;
 }
 
 export interface HostedGradeRow {
@@ -82,7 +86,7 @@ export function detailFromRow(
       tool_defs_fingerprint:
         bundle?.toolDefsFingerprint ?? row.tool_defs_fingerprint ?? null,
       methodology_version: bundle?.methodologyVersion ?? "litmus",
-      rationale: row.rationale ?? null,
+      rationale: row.rationale ?? bundle?.gradeRationale ?? null,
       evidence_url: null,
       computed_at: row.published_at ?? null,
     },
