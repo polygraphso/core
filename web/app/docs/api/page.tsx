@@ -146,10 +146,9 @@ pypi/mcp-server-git
 pypi/mcp-server-fetch`}
           </Code>
           <p>
-            The version segment is optional. Server lookups are versionless —{" "}
+            The version segment is optional. Lookups are versionless —{" "}
             <Inline>1.0.0</Inline> and <Inline>1.0.1</Inline> of the same
-            package resolve to the same server record. Adoption tier and
-            polygraph are reported for the latest tracked version.
+            package resolve to the same grade.
           </p>
         </Section>
 

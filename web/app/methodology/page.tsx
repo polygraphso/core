@@ -107,9 +107,8 @@ export default function MethodologyPage() {
           </p>
           <p>
             It does not measure popularity, code quality, maintenance, or
-            licensing — those live on a separate adoption axis, never averaged
-            in. The litmus grade is the behavioral half of a server&rsquo;s
-            polygraph.
+            licensing — this is a behavioral grade, not a quality or
+            popularity score.
           </p>
           <SubHead>What a passing grade does — and does not — claim</SubHead>
           <p>
