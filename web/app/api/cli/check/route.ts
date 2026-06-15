@@ -9,13 +9,18 @@
  * Contract: POST /api/cli/check in core-contracts.md.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { getSupabaseAdmin } from "@/lib/supabase";
 import {
   ServerRefParseError,
   parseServerRef,
   serverKey,
   type AdoptionTier,
 } from "@/lib/identity";
+import {
+  fetchPublishedGrade,
+  type LitmusGrade,
+  type PolygraphDetail,
+} from "@/lib/hostedGrades";
 
 interface CheckRequest {
   server_ref?: unknown;
@@ -24,7 +29,8 @@ interface CheckRequest {
 interface TrackedResponse {
   status: "tracked";
   adoption_tier: AdoptionTier | null;
-  polygraph: null;
+  polygraph: LitmusGrade | null;
+  polygraph_detail: PolygraphDetail | null;
   notify_url: string;
 }
 
@@ -40,19 +46,6 @@ function notifyUrl(serverRef: string): string {
   // mandates the unencoded form for readability. encodeURIComponent would
   // mangle them into %2F / %40.
   return `${NOTIFY_BASE}?for=${serverRef}`;
-}
-
-function getSupabase() {
-  const url = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) {
-    throw new Error(
-      "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set on the server.",
-    );
-  }
-  return createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 }
 
 export async function POST(request: Request) {
@@ -93,7 +86,11 @@ export async function POST(request: Request) {
   // counter — versionless so two CLI calls for v1.0.0 and v1.0.1 of the
   // same package both register against the same ref.
   const refKey = serverKey(parsed);
-  const supabase = getSupabase();
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    console.error("[cli/check] Supabase is not configured");
+    return Response.json({ error: "Lookup failed." }, { status: 500 });
+  }
 
   // Server lookup. `nulls not distinct` on the unique constraint means
   // unscoped npm rows (owner is NULL) are addressable via `owner.is.null`,
@@ -148,12 +145,15 @@ export async function POST(request: Request) {
     }
   }
 
-  // behavioral_grades is empty in v0 — polygraph is always null until
-  // litmus lands.
+  // Latest published grade from hosted_runs (same source the website
+  // reads). Null until a registry run for this ref is published.
+  const published = await fetchPublishedGrade(supabase, refKey);
+
   const body2: TrackedResponse = {
     status: "tracked",
     adoption_tier: tier,
-    polygraph: null,
+    polygraph: published?.grade ?? null,
+    polygraph_detail: published?.detail ?? null,
     notify_url: notifyUrl(refKey),
   };
   return Response.json(body2);

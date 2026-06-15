@@ -16,7 +16,7 @@ import { NETWORK_FAILURE_LINE, listUrl } from "./api.js";
 interface ListEntry {
   server_ref: string;
   adoption_tier: "top10" | "top25" | "top50" | "top100" | null;
-  polygraph: null | "pending" | "A" | "B" | "C" | "D" | "F";
+  polygraph: null | "A" | "B" | "C" | "D" | "F";
 }
 
 interface ListResponse {
@@ -31,7 +31,7 @@ const TIER_LABEL: Record<string, string> = {
   top100: "top 100",
 };
 const TIER_LABEL_WIDTH = 8; // "top 100" + breathing room
-const POLY_COL_WIDTH = 9;   // "pending" / single letter — pad to 9
+const POLY_COL_WIDTH = 9;   // grade label column
 
 const MAX_WIDTH = 100;
 const MIN_REF_WIDTH = 30;
@@ -42,8 +42,8 @@ function tierLabel(tier: ListEntry["adoption_tier"]): string {
 }
 
 function polyLabel(grade: ListEntry["polygraph"]): string {
-  if (grade === null) return "pending";
-  return grade; // 'pending' literal or A–F
+  if (grade === null) return "—"; // not yet graded
+  return grade; // A–F
 }
 
 function padRight(s: string, width: number): string {
