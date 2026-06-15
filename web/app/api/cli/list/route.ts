@@ -2,9 +2,9 @@
  * GET /api/cli/list — CLI discovery endpoint.
  *
  * Anonymous; service-role DB access on the server side only. Returns every
- * tracked server with its latest adoption tier and (eventually) latest
- * behavioral polygraph grade. behavioral_grades is empty in v0, so
- * `polygraph` is always null today — the CLI renders that as "pending".
+ * tracked server with its latest adoption tier and latest published
+ * polygraph grade. Grades come from hosted_runs (status='complete',
+ * published_at set) — the same source the website reads.
  *
  * Sort: tier rank (top10 → top25 → top50 → top100 → null), then by
  * server_ref alphabetically within tier.
@@ -16,14 +16,13 @@
 
 import type { AdoptionTier } from "@/lib/identity";
 import { getSupabaseAdmin } from "@/lib/supabase";
-
-type PolygraphGrade = "A" | "B" | "C" | "D" | "F";
+import { fetchPublishedGradeMap, type LitmusGrade } from "@/lib/hostedGrades";
 
 interface ListEntry {
   server_ref: string;
   adoption_tier: AdoptionTier | null;
-  /** null = no polygraph yet (v0 default); 'pending' = run scheduled; A–F = result. */
-  polygraph: null | "pending" | PolygraphGrade;
+  /** null = no published grade; A–F = published litmus grade. */
+  polygraph: null | LitmusGrade;
 }
 
 interface ListResponse {
@@ -93,31 +92,10 @@ export async function GET() {
     }
   }
 
-  // behavioral_grades is empty in v0 — keep the query so the shape is
-  // forward-compatible. If/when grades land, the CLI's "pending" rendering
-  // becomes "A"/"B"/etc.
-  const gradeByVersion = new Map<string, PolygraphGrade>();
-  if (versionIds.length > 0) {
-    const { data: grades, error: gradesErr } = await supabase
-      .from("behavioral_grades")
-      .select("version_id, grade, computed_at")
-      .in("version_id", versionIds)
-      .order("computed_at", { ascending: false });
-    // Don't 500 the whole endpoint if behavioral_grades doesn't exist yet
-    // — that table lands with the litmus harness. Log + continue.
-    if (gradesErr) {
-      console.warn("[cli/list] behavioral_grades query soft-failed:", gradesErr.message);
-    } else {
-      for (const row of grades ?? []) {
-        const vid = row.version_id as string;
-        if (gradeByVersion.has(vid)) continue;
-        const g = row.grade as string | null;
-        if (g === "A" || g === "B" || g === "C" || g === "D" || g === "F") {
-          gradeByVersion.set(vid, g);
-        }
-      }
-    }
-  }
+  // Published grades from hosted_runs, keyed by target (the versionless
+  // server_key) — the same source the website reads. Soft-fails to an
+  // empty map so the list still returns the catalog + adoption tiers.
+  const gradeByRef = await fetchPublishedGradeMap(supabase);
 
   const entries: ListEntry[] = servers.map((s) => {
     const registry = s.registry as string;
@@ -125,13 +103,11 @@ export async function GET() {
     const name = s.name as string;
     const vid = s.latest_version_id as string | null;
     const adoption_tier = vid ? tierByVersion.get(vid) ?? null : null;
-    const polygraph: ListEntry["polygraph"] = vid
-      ? gradeByVersion.get(vid) ?? null
-      : null;
+    const server_ref = serverRefOf(registry, owner, name);
     return {
-      server_ref: serverRefOf(registry, owner, name),
+      server_ref,
       adoption_tier,
-      polygraph,
+      polygraph: gradeByRef.get(server_ref) ?? null,
     };
   });
 

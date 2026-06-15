@@ -38,7 +38,11 @@ export function apiBaseUrl(): string {
 export interface CheckResponseTracked {
   status: "tracked";
   adoption_tier: "top10" | "top25" | "top50" | "top100" | null;
-  polygraph: unknown;
+  // Published grade or null. The richer polygraph_detail (per-check
+  // results, fingerprint, methodology version) rides alongside when a
+  // grade exists; passed through to the caller verbatim.
+  polygraph: null | "A" | "B" | "C" | "D" | "F";
+  polygraph_detail?: unknown;
   notify_url: string;
 }
 
@@ -52,7 +56,7 @@ export type CheckResponse = CheckResponseTracked | CheckResponseNotAvailable;
 export interface ListEntry {
   server_ref: string;
   adoption_tier: "top10" | "top25" | "top50" | "top100" | null;
-  polygraph: null | "pending" | "A" | "B" | "C" | "D" | "F";
+  polygraph: null | "A" | "B" | "C" | "D" | "F";
 }
 
 export interface ListResponse {
