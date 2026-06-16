@@ -10,7 +10,6 @@ export type PostMeta = {
   title: string;
   date: string; // ISO yyyy-mm-dd
   excerpt: string;
-  ogImage?: string;
 };
 
 export type Post = PostMeta & { body: string };
@@ -30,7 +29,6 @@ function parseFile(slug: string, raw: string): Post {
     title: data.title,
     date: data.date,
     excerpt: data.excerpt,
-    ogImage: typeof data.ogImage === "string" ? data.ogImage : undefined,
     body: content.trim(),
   };
 }

@@ -4,8 +4,6 @@ import { notFound } from "next/navigation";
 import { getAllPosts, getPost } from "@/lib/blog";
 import { Markdown } from "../_components/Markdown";
 
-const DEFAULT_OG = "/og.png";
-
 export async function generateStaticParams() {
   const posts = await getAllPosts();
   return posts.map((p) => ({ slug: p.slug }));
@@ -31,7 +29,7 @@ export async function generateMetadata({
   if (!post) return { title: "Post not found" };
 
   const url = `/blog/${post.slug}`;
-  const image = post.ogImage ?? DEFAULT_OG;
+  // og:image / twitter:image come from the colocated opengraph-image.tsx card.
   return {
     title: post.title,
     description: post.excerpt,
@@ -42,13 +40,11 @@ export async function generateMetadata({
       description: post.excerpt,
       url,
       publishedTime: post.date,
-      images: [{ url: image }],
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
       description: post.excerpt,
-      images: [image],
     },
   };
 }

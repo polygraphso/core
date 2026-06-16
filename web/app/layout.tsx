@@ -49,14 +49,12 @@ export const metadata: Metadata = {
     siteName: "polygraph.so",
     locale: "en_US",
     type: "website",
-    images: [{ url: "/og.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "polygraph.so",
     description:
       "Behavioral polygraphs for AI agents and MCP servers — grades anyone can re-run. No graded party pays us.",
-    images: ["/og.png"],
   },
   robots: { index: true, follow: true },
 };
