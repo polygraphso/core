@@ -18,6 +18,7 @@ type ApiResponse =
         methodology_version?: string;
         computed_at?: string;
         evidence_url?: string | null;
+        resolved_version?: string | null;
       } | null;
       notify_url: string;
     }
@@ -57,14 +58,18 @@ export async function runCheck(args: readonly string[]): Promise<number> {
     throw err;
   }
 
+  // Send the version when pinned (the API looks up that exact version's grade);
+  // a bare ref returns the latest graded version. The versionless canonical keys
+  // the server identity and the demand counter either way.
   const canonical = canonicalRef(parsed);
+  const serverRef = parsed.version ? `${canonical}@${parsed.version}` : canonical;
 
   let res: Response;
   try {
     res = await fetch(checkUrl(), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ server_ref: canonical }),
+      body: JSON.stringify({ server_ref: serverRef }),
     });
   } catch {
     process.stderr.write(NETWORK_FAILURE_LINE + "\n");
@@ -99,7 +104,8 @@ export async function runCheck(args: readonly string[]): Promise<number> {
     const detail = body.polygraph_detail ?? null;
     const method = detail?.methodology_version ?? "litmus";
     const date = detail?.computed_at ? detail.computed_at.slice(0, 10) : null;
-    const polyLine = `→ polygraph: ${body.polygraph} · ${method}${date ? ` · ${date}` : ""}`;
+    const ver = detail?.resolved_version ? ` · version ${detail.resolved_version}` : "";
+    const polyLine = `→ polygraph: ${body.polygraph}${ver} · ${method}${date ? ` · ${date}` : ""}`;
     const evidence = detail?.evidence_url;
     const tailLine = evidence
       ? `→ evidence → ${evidence.replace(/^https?:\/\//, "")}`

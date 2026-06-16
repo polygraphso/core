@@ -15,6 +15,8 @@ export interface ParsedRef {
   registry: Registry;
   owner: string | null;
   name: string;
+  /** Version pinned after the final `@`, if any (null = bare ref). */
+  version: string | null;
 }
 
 export class RefParseError extends Error {
@@ -37,10 +39,11 @@ export function parseRef(ref: string): ParsedRef {
   }
   const rest = ref.slice(firstSlash + 1);
 
-  // Strip an optional version suffix (after the final `@`, but not the
+  // Split off an optional version suffix (after the final `@`, but not the
   // leading `@` of an npm scope at position 0).
   const versionAt = rest.lastIndexOf("@");
   const pathPart = versionAt > 0 ? rest.slice(0, versionAt) : rest;
+  const version = versionAt > 0 ? rest.slice(versionAt + 1) || null : null;
 
   const lastSlash = pathPart.lastIndexOf("/");
   let owner: string | null;
@@ -58,7 +61,7 @@ export function parseRef(ref: string): ParsedRef {
   if (!name) throw new RefParseError("empty name segment");
   if (lastSlash !== -1 && !owner) throw new RefParseError("empty owner segment");
 
-  return { registry: registry as Registry, owner, name };
+  return { registry: registry as Registry, owner, name, version };
 }
 
 /** Versionless canonical key — what the API and `notify_url` use. */
