@@ -14,6 +14,12 @@ Visual identity assets for polygraph.so. SVGs are the source-of-truth for any we
 | `social-preview.png` | 1280×640 raster of the above | **GitHub repo social preview** (Settings → Social preview) |
 | `build.sh` | Rasterizer — composes the PNGs from `magick` primitives | Re-run any time the design changes |
 
+> **Web mirror:** `web/public/brand/` holds copies of `mark.{svg,png}`,
+> `mark-512.png`, `wordmark.svg`, and `social-preview.{svg,png}` so the
+> `/brand-kit` page can serve them for download. If you change any source
+> asset here, re-copy it into `web/public/brand/` — there is no build step
+> that does this automatically.
+
 ## How to upload to GitHub
 
 **Org avatar** (`polygraph-so`):
