@@ -8,6 +8,7 @@ describe("parseRef", () => {
       registry: "npm",
       owner: "@modelcontextprotocol",
       name: "server-filesystem",
+      version: "0.4.2",
     });
   });
 
@@ -16,6 +17,7 @@ describe("parseRef", () => {
       registry: "npm",
       owner: null,
       name: "lodash",
+      version: null,
     });
   });
 
@@ -24,6 +26,7 @@ describe("parseRef", () => {
       registry: "pypi",
       owner: null,
       name: "mcp-server-git",
+      version: "1.0.0",
     });
   });
 
@@ -32,6 +35,7 @@ describe("parseRef", () => {
       registry: "github",
       owner: "anthropic",
       name: "mcp-server-foo",
+      version: "v0.1.3",
     });
   });
 
