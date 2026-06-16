@@ -113,7 +113,7 @@ export default function BrandKitPage() {
             calm baseline — with an oxblood pulse at the left. The wordmark
             pairs it with &ldquo;polygraph.so&rdquo; set in Source Serif 4.
           </p>
-          <figure className="border hairline bg-parchment grid sm:grid-cols-2 not-prose">
+          <figure className="border hairline bg-parchment grid sm:grid-cols-2">
             <div className="flex items-center justify-center p-10 border-b sm:border-b-0 sm:border-r hairline">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -171,7 +171,7 @@ export default function BrandKitPage() {
             </code>
             .
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 not-prose">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {CORE_COLORS.map((c) => (
               <Swatch key={c.token} {...c} />
             ))}
@@ -180,7 +180,7 @@ export default function BrandKitPage() {
             The grade scale — the letters A&ndash;F carry their own muted,
             journal-appropriate colors.
           </p>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 not-prose">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {GRADE_COLORS.map((c) => (
               <Swatch key={c.token} {...c} />
             ))}
