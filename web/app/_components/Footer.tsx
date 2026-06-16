@@ -38,6 +38,14 @@ export function Footer() {
                 Methodology →
               </a>
             </p>
+            <p className="mt-1.5 font-sans text-[11.5px] leading-relaxed">
+              <a
+                className="text-ink hover:text-oxblood transition-colors"
+                href="/brand-kit"
+              >
+                Brand kit →
+              </a>
+            </p>
           </div>
 
           <div>
