@@ -1,0 +1,208 @@
+"use client";
+
+import { useState } from "react";
+
+// Free "grade this server" intake. target + email (+ optional note) →
+// POST /api/grade-requests → confirmation with the demand count. No
+// payment, no login — the goodwill step. The server stays authoritative;
+// the live hint and email check are just instant feedback.
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function targetHint(raw: string): { text: string; warn: boolean } | null {
+  const t = raw.trim();
+  if (!t) return null;
+  if (t.startsWith("https://")) {
+    return { text: "remote server — its grade will cap at B (egress can't be verified)", warn: true };
+  }
+  if (t.startsWith("http://")) {
+    return { text: "https:// only — plain http isn't accepted", warn: true };
+  }
+  if (/^(npm|pypi|github)\//.test(t)) {
+    return { text: "registry package — runs in the full sandbox", warn: false };
+  }
+  return null;
+}
+
+export function RequestForm() {
+  const [target, setTarget] = useState("");
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
+  const [state, setState] = useState<"idle" | "submitting" | "ok" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const [result, setResult] = useState<{ created: boolean; demand: number } | null>(null);
+
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!target.trim()) {
+      setState("error");
+      setMessage("Enter a server — a registry ref or an https:// MCP URL.");
+      return;
+    }
+    if (!EMAIL_RE.test(email.trim())) {
+      setState("error");
+      setMessage("Enter a valid email — it's how you'll hear back.");
+      return;
+    }
+    setState("submitting");
+    setMessage("");
+    try {
+      const res = await fetch("/api/grade-requests", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          target: target.trim(),
+          email: email.trim(),
+          note: note.trim() || undefined,
+        }),
+      });
+      const body = (await res.json()) as {
+        ok: boolean;
+        message?: string;
+        created?: boolean;
+        demand?: number;
+      };
+      if (!res.ok || !body.ok) {
+        throw new Error(body.message ?? "Couldn't save your request.");
+      }
+      setResult({ created: body.created ?? true, demand: body.demand ?? 1 });
+      setState("ok");
+    } catch (err) {
+      setState("error");
+      setMessage(
+        err instanceof Error ? err.message : "Something went wrong. Try again.",
+      );
+    }
+  }
+
+  if (state === "ok" && result) {
+    return (
+      <div className="border hairline bg-parchment-50">
+        <div className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
+          <span>on the bench</span>
+          <span className="text-ink">{target.trim()}</span>
+        </div>
+        <div className="p-5 md:p-7">
+          <p className="font-serif text-xl md:text-2xl text-ink leading-snug">
+            {result.created
+              ? "Added to the queue."
+              : "Already on the queue — your request is counted."}
+          </p>
+          <p className="mt-3 text-ink-muted leading-relaxed">
+            {result.demand > 1 ? (
+              <>
+                <span className="font-mono text-ink">{result.demand}</span>{" "}
+                people have asked for this server — demand moves it up the
+                bench.
+              </>
+            ) : (
+              <>You&rsquo;re the first to ask for this one.</>
+            )}{" "}
+            We&rsquo;ll email you when its grade publishes. One email, nothing
+            else.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setTarget("");
+              setNote("");
+              setResult(null);
+              setState("idle");
+            }}
+            className="mt-6 font-mono text-xs text-ink-faint border-b hairline border-dotted hover:text-ink transition-colors"
+          >
+            Request another →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const hint = targetHint(target);
+
+  return (
+    <form onSubmit={submit} className="border hairline bg-parchment-50" noValidate>
+      <div className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
+        <span>request a grade</span>
+        <span className="hidden sm:inline">free · email-gated</span>
+      </div>
+      <div className="p-4 md:p-6 space-y-4">
+        <label className="block">
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
+            MCP server — registry ref or https:// URL
+          </span>
+          <input
+            type="text"
+            inputMode="text"
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck={false}
+            maxLength={512}
+            placeholder="npm/@modelcontextprotocol/server-filesystem · or · https://mcp.example.com"
+            value={target}
+            onChange={(e) => setTarget(e.target.value)}
+            className="w-full bg-parchment border hairline px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
+          />
+          <span
+            aria-live="polite"
+            className={`block mt-1.5 font-mono text-[10.5px] min-h-4 transition-opacity ${
+              hint ? "opacity-100" : "opacity-0"
+            } ${hint?.warn ? "text-terracotta" : "text-grade-a"}`}
+          >
+            {hint ? `→ ${hint.text}` : "—"}
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
+            Email — where the grade lands
+          </span>
+          <input
+            type="email"
+            required
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full bg-parchment border hairline px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
+          />
+        </label>
+
+        <label className="block">
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
+            Why you want it — optional
+          </span>
+          <textarea
+            rows={2}
+            maxLength={2000}
+            placeholder="My agent depends on this and I want to know it's safe."
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            className="w-full bg-parchment border hairline px-3.5 py-2.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors resize-none"
+          />
+        </label>
+
+        <div className="flex items-center justify-between gap-4 pt-1">
+          <button
+            type="submit"
+            disabled={state === "submitting"}
+            className="inline-flex items-center justify-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {state === "submitting" ? "Adding…" : "Add to the queue"}
+          </button>
+          <p className="font-mono text-[10.5px] text-ink-faint">
+            Free. We grade it on our own timeline.
+          </p>
+        </div>
+
+        {state === "error" && (
+          <p role="status" className="font-mono text-[12px] text-oxblood">
+            {message}
+          </p>
+        )}
+      </div>
+    </form>
+  );
+}
