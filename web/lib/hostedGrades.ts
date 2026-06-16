@@ -27,6 +27,8 @@ interface EvidenceBundle {
   toolDefsFingerprint?: string;
   categories?: EvidenceCategory[];
   methodologyVersion?: string;
+  // The version the grade was run against (null for HTTP/unresolved targets).
+  resolvedVersion?: string | null;
   // The grader writes the rationale into the bundle as `gradeRationale`;
   // the flat `rationale` column may or may not be populated, so we fall
   // back to this. (Confirmed against a live web3auth evidence bundle.)
@@ -53,6 +55,8 @@ export interface PolygraphDetail {
   c03: string | null;
   tool_defs_fingerprint: string | null;
   methodology_version: string;
+  /** The version the grade was run against; null for HTTP/unresolved targets. */
+  resolved_version: string | null;
   rationale: string | null;
   evidence_url: string | null;
   computed_at: string | null;
@@ -86,6 +90,7 @@ export function detailFromRow(
       tool_defs_fingerprint:
         bundle?.toolDefsFingerprint ?? row.tool_defs_fingerprint ?? null,
       methodology_version: bundle?.methodologyVersion ?? "litmus",
+      resolved_version: bundle?.resolvedVersion ?? null,
       rationale: row.rationale ?? bundle?.gradeRationale ?? null,
       evidence_url: null,
       computed_at: row.published_at ?? null,
@@ -93,18 +98,27 @@ export function detailFromRow(
   };
 }
 
-/** Latest published registry grade for a versionless server_key. */
+/**
+ * Latest published registry grade for a versionless server_key. With `version`,
+ * only a grade run against that EXACT version matches (a different version → null,
+ * i.e. "not graded for this version"); without it, the latest grade for any
+ * version. The version is matched on the evidence bundle's `resolvedVersion`
+ * (always present in the JSONB), so this needs no extra column.
+ */
 export async function fetchPublishedGrade(
   db: SupabaseClient,
   serverKey: string,
+  version?: string | null,
 ): Promise<{ grade: LitmusGrade; detail: PolygraphDetail } | null> {
-  const { data, error } = await db
+  let query = db
     .from("hosted_runs")
     .select(HOSTED_GRADE_COLUMNS)
     .eq("target", serverKey)
     .eq("target_kind", "registry_ref")
     .eq("status", "complete")
-    .not("published_at", "is", null)
+    .not("published_at", "is", null);
+  if (version) query = query.eq("evidence->>resolvedVersion", version);
+  const { data, error } = await query
     .order("published_at", { ascending: false })
     .limit(1)
     .maybeSingle();

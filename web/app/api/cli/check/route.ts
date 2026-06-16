@@ -68,8 +68,9 @@ export async function POST(request: Request) {
     throw err;
   }
 
-  // Versionless canonical key — two calls for v1.0.0 and v1.0.1 of the same
-  // package resolve to the same grade and the same demand counter.
+  // Versionless canonical key — keys the server identity and the demand counter.
+  // A pinned @version narrows the grade lookup to that exact version; a bare ref
+  // returns the latest graded version (the resolved version is in polygraph_detail).
   const refKey = serverKey(parsed);
   const supabase = getSupabaseAdmin();
   if (!supabase) {
@@ -77,7 +78,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Lookup failed." }, { status: 500 });
   }
 
-  const published = await fetchPublishedGrade(supabase, refKey);
+  const published = await fetchPublishedGrade(supabase, refKey, parsed.version);
 
   if (!published) {
     // No published grade — bump demand, return the notify outlet.
