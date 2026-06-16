@@ -66,6 +66,16 @@ export function Footer() {
               <li>
                 <a
                   className="text-ink hover:text-oxblood transition-colors"
+                  href="https://github.com/polygraphso"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  GitHub
+                </a>
+              </li>
+              <li>
+                <a
+                  className="text-ink hover:text-oxblood transition-colors"
                   href="https://bankr.bot/discover/0x2878cfc54aabdadd9bb5d70dd24d6b91485afba3"
                   target="_blank"
                   rel="noreferrer"
