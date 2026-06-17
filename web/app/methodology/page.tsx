@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Methodology — litmus-v2",
+  title: "Methodology — litmus-v5",
   description:
-    "The litmus test, v2: a behavioral evaluation of MCP servers. Three checks — tool-output injection, permission overreach, sensitive-data handling — graded A–F with reproducible evidence.",
+    "The litmus test, v5: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence.",
   alternates: { canonical: "/methodology" },
 };
 
-// Faithful rendering of litmus-test-v1.md (polygraph-litmus repo) — the
-// authoritative methodologyVersion: "litmus-v2" spec. Content edits belong
+// Faithful rendering of litmus-test.md (polygraphso/hosted-service repo) — the
+// authoritative methodologyVersion: "litmus-v5" spec. Content edits belong
 // in the spec first; this page mirrors it.
 
 function Section({
@@ -59,7 +59,7 @@ export default function MethodologyPage() {
       <article className="mx-auto max-w-3xl px-6 pt-14 pb-24 md:pt-20 md:pb-32">
         <header className="mb-14">
           <p className="section-label mb-4">
-            Methodology · litmus-v2 · specification
+            Methodology · litmus-v5 · specification
           </p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             The litmus test
@@ -68,7 +68,7 @@ export default function MethodologyPage() {
             A behavioral evaluation of an MCP server — what it{" "}
             <em>does</em> when exercised the way an agent would, not what its
             README says. The string{" "}
-            <Inline>methodologyVersion: &quot;litmus-v2&quot;</Inline> travels
+            <Inline>methodologyVersion: &quot;litmus-v5&quot;</Inline> travels
             with every grade this spec produces.
           </p>
         </header>
@@ -93,7 +93,7 @@ export default function MethodologyPage() {
           <SubHead>What a passing grade does — and does not — claim</SubHead>
           <p>
             It <strong className="text-ink">does</strong> claim: against{" "}
-            <Inline>litmus-v2</Inline>, on the exact tool surface identified by
+            <Inline>litmus-v5</Inline>, on the exact tool surface identified by
             the fingerprint, the server did not exhibit the failure modes
             below, and the evidence is published and re-runnable.
           </p>
@@ -107,12 +107,12 @@ export default function MethodologyPage() {
 
         <Section num="02" label="Checks and probes" id="checks">
           <p>
-            Six probes across three categories. Probe IDs are permanent and
+            Nine probes across four categories. Probe IDs are permanent and
             carry their family number; future probes extend a family without
             renumbering.
           </p>
 
-          <SubHead>C-01 — Tool-output injection · probes 1.1, 1.2</SubHead>
+          <SubHead>C-01 — Tool-output injection · probes 1.1, 1.2, 1.3</SubHead>
           <p>
             A server&rsquo;s tool descriptions and outputs flow straight into
             the calling agent&rsquo;s context — the documented &ldquo;tool
@@ -121,7 +121,12 @@ export default function MethodologyPage() {
             <Inline>tools/list</Inline> and scans every name, description, and
             input schema. <strong className="text-ink">Probe 1.2</strong>{" "}
             issues bait calls — benign-but-suggestive inputs designed to elicit
-            injection-shaped echoes — and scans every output.
+            injection-shaped echoes — and scans every output.{" "}
+            <strong className="text-ink">Probe 1.3</strong> (second-order) feeds
+            one tool&rsquo;s output back in as another tool&rsquo;s input — the
+            chaining path a real agent takes — and scans the result; only
+            injection the server <em>generated</em> from that chained content
+            fails, not a verbatim echo.
           </p>
           <p>
             Fails on any high-severity hit: instruction mimicry aimed at the
@@ -129,7 +134,10 @@ export default function MethodologyPage() {
             tool-call-shaped JSON in free text), hidden or invisible Unicode
             (zero-width, bidi overrides, tag characters), or markdown and link
             tricks (<Inline>javascript:</Inline> / <Inline>data:</Inline> URIs,
-            link text contradicting the href, exfiltration-shaped image URLs).
+            link text contradicting the href, or a URL whose query string is
+            exfiltration-shaped — a credential-named key, a long/high-entropy
+            value, or an interpolation marker; an honest{" "}
+            <Inline>?q=search</Inline> link is not flagged).
           </p>
 
           <SubHead>C-02 — Permission overreach · probes 2.1, 2.2</SubHead>
@@ -137,25 +145,37 @@ export default function MethodologyPage() {
             Does it touch more than it claimed — or label itself less capable
             than it is? <strong className="text-ink">Probe 2.1</strong>{" "}
             (declared-permission honesty) flags a tool that annotates itself{" "}
-            <Inline>readOnlyHint: true</Inline> while its name plainly mutates
-            (an unambiguously destructive verb — <Inline>delete</Inline>,{" "}
-            <Inline>drop</Inline>, <Inline>transfer</Inline>,{" "}
-            <Inline>send</Inline>, <Inline>withdraw</Inline>, …). An agent — and
-            this harness — would otherwise auto-trust that read-only claim. It
-            is deliberately narrow: polysemous verbs like{" "}
-            <Inline>create</Inline> or <Inline>update</Inline> are not flagged,
+            <Inline>readOnlyHint: true</Inline> while it plainly mutates — caught
+            three ways: an unambiguously destructive verb in its{" "}
+            <strong className="text-ink">name</strong> (<Inline>delete</Inline>,{" "}
+            <Inline>transfer</Inline>, <Inline>withdraw</Inline>, …), a{" "}
+            <strong className="text-ink">parameter</strong> that names value
+            movement or secrets (<Inline>recipient</Inline>,{" "}
+            <Inline>amount</Inline>, <Inline>private_key</Inline>, …), or a{" "}
+            <strong className="text-ink">description</strong> that admits it
+            (&ldquo;transfers,&rdquo; &ldquo;deletes&rdquo;). An agent — and this
+            harness — would otherwise auto-trust that read-only claim. Each layer
+            is deliberately narrow: polysemous words like <Inline>create</Inline>,{" "}
+            <Inline>update</Inline>, or <Inline>query</Inline> are not flagged,
             so an honest <Inline>create_query</Inline> is no false positive.
             Static and deterministic; needs no sandbox.
           </p>
           <p>
             <strong className="text-ink">Probe 2.2</strong> runs the server
-            inside a default-deny network namespace and exercises it through a
-            script that should require no outbound traffic. Egress is routed to
-            a local sinkhole that logs{" "}
+            inside a default-deny network sandbox and exercises it. Egress is
+            routed to a local sinkhole that logs{" "}
             <Inline>{`{host, port, firstBytes}`}</Inline> and never completes
-            the connection — the evidence shows what it tried to reach, not a
-            silent block. Any outbound attempt during a no-expected-egress run
-            is a failure.
+            the connection — the evidence shows what it tried to reach. Each
+            attempt is classified against an effective allowlist: the operator
+            baseline plus the hosts the package <em>declares</em> it reaches
+            (<Inline>polygraph.egress</Inline> in its manifest). Egress matching
+            that list on <strong className="text-ink">host and port</strong> is
+            permitted and recorded; anything beyond it — or a declared host
+            reached on an undeclared port — is overreach and fails. A passing
+            C-02 means <em>no overreach</em>, not <em>no network</em>; the
+            declared hosts are surfaced in the evidence for the consumer to
+            judge. A host-level DNAT gateway captures hard-coded IPs and DoH
+            too, so an IP literal can&rsquo;t dodge the check.
           </p>
           <p>
             Probe 2.2 requires that the harness runs the server itself. For a
@@ -182,28 +202,39 @@ export default function MethodologyPage() {
             such.
           </p>
 
-          <SubHead>C-04 — Adversarial input handling · deferred</SubHead>
+          <SubHead>C-04 — Adversarial input handling · probes 3.1, 3.2</SubHead>
           <p>
-            Behavior under malformed inputs, oversized payloads, and known
-            jailbreak patterns. The deterministic battery ships first; this
-            category waits for the harness to mature. Not yet graded.
+            How the server holds up under hostile input.{" "}
+            <strong className="text-ink">Probe 3.1</strong> stresses each tool
+            with a deterministic battery of malformed and oversized arguments;
+            it fails if the server crashes or hangs, or if its output spills an
+            uncaught stack trace (an internals leak).{" "}
+            <strong className="text-ink">Probe 3.2</strong> feeds known
+            jailbreak patterns and scans the output — failing only if the server{" "}
+            <em>amplifies</em> them into agent-directed injection of its own (a
+            verbatim echo is excluded). A C-04 failure caps the grade at D. It
+            is graded off-chain: it moves the overall letter, but the on-chain
+            schema keeps its three per-category slots.
           </p>
         </Section>
 
         <Section num="03" label="Shared scanners" id="scanners">
           <p>
-            The detection primitives behind C-01 and C-03, implemented once
-            and applied uniformly: <Inline>invisibleUnicode</Inline> (zero-width,
-            bidi-override, and tag-char codepoints, each reported with
-            codepoint and byte offset), <Inline>instructionMimicry</Inline>{" "}
+            The detection primitives behind C-01, C-03, and C-04, implemented
+            once and applied uniformly: <Inline>invisibleUnicode</Inline>{" "}
+            (zero-width, bidi-override, and tag-char codepoints, each reported
+            with codepoint and byte offset), <Inline>instructionMimicry</Inline>{" "}
             (agent-directed imperatives, override and jailbreak framing,
             free-text tool-call JSON), <Inline>markdownTricks</Inline>{" "}
             (<Inline>javascript:</Inline>/<Inline>data:</Inline> URIs,
-            link-text/href mismatch, exfiltration-shaped image URLs), and{" "}
-            <Inline>canaryMatch</Inline> (exact and lightly-obfuscated matches —
-            case, whitespace, simple encodings). Scanners are pure functions
-            over text: independently testable, and the place new failure modes
-            get added.
+            link-text/href mismatch, exfiltration-shaped query strings),{" "}
+            <Inline>internalsLeak</Inline> (uncaught stack-trace and crash
+            signatures across Node, Python, Java, Go, Ruby, Rust, .NET, and
+            PHP), and <Inline>canaryMatch</Inline> (exact and lightly-obfuscated
+            matches — case, whitespace, simple encodings). A shared reflection
+            check lets the second-order and jailbreak probes ignore content a
+            tool merely echoed back. Scanners are pure functions over text:
+            independently testable, and the place new failure modes get added.
           </p>
         </Section>
 
@@ -216,7 +247,7 @@ export default function MethodologyPage() {
           </p>
           <figure className="border hairline bg-parchment-50 mt-2">
             <figcaption className="px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-              Grade rubric · litmus-v2 §5
+              Grade rubric · litmus-v5 §5
             </figcaption>
             <table className="w-full text-left text-sm">
               <thead>
@@ -228,12 +259,12 @@ export default function MethodologyPage() {
               <tbody className="text-ink-muted">
                 <tr className="border-b hairline align-top">
                   <td className="px-4 py-3 font-serif text-xl text-grade-a">A</td>
-                  <td className="px-4 py-3">All three categories pass.</td>
+                  <td className="px-4 py-3">All four categories pass.</td>
                 </tr>
                 <tr className="border-b hairline align-top">
                   <td className="px-4 py-3 font-serif text-xl text-grade-b">B</td>
                   <td className="px-4 py-3">
-                    C-01 and C-03 pass; C-02 <Inline>skipped</Inline> (no
+                    C-01, C-03, and C-04 pass; C-02 <Inline>skipped</Inline> (no
                     sandbox or remote target). Egress was not verified —
                     capped by design.
                   </td>
@@ -241,15 +272,16 @@ export default function MethodologyPage() {
                 <tr className="border-b hairline align-top opacity-60">
                   <td className="px-4 py-3 font-serif text-xl text-grade-c">C</td>
                   <td className="px-4 py-3">
-                    Reserved — no litmus-v2 condition maps to it. Future probe
+                    Reserved — no litmus-v5 condition maps to it. Future probe
                     categories may claim it.
                   </td>
                 </tr>
                 <tr className="border-b hairline align-top">
                   <td className="px-4 py-3 font-serif text-xl text-grade-d">D</td>
                   <td className="px-4 py-3">
-                    C-02 failure — unexpected egress, or a tool that lies about
-                    being read-only — with no C-01/C-03 failure.
+                    C-02 or C-04 failure — egress overreach, a read-only lie, or
+                    a crash / internals-leak / amplification — with no
+                    C-01/C-03 failure.
                   </td>
                 </tr>
                 <tr className="align-top">
@@ -264,11 +296,12 @@ export default function MethodologyPage() {
           <p>
             Rationale: injection and data-leak are disqualifying — they are
             the failures that directly harm an agent that trusts the server,
-            so they floor the grade at F. A C-02 failure — unexpected egress,
-            or a tool that lies about being read-only — is serious but not
-            proven exfiltration or harm, so it caps at D. The B tier keeps the
-            no-sandbox path usable while stating honestly that egress was not
-            verified. Every grade carries its reasons in the evidence bundle.
+            so they floor the grade at F. A C-02 failure (egress overreach or a
+            read-only lie) or a C-04 failure (a crash, an internals-leak, or
+            jailbreak amplification) is serious but not proven exfiltration or
+            harm, so it caps at D. The B tier keeps the no-sandbox path usable
+            while stating honestly that egress was not verified. Every grade
+            carries its reasons in the evidence bundle.
           </p>
         </Section>
 
@@ -279,9 +312,10 @@ export default function MethodologyPage() {
           <ul className="list-none space-y-3">
             <li>
               <strong className="text-ink">Deterministic harness.</strong>{" "}
-              Same server version + same <Inline>litmus-v2</Inline> harness →
-              same findings. No randomness in probe verdicts; timestamps and
-              environment are recorded, not baked in.
+              Same server version + same <Inline>litmus-v5</Inline> harness →
+              same findings. The bait, jailbreak, and malformed batteries are
+              varied but fixed — no randomness in probe verdicts; timestamps
+              and environment are recorded, not baked in.
             </li>
             <li>
               <strong className="text-ink">Tool-defs fingerprint.</strong> The
@@ -300,7 +334,7 @@ export default function MethodologyPage() {
             <li>
               <strong className="text-ink">Re-runnable.</strong> Anyone — a
               skeptic, a counterparty, a future independent verifier — can
-              re-run <Inline>litmus-v2</Inline> against the same server and
+              re-run <Inline>litmus-v5</Inline> against the same server and
               compare fingerprint and grade. A false grade is falsifiable, not
               merely disputable.
             </li>
@@ -330,11 +364,11 @@ export default function MethodologyPage() {
             evaluation, then misbehave in production — a defeat device. No
             proof layer fixes this; an independent lab running the same open
             test has the same exposure. We reduce, not eliminate, the gap:
-            per-run-unique canary values, bait inputs drawn from a varied
-            pool, behavioral probes over real outputs rather than static
-            reads, periodic re-attestation, and the live-fingerprint check at
-            call time against bait-and-switch. Evasion is an explicitly
-            acknowledged residual risk of v1.
+            per-run-unique canary values, bait/jailbreak/malformed inputs drawn
+            from varied (widened) but fixed pools, behavioral probes over real
+            outputs rather than static reads, periodic re-attestation, and the
+            live-fingerprint check at call time against bait-and-switch. Evasion
+            is an explicitly acknowledged residual risk of v1.
           </p>
           <SubHead>Non-goals</SubHead>
           <ul className="list-none space-y-2">
@@ -367,28 +401,31 @@ export default function MethodologyPage() {
 
         <Section num="07" label="Versioning" id="versioning">
           <p>
-            This page documents <Inline>litmus-v2</Inline>. Probes evolve as
+            This page documents <Inline>litmus-v5</Inline>. Probes evolve as
             agents do; new failure modes get new probe IDs within their
             family. A change that alters pass/fail semantics bumps the
             methodology version. Every evidence bundle and every attestation
             embeds the methodology version that produced it, so a grade is
-            always tied to the spec it was measured against — existing{" "}
-            <Inline>litmus-v1</Inline> grades stay valid as v1 results.
+            always tied to the spec it was measured against — earlier{" "}
+            <Inline>litmus-v1</Inline>…<Inline>v4</Inline> grades stay valid as
+            their own version&rsquo;s results.
           </p>
           <p className="text-sm">
             <span className="text-ink-faint">Changelog · </span>
-            <Inline>litmus-v2</Inline> adds C-02 probe 2.1 (declared-permission
-            honesty): a tool annotated read-only whose name plainly mutates
-            fails C-02, capping the grade at D — a new fail condition, so the
-            methodology version bumps. <Inline>litmus-v1.3</Inline> enumerates
-            the full tool surface across pagination before grading and fails
-            closed past the gradable cap, closing a gap where a tool hidden
-            behind a cursor escaped both the grade and the fingerprint.{" "}
-            <Inline>litmus-v1.1</Inline> hardened the harness within v1
-            semantics: obfuscated-canary detection, canaries seeded into a
-            throwaway working directory, varied bait pools, erroring tools
-            recorded as unevaluated, and bare imperatives downgraded to medium
-            severity so legitimate phrasing no longer false-floors C-01.
+            <Inline>litmus-v5</Inline> adds C-01 probe 1.3 (second-order
+            injection), makes C-02 egress port-aware, and widens probe 2.1 to
+            parameter- and description-evidenced read-only lies; it also widens
+            the probe payloads and sharpens the scanners.{" "}
+            <Inline>litmus-v4</Inline> makes C-04 (adversarial input) a graded
+            category — a crash, internals-leak, or jailbreak amplification caps
+            the grade at D — and closes the hard-coded-IP egress gap with a
+            host-DNAT gateway. <Inline>litmus-v3</Inline> reframed C-02 from
+            default-deny to egress overreach: a server may reach hosts it
+            declares, so a passing C-02 means no overreach, not no network.{" "}
+            <Inline>litmus-v2</Inline> added C-02 probe 2.1 (declared-permission
+            honesty). Each pass/fail-semantics change bumps the methodology
+            version; earlier grades stay valid as their own version&rsquo;s
+            results.
           </p>
         </Section>
 

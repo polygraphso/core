@@ -32,7 +32,7 @@ app/
 │   ├── InstallCard.tsx     # copy-paste $ npx polygraphso check + lookup-flow steps
 │   ├── PolygraphTrace.tsx  # oscillograph divider SVG
 │   ├── Problem.tsx         # § 01
-│   ├── HowWeTest.tsx       # § 02 — categories mirror litmus-test-v1.md
+│   ├── HowWeTest.tsx       # § 02 — categories mirror litmus-test.md
 │   ├── WhereWeSit.tsx      # § 03 — three-axis table
 │   ├── GradesUpdates.tsx   # quiet down-page "notify me when grades publish" tile
 │   ├── Footer.tsx          # tagline + vision + contact + disclosures
@@ -65,10 +65,10 @@ The brief is firm: *if real grades aren't ready, the page isn't ready.* Track bo
 ## Before launch (rest of the checklist)
 
 - [ ] Swap `app/api/waitlist/route.ts` for a real subscription endpoint (ConvertKit / Buttondown / Loops / Postgres). The `MinimalSignup` component posts `{ email, source }`.
-- [ ] Wire the methodology link in `HowWeTest.tsx` (and footer) to the published `litmus-test-v1` page.
+- [ ] Wire the methodology link in `HowWeTest.tsx` (and footer) to the published `/methodology` page.
 - [ ] Add a real OG image (currently inferred from metadata).
 - [ ] Lighthouse audit: a11y must pass.
 
 ## Spec source-of-truth
 
-`§ 02 How we test` in `app/_components/HowWeTest.tsx` is anchored to `litmus-test-v1.md`. Four categories total; v1 ships **C-01 / C-02 / C-03** (5 probes: 1.1, 1.2, 2.2, 4.1, 4.2). **C-04 Adversarial input handling** is shown but explicitly marked `v2 · deferred`. **Secrets handling is not in the spec** — do not re-add without updating the spec first.
+`§ 02 How we test` in `app/_components/HowWeTest.tsx` is anchored to `litmus-test.md` (litmus-v5). Four categories, nine probes, all live: **C-01** (1.1, 1.2, 1.3), **C-02** (2.1, 2.2), **C-03** (4.1, 4.2), **C-04** (3.1, 3.2). **Secrets handling is not in the spec** — do not re-add without updating the spec first.
