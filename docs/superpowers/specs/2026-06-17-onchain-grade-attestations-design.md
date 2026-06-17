@@ -22,8 +22,9 @@ on-chain.
 - No custom Solidity contract — use the existing EAS infrastructure on Base.
 - No off-chain/IPFS attestation flow (fails the composability goal).
 - No automatic/batch attestation — manual, per-grade, button-driven for now.
-- No public-facing "verify this grade on-chain" UI yet (the data is on easscan;
-  a polished public verifier is parking-lot).
+- No "verify on-chain" badge added to the *existing* grade displays (hero card,
+  §03 list) yet — parking-lot. (The new per-grade evidence page below *does* show
+  the on-chain link; wiring it into the other surfaces is deferred.)
 
 ## Approach
 
@@ -60,7 +61,7 @@ string  grade             // "A".."F"
 string  methodologyVersion
 string  toolDefsFingerprint
 bytes32 evidenceHash       // keccak256 of the canonical-serialized evidence bundle
-string  evidenceURI        // public pointer (best-effort; "" until a public evidence page exists)
+string  evidenceURI        // version-pinned public evidence page (see below)
 uint64  issuedAt           // published_at, unix seconds
 ```
 
@@ -90,6 +91,34 @@ definition the CLI/site use). Fields used:
 The existing `detailFromRow` / fetch helpers in `web/lib/hostedGrades.ts` already
 do the bundle-vs-column fallback resolution and should be reused so the attested
 values match exactly what the site/CLI display.
+
+## Public per-grade evidence page
+
+The `evidenceURI` in each attestation points at a **public, version-pinned**
+evidence page so anyone can read the grade in human-readable form and cross-check
+it against the on-chain `evidenceHash`.
+
+- **Route:** `web/app/grade/[...slug]/page.tsx` — a catch-all that captures the
+  server key path (`npm/owner/name`, `github/owner/repo`, `pypi/name`, including a
+  leading `@scope`). The version is a query param: `?v=<version>`.
+- **Canonical URL:** `https://polygraph.so/grade/<serverKey>?v=<version>`. Version
+  is included so the URL is **immutable** for the attested grade. When the grade
+  has no resolved version (HTTP/unresolved targets), `?v` is omitted.
+- **Resolution:** reuse `fetchPublishedGrade(db, serverKey, version)` from
+  `web/lib/hostedGrades.ts` so the page shows exactly what the CLI/site show. A
+  missing grade renders a 404 (`not-found`).
+- **Renders:** server, resolved version, grade, the per-category results
+  (C-01/C-02/C-03), rationale, methodology version, tool-defs fingerprint, and
+  published date — plus, if attested, the on-chain section: attester address,
+  `evidenceHash`, and a link to the attestation on `base.easscan.org`.
+- **Verifiability:** the page documents that `evidenceHash` is
+  `keccak256(canonical(evidence))` and shows the value, so a third party can
+  reproduce it. (Exposing the raw canonical bundle for download is a nice-to-have;
+  acceptable to show the structured fields plus the hash.)
+
+**Ordering:** this page is independent of attestation (no circular dependency) and
+must be live before the first attestation is written, so the `evidenceURI` resolves
+the moment the attestation lands.
 
 ## Data model (Supabase)
 
@@ -145,7 +174,8 @@ There is no auth in the app today. Smallest secure thing for a single operator:
    b. **Idempotency guard:** rejects if a `confirmed` attestation already exists
       for that `hosted_run_id` (returns the existing easscan link instead).
    c. Resolves the attested values (reusing `hostedGrades.ts` helpers).
-   d. Computes `evidenceHash` (canonical serialize → keccak256).
+   d. Computes `evidenceHash` (canonical serialize → keccak256) and builds the
+      version-pinned `evidenceURI` for the public evidence page.
    e. Inserts a `grade_attestations` row with `status='pending'`, `tx_hash` null.
    f. Encodes the schema (eas-sdk `SchemaEncoder`), signs with the hot wallet,
       submits the on-chain attestation to Base.
@@ -187,8 +217,11 @@ Surfaced inline in the admin UI and returned as structured JSON from the route:
   env, register-schema helper, `attestGrade(fields)` → `{ uid, txHash }`,
   `revokeAttestation(uid)`. Pure I/O against the chain.
 - `web/lib/attestations/encode.ts` — pure functions: canonical evidence
-  serialization, `evidenceHash`, schema field assembly from a `HostedGradeRow`.
-  Unit-testable with no chain.
+  serialization, `evidenceHash`, version-pinned `evidenceURI` builder, schema
+  field assembly from a `HostedGradeRow`. Unit-testable with no chain.
+- `web/app/grade/[...slug]/page.tsx` (+ `not-found`) — the public per-grade
+  evidence page described above. Reuses `hostedGrades.ts` for resolution and the
+  attestations store to show the on-chain section when present.
 - `web/lib/attestations/store.ts` — `grade_attestations` reads/writes via the
   service-role client (insert pending, mark confirmed/failed, idempotency lookup,
   list-with-status join for the admin page).
@@ -200,9 +233,12 @@ Surfaced inline in the admin UI and returned as structured JSON from the route:
 ## Testing
 
 - **Unit (no chain):** canonical serialization is deterministic (key-order
-  independent), `evidenceHash` is stable, schema encoding round-trips, idempotency
-  guard rejects a second confirmed attestation, value resolution matches
-  `hostedGrades.ts` output.
+  independent), `evidenceHash` is stable, `evidenceURI` builder produces the
+  expected version-pinned URL (and omits `?v` when unresolved), schema encoding
+  round-trips, idempotency guard rejects a second confirmed attestation, value
+  resolution matches `hostedGrades.ts` output.
+- **Evidence page:** renders a published grade from a server-key slug (+ version),
+  404s an unknown grade, and surfaces the on-chain section once attested.
 - **Integration (Base Sepolia):** register schema, attest a real published grade
   end-to-end, confirm it appears on `base-sepolia.easscan.org`, verify the stored
   `attestation_uid` resolves, verify re-hashing the evidence matches
