@@ -52,3 +52,63 @@ describe("evidenceURI", () => {
     );
   });
 });
+
+import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
+import { buildFields, encodeFields } from "./encode";
+import { GRADE_SCHEMA } from "./schema";
+import type { HostedGradeRow } from "@/lib/hostedGrades";
+
+const ROW: HostedGradeRow & { id: number } = {
+  id: 7,
+  target: "npm/some-mcp",
+  target_kind: "registry_ref",
+  grade: "B",
+  rationale: "ok",
+  evidence: {
+    resolvedVersion: "2.1.0",
+    methodologyVersion: "litmus-v1",
+    toolDefsFingerprint: "fp123",
+    categories: [],
+  },
+  tool_defs_fingerprint: "fp123",
+  c01: null,
+  c02: null,
+  c03: null,
+  published_at: "2026-01-02T00:00:00.000Z",
+};
+
+describe("buildFields", () => {
+  it("maps a hosted_runs row into attestation fields", () => {
+    const f = buildFields(ROW)!;
+    expect(f.server).toBe("npm/some-mcp");
+    expect(f.version).toBe("2.1.0");
+    expect(f.grade).toBe("B");
+    expect(f.methodologyVersion).toBe("litmus-v1");
+    expect(f.toolDefsFingerprint).toBe("fp123");
+    expect(f.evidenceURI).toBe("https://polygraph.so/grade/npm/some-mcp?v=2.1.0");
+    expect(f.evidenceHash).toMatch(/^0x[0-9a-f]{64}$/);
+    expect(f.issuedAt).toBe(BigInt(Date.parse("2026-01-02T00:00:00.000Z") / 1000));
+  });
+
+  it("returns null when the row has no valid grade", () => {
+    expect(buildFields({ ...ROW, grade: null })).toBeNull();
+  });
+
+  it("uses empty string for an unresolved version", () => {
+    const f = buildFields({ ...ROW, evidence: { ...ROW.evidence, resolvedVersion: null } })!;
+    expect(f.version).toBe("");
+    expect(f.evidenceURI).toBe("https://polygraph.so/grade/npm/some-mcp");
+  });
+});
+
+describe("encodeFields", () => {
+  it("produces EAS data that round-trips through the schema decoder", () => {
+    const f = buildFields(ROW)!;
+    const encoded = encodeFields(f);
+    const decoded = new SchemaEncoder(GRADE_SCHEMA).decodeData(encoded);
+    const byName = Object.fromEntries(decoded.map((d) => [d.name, d.value.value]));
+    expect(byName.server).toBe("npm/some-mcp");
+    expect(byName.grade).toBe("B");
+    expect(String(byName.issuedAt)).toBe(String(f.issuedAt));
+  });
+});
