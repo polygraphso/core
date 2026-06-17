@@ -5,28 +5,26 @@ type Probe = {
   question: string; // the plain-English title — the question a buyer actually has
   name: string; // spec name, demoted to the mono subtitle
   body: string;
-  probeIds: string[]; // refs to litmus-test-v1.md
+  probeIds: string[]; // refs to litmus-test.md
   state: "live" | "deferred"; // shipped in the current methodology, or deferred
 };
 
-// Source of truth: litmus-test-v1.md.
-// Live = probes 1.1, 1.2, 2.1, 2.2, 4.1, 4.2 — six probes across three categories.
-// (2.1 declared-permission honesty was added in litmus-v2.)
-// Adversarial input handling (category 3) is deferred.
+// Source of truth: litmus-test.md (litmus-v5).
+// Live = probes 1.1, 1.2, 1.3, 2.1, 2.2, 3.1, 3.2, 4.1, 4.2 — nine probes across four categories.
 const probes: Probe[] = [
   {
     code: "C-01",
     question: "Does it try to hijack your agent?",
     name: "tool-output injection",
-    body: "We bait it with inputs designed to make it slip commands into its output, then scan for hijack attempts — lookalike instructions, hidden text, markdown tricks.",
-    probeIds: ["1.1", "1.2"],
+    body: "We bait it with inputs designed to make it slip commands into its output — including one tool's output fed into another — then scan for hijack attempts: lookalike instructions, hidden text, markdown tricks.",
+    probeIds: ["1.1", "1.2", "1.3"],
     state: "live",
   },
   {
     code: "C-02",
     question: "Does it touch things it shouldn't?",
     name: "permission overreach",
-    body: "We run local tools in a sandbox that blocks all network traffic by default, then flag any call they try to make anyway. Remote servers can't be sandboxed — there this check is marked skipped, never assumed. We also flag a tool that labels itself read-only while its name plainly mutates — a permission lie your agent would otherwise trust.",
+    body: "We run local tools in a sandbox that captures every outbound call, then flag any that reach beyond the hosts and ports the server declared it needs. Remote servers can't be sandboxed — there this check is marked skipped, never assumed. We also flag a tool that labels itself read-only while its name, a parameter, or its description shows it mutates — a permission lie your agent would otherwise trust.",
     probeIds: ["2.1", "2.2"],
     state: "live",
   },
@@ -42,14 +40,14 @@ const probes: Probe[] = [
     code: "C-04",
     question: "How does it handle hostile input?",
     name: "adversarial input handling",
-    body: "Malformed inputs, oversized payloads, known jailbreak patterns. Deferred to v2 — the deterministic checks ship first.",
-    probeIds: [],
-    state: "deferred",
+    body: "We hit each tool with malformed and oversized inputs and known jailbreak patterns, and flag it if it crashes, spills an internal stack trace, or turns the hostile input into an attack of its own.",
+    probeIds: ["3.1", "3.2"],
+    state: "live",
   },
 ];
 
-// Grade rubric — mirrors litmus-test-v1.md §5. The scale is A–F; only
-// A / B / D / F are reachable in v1, so C renders as reserved. No E:
+// Grade rubric — mirrors litmus-test.md §5. The scale is A–F; only
+// A / B / D / F are reachable, so C renders as reserved. No E:
 // letter scales jump D → F by convention.
 const grades: Array<{
   letter: string;
@@ -65,7 +63,7 @@ const grades: Array<{
   {
     letter: "B",
     colorVar: "var(--color-grade-b)",
-    when: "Passed the hijack and data-leak checks; its network traffic couldn't be verified (remote server, or no sandbox). Capped by design — unverified is not verified-good.",
+    when: "Passed the hijack, data-leak, and adversarial-input checks; its network traffic couldn't be verified (remote server, or no sandbox). Capped by design — unverified is not verified-good.",
   },
   {
     letter: "C",
@@ -76,7 +74,7 @@ const grades: Array<{
   {
     letter: "D",
     colorVar: "var(--color-grade-d)",
-    when: "Made network calls it shouldn't have, or lied about a tool being read-only (C-02 fail), with no hijack or leak. Serious, but not necessarily theft.",
+    when: "Reached beyond what it declared, lied about a tool being read-only, or broke under hostile input — a crash, internals leak, or amplified attack (C-02 / C-04 fail), with no hijack or leak. Serious, but not necessarily theft.",
   },
   {
     letter: "F",
@@ -96,11 +94,10 @@ export function HowWeTest() {
         label="How we polygraph"
         title="How a tool earns its grade."
       >
-        Six probes, three live checks &mdash; a fourth deferred to v2 &mdash;
-        and one sandbox that blocks everything by default. A check we
-        can&rsquo;t run is reported as skipped &mdash; never passed &mdash;
-        and every grade ships with the evidence: not a star rating, the
-        actual artifacts.
+        Nine probes across four live checks &mdash; and one sandbox that
+        captures every outbound call. A check we can&rsquo;t run is reported as
+        skipped &mdash; never passed &mdash; and every grade ships with the
+        evidence: not a star rating, the actual artifacts.
       </SectionHeader>
 
       <ol className="border-t hairline">
@@ -122,7 +119,7 @@ export function HowWeTest() {
                     isDeferred ? "text-ink-faint" : "text-grade-a"
                   }`}
                 >
-                  {isDeferred ? "deferred" : "litmus-v2 · live"}
+                  {isDeferred ? "deferred" : "litmus-v5 · live"}
                 </span>
               </div>
               <div className="md:col-span-4">
@@ -143,10 +140,10 @@ export function HowWeTest() {
         })}
       </ol>
 
-      {/* Grade rubric — litmus-test-v1.md §5 */}
+      {/* Grade rubric — litmus-test.md §5 */}
       <figure className="mt-12 border hairline bg-parchment-50 max-w-3xl">
         <figcaption className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-          <span>Table 1 — Grade rubric · litmus-v2</span>
+          <span>Table 1 — Grade rubric · litmus-v5</span>
           <span className="hidden sm:inline">scale a–f</span>
         </figcaption>
         <ul>
@@ -187,7 +184,7 @@ export function HowWeTest() {
       <p className="mt-4 max-w-2xl text-ink-muted text-sm leading-relaxed">
         Probes evolve as agents do &mdash; new failure modes get new probes.
         The methodology is versioned;{" "}
-        <span className="font-mono text-[0.92em] text-ink">litmus-v2</span>{" "}
+        <span className="font-mono text-[0.92em] text-ink">litmus-v5</span>{" "}
         travels with every grade it produced. Read{" "}
         <a
           href="/methodology"
