@@ -45,10 +45,13 @@ export async function POST(request: Request) {
   }
 
   // Re-read the grade server-side; never trust client-supplied grade data.
+  // Restrict to registry_ref grades — the only kind the public /grade page can
+  // serve, so the attestation's evidenceURI always resolves.
   const { data: row, error } = await db
     .from("hosted_runs")
     .select(`id, ${HOSTED_GRADE_COLUMNS}`)
     .eq("id", hostedRunId)
+    .eq("target_kind", "registry_ref")
     .eq("status", "complete")
     .not("published_at", "is", null)
     .maybeSingle();
@@ -71,22 +74,38 @@ export async function POST(request: Request) {
     evidence_hash: fields.evidenceHash,
   });
 
+  // Only the on-chain submission may mark the row failed. Once the tx lands we
+  // must never label it failed — that would invite a duplicate attestation
+  // (and wasted gas) on retry.
+  let attested;
   try {
-    const { uid, txHash, attester } = await attestGrade(fields);
-    await markConfirmed(db, pendingId, {
-      attestation_uid: uid,
-      tx_hash: txHash,
-      attester_address: attester,
-    });
-    return Response.json({
-      status: "confirmed",
-      attestation_uid: uid,
-      tx_hash: txHash,
-      url: attestationUrl(cfg, uid),
-    });
+    attested = await attestGrade(fields);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await markFailed(db, pendingId, msg);
     return Response.json({ status: "failed", error: msg }, { status: 502 });
   }
+
+  const { uid, txHash, attester } = attested;
+  try {
+    await markConfirmed(db, pendingId, {
+      attestation_uid: uid,
+      tx_hash: txHash,
+      attester_address: attester,
+    });
+  } catch (e) {
+    // The attestation IS on-chain; only the DB record lagged. Surface the UID
+    // loudly so it is not lost, and still return confirmed so the operator
+    // does not re-submit. (The pending row can be reconciled manually.)
+    console.error(
+      `[attestations] on-chain attestation ${uid} (tx ${txHash}) succeeded but markConfirmed failed for row ${pendingId}:`,
+      e instanceof Error ? e.message : String(e),
+    );
+  }
+  return Response.json({
+    status: "confirmed",
+    attestation_uid: uid,
+    tx_hash: txHash,
+    url: attestationUrl(cfg, uid),
+  });
 }
