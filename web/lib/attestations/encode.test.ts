@@ -30,3 +30,25 @@ describe("evidenceHash", () => {
     expect(evidenceHash({ a: 1 })).not.toBe(evidenceHash({ a: 2 }));
   });
 });
+
+import { evidenceURI } from "./encode";
+
+describe("evidenceURI", () => {
+  it("builds a version-pinned URL", () => {
+    expect(evidenceURI("npm/@scope/pkg", "1.2.3")).toBe(
+      "https://polygraph.so/grade/npm/@scope/pkg?v=1.2.3",
+    );
+  });
+
+  it("omits ?v when there is no resolved version", () => {
+    expect(evidenceURI("github/owner/repo", null)).toBe(
+      "https://polygraph.so/grade/github/owner/repo",
+    );
+  });
+
+  it("encodes special characters in the version", () => {
+    expect(evidenceURI("pypi/pkg", "1.0+local")).toBe(
+      "https://polygraph.so/grade/pypi/pkg?v=1.0%2Blocal",
+    );
+  });
+});

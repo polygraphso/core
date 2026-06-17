@@ -24,3 +24,16 @@ export function canonicalize(value: unknown): string {
 export function evidenceHash(evidence: unknown): string {
   return keccak256(toUtf8Bytes(canonicalize(evidence ?? {})));
 }
+
+/** Canonical public site origin used for evidence URIs. */
+const SITE_URL = "https://polygraph.so";
+
+/**
+ * Version-pinned public evidence page URL for a grade. The server key forms
+ * the path (slashes preserved); the resolved version is a query param so the
+ * URL is immutable for the attested grade. Null version → no `?v`.
+ */
+export function evidenceURI(serverKey: string, version: string | null): string {
+  const base = `${SITE_URL}/grade/${serverKey}`;
+  return version ? `${base}?v=${encodeURIComponent(version)}` : base;
+}
