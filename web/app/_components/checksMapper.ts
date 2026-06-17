@@ -93,10 +93,13 @@ const CATEGORY_LABELS: Record<string, string> = {
   "C-03": "C-03 sensitive-data handling",
 };
 
+// Plain, human labels on the public card — the methodology IDs (S-01/S-03/S-04,
+// with intentional gaps where S-02/S-05 are advisory-only) would read as "broken"
+// next to a contiguous list. The codes live on the methodology page.
 const SKILL_CATEGORY_LABELS: Record<string, string> = {
-  "S-01": "S-01 prompt injection",
-  "S-03": "S-03 exfil instructions",
-  "S-04": "S-04 dangerous commands",
+  "S-01": "prompt injection",
+  "S-03": "exfil instructions",
+  "S-04": "dangerous commands",
 };
 
 const FINDING_PHRASES: Record<string, string> = {
@@ -204,8 +207,8 @@ function skillBundleToRows(
     const category = bundle.categories.find((c) => c.code === code);
     rows.push([SKILL_CATEGORY_LABELS[code] ?? code, formatSkillCategory(category)]);
   }
-  if (bundle.contentHash) rows.push(["content hash", shortFingerprint(bundle.contentHash)]);
   if (quality?.verdict) rows.push(["quality", quality.verdict]);
+  if (bundle.contentHash) rows.push(["content hash", shortFingerprint(bundle.contentHash)]);
   return rows;
 }
 
