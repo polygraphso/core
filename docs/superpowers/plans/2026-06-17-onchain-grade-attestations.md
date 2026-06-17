@@ -26,7 +26,7 @@
 - Create `web/lib/attestations/store.ts` — `grade_attestations` reads/writes + pure join helper.
 - Create `web/db/grade_attestations.sql` — table DDL (run manually in Supabase).
 - Create `web/scripts/register-schema.ts` — one-off schema registration.
-- Create `web/middleware.ts` — env-token gate for `/admin/*` and `/api/admin/*`.
+- Create `web/proxy.ts` — env-token gate for `/admin/*` and `/api/admin/*`. (Next.js 16 renamed the `middleware` convention to `proxy`: file is `proxy.ts`, export is `proxy`. Logic is identical to a classic middleware.)
 - Create `web/app/admin/login/page.tsx` + `web/app/api/admin/login/route.ts` — login.
 - Create `web/app/admin/attestations/page.tsx` + `web/app/admin/attestations/AttestButton.tsx` — admin UI.
 - Create `web/app/api/admin/attestations/route.ts` — the attestation orchestration.
@@ -948,10 +948,12 @@ git commit -m "feat: add EAS schema registration script"
 
 ---
 
-## Task 11: Admin auth (middleware + login)
+## Task 11: Admin auth (proxy + login)
+
+> **Next.js 16 note:** the `middleware` convention was renamed to `proxy`. Use `web/proxy.ts` with `export function proxy(req: NextRequest)` instead of `middleware.ts`/`middleware`. Everything else below is unchanged.
 
 **Files:**
-- Create: `web/middleware.ts`
+- Create: `web/proxy.ts`
 - Create: `web/app/api/admin/login/route.ts`
 - Create: `web/app/admin/login/page.tsx`
 
