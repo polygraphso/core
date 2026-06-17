@@ -253,3 +253,13 @@ Surfaced inline in the admin UI and returned as structured JSON from the route:
 - Migrating from env-token auth to a real auth system — when more than one
   operator needs access.
 - Tying attestations to `$POLYGRAPH` token mechanics — out of scope here.
+- **Concurrency / stale-pending hardening (deferred, single-operator scope):**
+  there is no DB unique constraint on `(hosted_run_id)`, so two simultaneous
+  POSTs could both attest; and a `pending` row left by a crash between
+  `insertPending` and resolution blocks UI retry until reconciled by hand.
+  Acceptable for one operator; revisit (e.g. a partial unique index
+  `(hosted_run_id) where status <> 'failed'`, or a pending-timeout retry) if
+  attestation is automated or multi-operator.
+- **Signed admin session (deferred):** the admin cookie currently stores the
+  raw `ADMIN_TOKEN` (HttpOnly + Secure + SameSite=Lax). Move to a signed/derived
+  session value if more than one operator or token rotation is needed.
