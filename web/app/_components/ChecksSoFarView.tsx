@@ -74,20 +74,25 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
                     className="w-full bg-parchment border hairline px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
                   />
                 </label>
-                <div className="flex border hairline self-start sm:self-auto" role="group" aria-label="Filter by type">
-                  {KIND_FILTERS.map((f, i) => (
-                    <button
-                      key={f.value}
-                      type="button"
-                      onClick={() => setKind(f.value)}
-                      aria-pressed={kind === f.value}
-                      className={`${i > 0 ? "border-l hairline " : ""}px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors ${
-                        kind === f.value ? "bg-parchment text-ink" : "text-ink-faint hover:text-ink-muted"
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
+                <div className="block">
+                  <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
+                    Type
+                  </span>
+                  <div className="flex border hairline" role="group" aria-label="Filter by type">
+                    {KIND_FILTERS.map((f, i) => (
+                      <button
+                        key={f.value}
+                        type="button"
+                        onClick={() => setKind(f.value)}
+                        aria-pressed={kind === f.value}
+                        className={`${i > 0 ? "border-l hairline " : ""}px-3 py-2.5 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors ${
+                          kind === f.value ? "bg-ink text-parchment" : "text-ink-muted hover:text-ink"
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
