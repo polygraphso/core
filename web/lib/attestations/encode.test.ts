@@ -14,6 +14,10 @@ describe("canonicalize", () => {
   it("omits undefined-valued keys", () => {
     expect(canonicalize({ a: 1, b: undefined })).toBe('{"a":1}');
   });
+
+  it("preserves array arity by serializing undefined elements as null", () => {
+    expect(canonicalize([1, undefined, 2])).toBe("[1,null,2]");
+  });
 });
 
 describe("evidenceHash", () => {

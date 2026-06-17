@@ -10,7 +10,9 @@ export function canonicalize(value: unknown): string {
     return JSON.stringify(value);
   }
   if (Array.isArray(value)) {
-    return `[${value.map(canonicalize).join(",")}]`;
+    // Match JSON.stringify: undefined array elements serialize to null
+    // (rather than collapsing), so array arity is preserved in the hash.
+    return `[${value.map((v) => (v === undefined ? "null" : canonicalize(v))).join(",")}]`;
   }
   const obj = value as Record<string, unknown>;
   const entries = Object.keys(obj)
