@@ -41,7 +41,7 @@ export function joinRunsWithAttestations(
   runs: RunLite[],
   atts: Array<
     Pick<AttestationRow, "hosted_run_id" | "attestation_uid" | "error"> & {
-      status: AttestationRow["status"] | string;
+      status: string;
     }
   >,
 ): AdminRow[] {
@@ -71,13 +71,14 @@ export async function findConfirmed(
   db: SupabaseClient,
   hostedRunId: string,
 ): Promise<AttestationRow | null> {
-  const { data } = await db
+  const { data, error } = await db
     .from(TABLE)
     .select("*")
     .eq("hosted_run_id", hostedRunId)
     .eq("status", "confirmed")
     .limit(1)
     .maybeSingle();
+  if (error) console.warn("[attestations] findConfirmed soft-failed:", error.message);
   return (data as AttestationRow | null) ?? null;
 }
 
@@ -87,7 +88,7 @@ export async function findLatestConfirmedByServerVersion(
   server: string,
   version: string,
 ): Promise<AttestationRow | null> {
-  const { data } = await db
+  const { data, error } = await db
     .from(TABLE)
     .select("*")
     .eq("server", server)
@@ -96,6 +97,9 @@ export async function findLatestConfirmedByServerVersion(
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+  if (error) {
+    console.warn("[attestations] findLatestConfirmedByServerVersion soft-failed:", error.message);
+  }
   return (data as AttestationRow | null) ?? null;
 }
 
@@ -141,16 +145,18 @@ export async function markFailed(db: SupabaseClient, id: number, message: string
 
 /** Published grades joined with their latest attestation status (admin list). */
 export async function listPublishedWithStatus(db: SupabaseClient): Promise<AdminRow[]> {
-  const { data: runs } = await db
+  const { data: runs, error: runsErr } = await db
     .from("hosted_runs")
     .select("id, target, grade, evidence, published_at")
     .eq("status", "complete")
     .not("published_at", "is", null)
     .order("published_at", { ascending: false });
-  const { data: atts } = await db
+  if (runsErr) console.warn("[attestations] listPublishedWithStatus runs soft-failed:", runsErr.message);
+  const { data: atts, error: attsErr } = await db
     .from(TABLE)
     .select("hosted_run_id, status, attestation_uid, error, created_at")
     .order("created_at", { ascending: false });
+  if (attsErr) console.warn("[attestations] listPublishedWithStatus atts soft-failed:", attsErr.message);
   return joinRunsWithAttestations(
     (runs as RunLite[]) ?? [],
     (atts as AttestationRow[]) ?? [],
