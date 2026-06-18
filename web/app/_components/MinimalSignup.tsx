@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { HoneypotField } from "./HoneypotField";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 
@@ -14,6 +15,7 @@ export function MinimalSignup({
   cta = "Notify me",
 }: Props) {
   const [email, setEmail] = useState("");
+  const [company, setCompany] = useState(""); // honeypot
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState<string>("");
 
@@ -25,7 +27,7 @@ export function MinimalSignup({
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, source }),
+        body: JSON.stringify({ email, source, company }),
       });
       const body = (await res.json()) as { ok: boolean; message?: string };
       if (!res.ok || !body.ok) {
@@ -49,6 +51,7 @@ export function MinimalSignup({
       aria-describedby="minimal-signup-status"
       noValidate
     >
+      <HoneypotField value={company} onChange={setCompany} />
       <label className="block">
         <span className="sr-only">Email</span>
         <input

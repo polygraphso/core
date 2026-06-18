@@ -129,9 +129,12 @@ pypi/mcp-server-git
 pypi/mcp-server-fetch`}
           </Code>
           <p>
-            The version segment is optional. Lookups are versionless —{" "}
-            <Inline>1.0.0</Inline> and <Inline>1.0.1</Inline> of the same
-            package resolve to the same grade.
+            The version segment is optional and version-aware. A pinned{" "}
+            <Inline>@version</Inline> returns the grade for that exact version. A
+            bare ref resolves the version in play — the installed version (CLI)
+            or the registry&rsquo;s current latest — and returns its grade; if
+            that version isn&rsquo;t graded yet, the most recent graded version
+            is returned and flagged (<Inline>version_match: false</Inline>).
           </p>
         </Section>
 
@@ -162,10 +165,13 @@ pypi/mcp-server-fetch`}
     "c02": "pass",
     "c03": "pass",
     "tool_defs_fingerprint": "0x256a…66db6",
-    "methodology_version": "litmus-v2",
+    "methodology_version": "litmus-v5",
+    "resolved_version": "1.4.0",
     "rationale": "All three categories passed.",
     "computed_at": "2026-06-11T14:14:04Z"
   },
+  "current_version": "1.4.0",
+  "version_match": true,
   "notify_url": "${NOTIFY_URL}"
 }`}
           </Code>
@@ -180,8 +186,11 @@ pypi/mcp-server-fetch`}
             >
               rubric
             </a>
-            ). <Inline>polygraph_detail</Inline> carries the per-check results,
-            tool-surface fingerprint, and methodology version.
+            ). <Inline>polygraph_detail.resolved_version</Inline> is the version
+            that was graded; <Inline>current_version</Inline> is the version in
+            play, and <Inline>version_match</Inline> is{" "}
+            <Inline>false</Inline> when an older graded version is returned
+            because the current one isn&rsquo;t graded yet.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">
@@ -212,6 +221,10 @@ pypi/mcp-server-fetch`}
               <Inline>400</Inline> — missing, malformed, or too-long{" "}
               <Inline>server_ref</Inline>. The body includes a short{" "}
               <Inline>error</Inline> string.
+            </li>
+            <li>
+              <Inline>429</Inline> — rate limited (per-IP). Back off and retry
+              after the <Inline>Retry-After</Inline> interval.
             </li>
             <li>
               <Inline>500</Inline> — lookup failed server-side. Safe to retry.
