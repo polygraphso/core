@@ -52,6 +52,7 @@ body {
 .pane { padding: 34px 40px 38px; font-size: 23px; line-height: 1.85; }
 .narrow .pane { padding: 28px 30px 30px; font-size: 19px; }
 .cmd { color: var(--cmd); margin-bottom: 18px; }
+.cmd.cmd-sm { font-size: 0.8em; }
 .cmd .ps1 { color: var(--faint); }
 .out { color: var(--text); }
 .out .line { display: block; }
@@ -69,6 +70,19 @@ body {
 .grade.A { color: var(--green); } .grade.B { color: var(--blue); }
 .grade.D { color: var(--amber); } .grade.F { color: var(--red); }
 .rationale { color: var(--dim); font-size: 0.85em; line-height: 1.6; display: block; margin-top: 6px; }
+
+/* the `→ checks` block: one aligned code · label · status row per category */
+.checks { padding-left: 30px; margin: 4px 0; }
+.chk { display: grid; align-items: baseline; padding: 1px 0; }
+.chk .ccode { color: var(--faint); }
+.chk .clabel { color: var(--text); }
+.chk .cstat { font-weight: 600; }
+.chk.hl {
+  background: rgba(103,168,248,.10);
+  outline: 1px solid rgba(103,168,248,.32);
+  border-radius: 6px;
+  padding: 3px 10px; margin: 2px -10px;
+}
 .caption { color: var(--dim); font-size: 21px; text-align: center; line-height: 1.6; }
 .caption b { color: var(--text); font-weight: 600; }
 .brand {
@@ -94,3 +108,17 @@ body {
 .chip.B { color: var(--blue); background: rgba(103,168,248,.12); }
 .chip.D { color: var(--amber); background: rgba(251,191,36,.12); }
 .chip.F { color: var(--red); background: rgba(248,113,113,.12); }
+
+/* claude-code "ask" framing for the batch skill scan */
+.ask { color: var(--text); margin-bottom: 14px; }
+.ask .caret { color: var(--green); margin-right: 12px; font-weight: 700; }
+.reply { color: var(--dim); margin-bottom: 16px; font-size: 0.92em; }
+.reply b { color: var(--text); font-weight: 600; }
+.rrow.muted .rname { color: var(--dim); }
+.summary { color: var(--dim); margin-top: 16px; padding-top: 16px; border-top: 1px solid #20242b; font-size: 0.95em; }
+.summary b { color: var(--green); font-weight: 700; }
+
+/* wide (16:9) two-column variant of the batch card */
+.report.wide { width: 1480px; }
+.skillgrid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 52px; }
+.moreline { color: var(--dim); padding: 11px 0 2px; }
