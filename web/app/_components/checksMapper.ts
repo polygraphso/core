@@ -77,13 +77,15 @@ function shortFingerprint(fp: string): string {
   return fp.length > 14 ? `${fp.slice(0, 6)}…${fp.slice(-4)}` : fp;
 }
 
-function targetLabel(target: TargetDescriptor): string {
+function targetLabel(target: TargetDescriptor | undefined): string {
+  if (!target) return "—";
   if (target.kind === "http" && target.url) return target.url;
   if (target.kind === "stdio" && target.command) return target.command;
   return target.kind;
 }
 
-function transportLabel(target: TargetDescriptor): string {
+function transportLabel(target: TargetDescriptor | undefined): string {
+  if (!target) return "—";
   if (target.kind === "http") return "Streamable HTTP — connected like an agent";
   if (target.kind === "stdio") return "stdio — launched like an agent";
   return target.kind;

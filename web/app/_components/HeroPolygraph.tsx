@@ -32,6 +32,10 @@ async function fetchLatestRun() {
     .select(
       "id, target, target_kind, grade, rationale, evidence, tool_defs_fingerprint, c01, c02, c03",
     )
+    // Server grades only — this is a server report card (transport, C-01/02/03,
+    // fingerprint). Skill grades have a different evidence shape (no target), so
+    // including them here crashes the server-shaped mapper.
+    .in("target_kind", ["registry_ref", "remote_url"])
     .eq("status", "complete")
     .not("published_at", "is", null)
     .order("published_at", { ascending: false })
