@@ -23,7 +23,7 @@ export interface WaitlistMetrics {
 export interface GradeRequestMetrics {
   perDay: DayBucket[];
   byStatus: Bucket[];
-  demand: Bucket[]; // targets ranked by distinct requester rows
+  demand: Bucket[]; // targets ranked by request rows (one row per distinct requester, by the unique index)
   recent: { target: string; target_kind: string; status: string; requested_at: string }[];
 }
 

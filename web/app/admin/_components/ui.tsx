@@ -98,3 +98,27 @@ export function BarList({ data, empty = "No data yet." }: { data: Bucket[]; empt
 export function EmptyNote({ children }: { children: ReactNode }) {
   return <p className="text-sm text-ink-faint">{children}</p>;
 }
+
+/** Compact list of recent rows: primary (mono) + optional secondary, with right-aligned meta. */
+export function RecentList({
+  rows,
+  empty = "Nothing yet.",
+}: {
+  rows: { primary: string; secondary?: string | null; meta: string }[];
+  empty?: string;
+}) {
+  if (rows.length === 0) return <EmptyNote>{empty}</EmptyNote>;
+  return (
+    <ul className="divide-y divide-rule border-y border-rule">
+      {rows.map((r, i) => (
+        <li key={i} className="flex items-baseline gap-3 py-1.5">
+          <span className="min-w-0 flex-1 truncate font-mono text-xs text-ink" title={r.primary}>
+            {r.primary}
+          </span>
+          {r.secondary && <span className="shrink-0 text-xs text-ink-faint">{r.secondary}</span>}
+          <span className="shrink-0 font-mono text-xs text-ink-muted tabular">{r.meta}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}

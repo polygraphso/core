@@ -6,7 +6,7 @@ import {
   getNotifyMetrics,
   getUntrackedDemand,
 } from "@/lib/adminMetrics";
-import { Panel, KpiCard, MiniBars, BarList, EmptyNote } from "./_components/ui";
+import { Panel, KpiCard, MiniBars, BarList, EmptyNote, RecentList } from "./_components/ui";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -69,6 +69,17 @@ export default async function AdminPage() {
                 <p className="section-label mb-2">By source</p>
                 <BarList data={waitlist.bySource} />
               </div>
+              <div>
+                <p className="section-label mb-2">Recent</p>
+                <RecentList
+                  rows={waitlist.recent.map((r) => ({
+                    primary: r.email,
+                    secondary: r.role ?? undefined,
+                    meta: r.first_seen_at.slice(0, 10),
+                  }))}
+                  empty="No signups yet."
+                />
+              </div>
             </div>
           ) : (
             <EmptyNote>No waitlist data (or Supabase not configured).</EmptyNote>
@@ -87,6 +98,17 @@ export default async function AdminPage() {
               <div>
                 <p className="section-label mb-2">Demand leaderboard</p>
                 <BarList data={grades.demand} empty="No requests yet." />
+              </div>
+              <div>
+                <p className="section-label mb-2">Recent</p>
+                <RecentList
+                  rows={grades.recent.map((r) => ({
+                    primary: r.target,
+                    secondary: r.status,
+                    meta: r.requested_at.slice(0, 10),
+                  }))}
+                  empty="No requests yet."
+                />
               </div>
             </div>
           ) : (
