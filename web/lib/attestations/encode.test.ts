@@ -78,6 +78,9 @@ const ROW: HostedGradeRow & { id: number } = {
   c01: null,
   c02: null,
   c03: null,
+  // First-class column added on main (#56); null here exercises the
+  // bundle (`evidence.resolvedVersion`) fallback that detailFromRow applies.
+  resolved_version: null,
   published_at: "2026-01-02T00:00:00.000Z",
 };
 
