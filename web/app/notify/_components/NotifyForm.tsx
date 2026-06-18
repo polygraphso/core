@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { HoneypotField } from "@/app/_components/HoneypotField";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 
@@ -19,10 +20,11 @@ type Props =
 export function NotifyForm(props: Props) {
   const { mode, serverRef } = props;
   const [email, setEmail] = useState("");
+  const [company, setCompany] = useState(""); // honeypot
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
 
-  async function submit(payload: { server_ref: string; email?: string }) {
+  async function submit(payload: { server_ref: string; email?: string; company?: string }) {
     setStatus("submitting");
     setMessage("");
     try {
@@ -93,12 +95,13 @@ export function NotifyForm(props: Props) {
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        submit({ server_ref: serverRef, email });
+        submit({ server_ref: serverRef, email, company });
       }}
       className="grid gap-3 sm:grid-cols-[1fr_auto]"
       aria-describedby="notify-status"
       noValidate
     >
+      <HoneypotField value={company} onChange={setCompany} />
       <label className="block">
         <span className="sr-only">Email</span>
         <input

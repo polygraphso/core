@@ -21,6 +21,7 @@ import {
   serverKey,
 } from "@/lib/identity";
 import { getSession } from "@/lib/session";
+import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
 
 const EMAIL_MAX_LEN = 254;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -39,6 +40,9 @@ function getSupabase() {
 }
 
 export async function POST(request: Request) {
+  const limited = await enforceRateLimit(request, "notify", { max: 12, windowSeconds: 60 });
+  if (limited) return limited;
+
   let payload: unknown;
   try {
     payload = await request.json();
@@ -49,10 +53,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const { server_ref, email } = (payload ?? {}) as {
+  const { server_ref, email, company } = (payload ?? {}) as {
     server_ref?: unknown;
     email?: unknown;
+    company?: unknown;
   };
+
+  // Honeypot: hidden field; a bot that fills it gets a silent ok and no write.
+  if (honeypotTripped(company)) {
+    return NextResponse.json({ ok: true });
+  }
 
   if (typeof server_ref !== "string" || server_ref.length === 0) {
     return NextResponse.json(

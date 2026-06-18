@@ -16,7 +16,7 @@ export type LitmusGrade = "A" | "B" | "C" | "D" | "F";
 
 // Mirrors the website's ChecksSoFar select (plus published_at for dating).
 export const HOSTED_GRADE_COLUMNS =
-  "target, target_kind, grade, rationale, evidence, tool_defs_fingerprint, c01, c02, c03, published_at";
+  "target, target_kind, grade, rationale, evidence, tool_defs_fingerprint, c01, c02, c03, resolved_version, published_at";
 
 interface EvidenceCategory {
   code?: string;
@@ -45,6 +45,7 @@ export interface HostedGradeRow {
   c01: string | null;
   c02: string | null;
   c03: string | null;
+  resolved_version: string | null;
   published_at: string | null;
 }
 
@@ -90,7 +91,9 @@ export function detailFromRow(
       tool_defs_fingerprint:
         bundle?.toolDefsFingerprint ?? row.tool_defs_fingerprint ?? null,
       methodology_version: bundle?.methodologyVersion ?? "litmus",
-      resolved_version: bundle?.resolvedVersion ?? null,
+      // Prefer the first-class column (migration 0002); fall back to the bundle
+      // for rows graded before it was populated.
+      resolved_version: row.resolved_version ?? bundle?.resolvedVersion ?? null,
       rationale: row.rationale ?? bundle?.gradeRationale ?? null,
       evidence_url: null,
       computed_at: row.published_at ?? null,
@@ -101,9 +104,10 @@ export function detailFromRow(
 /**
  * Latest published registry grade for a versionless server_key. With `version`,
  * only a grade run against that EXACT version matches (a different version → null,
- * i.e. "not graded for this version"); without it, the latest grade for any
- * version. The version is matched on the evidence bundle's `resolvedVersion`
- * (always present in the JSONB), so this needs no extra column.
+ * i.e. "not graded for this version"); without it, the latest published grade for
+ * any version. Version is matched on the first-class `resolved_version` column
+ * (migration 0002), which is indexed and decoupled from the evidence-bundle shape
+ * — replacing the prior `evidence->>resolvedVersion` JSONB probe.
  */
 export async function fetchPublishedGrade(
   db: SupabaseClient,
@@ -117,7 +121,7 @@ export async function fetchPublishedGrade(
     .eq("target_kind", "registry_ref")
     .eq("status", "complete")
     .not("published_at", "is", null);
-  if (version) query = query.eq("evidence->>resolvedVersion", version);
+  if (version) query = query.eq("resolved_version", version);
   const { data, error } = await query
     .order("published_at", { ascending: false })
     .limit(1)

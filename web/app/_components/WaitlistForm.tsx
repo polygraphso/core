@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { HoneypotField } from "./HoneypotField";
 
 type Status = "idle" | "submitting" | "ok" | "error";
 
@@ -12,6 +13,7 @@ type Props = {
 export function WaitlistForm({ variant = "hero", source = "hero" }: Props) {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("");
+  const [company, setCompany] = useState(""); // honeypot
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState<string>("");
 
@@ -23,7 +25,7 @@ export function WaitlistForm({ variant = "hero", source = "hero" }: Props) {
       const res = await fetch("/api/waitlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, role, source }),
+        body: JSON.stringify({ email, role, source, company }),
       });
       const body = (await res.json()) as { ok: boolean; message?: string };
       if (!res.ok || !body.ok) {
@@ -54,6 +56,7 @@ export function WaitlistForm({ variant = "hero", source = "hero" }: Props) {
       aria-describedby="waitlist-status"
       noValidate
     >
+      <HoneypotField value={company} onChange={setCompany} />
       <div className="grid gap-3 sm:grid-cols-[1.4fr_1fr] sm:col-span-1">
         <label className="block">
           <span className="sr-only">Email</span>
