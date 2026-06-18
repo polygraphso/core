@@ -18,6 +18,24 @@ Five probes across three checks:
 
 All three pass in the sandbox → A. Full spec: https://polygraph.so/methodology
 
+## Agent Skills (methodologyVersion: litmus-skill-v1)
+
+polygraph now grades **Agent Skills** too — the `SKILL.md` format used by Claude Code, the Claude apps, the Agent SDK, and skill marketplaces. A skill is a `SKILL.md` of instructions plus an optional bundle of files. This is a **static safety scan** — the skill is read, never executed — across three checks:
+
+- **S-01 Prompt injection / context poisoning** — does the skill body try to hijack the agent that loads it?
+- **S-03 Data-exfiltration instructions** — does it instruct the agent to leak secrets or planted data?
+- **S-04 Dangerous bundled commands** — does the bundle ship something like `curl | bash`, a reverse shell, or similar?
+
+Skills grade on a strict **A / B / D / F** alphabet (no C, as with servers). Honest by construction: an **A is a clean static scan, not behavioral proof**. Static scanning cannot catch a command built or fetched at runtime, and bundled scripts are not run. It is a measurement, not an endorsement. The letter is reproducible — open, deterministic, and tied to a content hash of the skill. (An optional, model-judged "honesty" signal — does the skill do what its description claims? — can run alongside it; it is advisory, non-deterministic, and separate from the A/B/D/F letter.)
+
+Run it yourself, zero-install:
+
+```
+npx -p @polygraphso/litmus polygraphso-litmus-skill <path-to-skill>
+```
+
+The same grade is available as an MCP tool, `run_skill_litmus`. (The MCP-server grader is the separate `polygraphso-litmus` / `run_litmus` — don't conflate the two.)
+
 ## Vocabulary
 
 - **Polygraph** — the deliverable. The result we issue for an MCP server.

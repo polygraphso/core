@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Methodology — litmus-v5",
   description:
-    "The litmus test, v5: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence.",
+    "The litmus test, v5: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence. Plus litmus-skill-v1: a static safety scan of Agent Skills, graded A/B/D/F.",
   alternates: { canonical: "/methodology" },
 };
 
@@ -69,7 +69,16 @@ export default function MethodologyPage() {
             <em>does</em> when exercised the way an agent would, not what its
             README says. The string{" "}
             <Inline>methodologyVersion: &quot;litmus-v5&quot;</Inline> travels
-            with every grade this spec produces.
+            with every grade this spec produces. The same lab also grades{" "}
+            <strong className="text-ink not-italic">Agent Skills</strong> under a
+            separate static methodology, <Inline>litmus-skill-v1</Inline> —{" "}
+            <a
+              href="#skills"
+              className="text-ink not-italic hover:text-oxblood transition-colors border-b hairline border-dotted"
+            >
+              §08
+            </a>
+            .
           </p>
         </header>
 
@@ -429,7 +438,96 @@ export default function MethodologyPage() {
           </p>
         </Section>
 
-        <Section num="08" label="See also" id="see-also">
+        <Section num="08" label="Agent Skills · litmus-skill-v1" id="skills">
+          <p>
+            Everything above grades MCP servers by exercising them. Agent
+            Skills are graded differently: a skill is content — a{" "}
+            <Inline>SKILL.md</Inline> of instructions plus an optional bundle of
+            files — and <Inline>litmus-skill-v1</Inline> is a{" "}
+            <strong className="text-ink">static safety scan</strong> of that
+            content. <strong className="text-ink">Nothing is executed.</strong>{" "}
+            &ldquo;Agent Skills&rdquo; here means the <Inline>SKILL.md</Inline>{" "}
+            format used by Claude Code, the Claude apps, the Agent SDK, and
+            skill marketplaces — not arbitrary agent frameworks.
+          </p>
+          <p>
+            It reads the skill the way an agent that loads it would, and asks
+            one question:
+          </p>
+          <p className="font-serif text-xl text-ink leading-snug border-l-2 border-oxblood pl-4">
+            Will loading this skill try to hijack me, tell me to leak data, or
+            ship a dangerous command?
+          </p>
+
+          <SubHead>S-01 — Prompt injection / context poisoning</SubHead>
+          <p>
+            Scans the skill body for instructions aimed at the loading agent
+            rather than the user&rsquo;s task — override and jailbreak framing,
+            role-tag or tool-call-shaped text, hidden or invisible Unicode. The
+            same instruction-mimicry and invisible-Unicode primitives the server
+            checks use, applied to skill content.
+          </p>
+
+          <SubHead>S-03 — Data-exfiltration instructions</SubHead>
+          <p>
+            Flags a skill that instructs the agent to read secrets, credentials,
+            or environment values and send them somewhere — the exfiltration
+            pattern expressed as guidance the agent is meant to follow.
+          </p>
+
+          <SubHead>S-04 — Dangerous bundled commands</SubHead>
+          <p>
+            Inspects the bundled files for commands that would harm the host if
+            run — a piped <Inline>curl | bash</Inline>, a reverse shell, and the
+            like. The scripts are read, never run; this is a static read of what
+            the bundle would do, not a record of what it did.
+          </p>
+
+          <SubHead>Grade</SubHead>
+          <p>
+            A single letter on a strict <Inline>A / B / D / F</Inline> scale —
+            skills have <strong className="text-ink">no C tier</strong>, the
+            same skipped letter as the server scale. A clean scan across all
+            three checks is A. A skill with no bundle to read leaves S-04
+            unverified — injection and exfiltration still pass, but a check
+            could not run — so it caps at B, stated honestly rather than
+            rounded up. A dangerous bundled command (S-04) caps at D; an
+            injection or exfiltration hit (S-01 or S-03) floors at F. The grade
+            is reproducible: the methodology is open and the letter is
+            deterministic, and the skill is content-hashed so a grade ties to
+            the exact bytes it measured.
+          </p>
+
+          <SubHead>What an A claims — and does not</SubHead>
+          <p>
+            An A is a <strong className="text-ink">clean static scan</strong>,{" "}
+            <strong className="text-ink">not behavioral proof</strong>. A static
+            read cannot catch a command built or fetched at runtime, and bundled
+            scripts are read but never executed — both are out of scope by
+            construction. The grade is a measurement of the skill&rsquo;s
+            content as written, not an accusation against it nor an endorsement
+            of it. We underclaim here too.
+          </p>
+          <p className="text-sm">
+            <span className="text-ink-faint">Advisory · </span>A separate,
+            model-judged <em>honesty</em> signal can be reported alongside the
+            letter — does the skill do what its description claims? It is
+            non-deterministic, kept apart from the <Inline>A / B / D / F</Inline>{" "}
+            grade, and never minted.
+          </p>
+          <p className="text-sm">
+            <span className="text-ink-faint">Run it yourself · </span>
+            <Inline>
+              npx -p @polygraphso/litmus polygraphso-litmus-skill
+              &lt;path-to-skill&gt;
+            </Inline>{" "}
+            — zero-install, or the <Inline>run_skill_litmus</Inline> MCP tool.
+            (The MCP-server grader is the separate{" "}
+            <Inline>polygraphso-litmus</Inline> / <Inline>run_litmus</Inline>.)
+          </p>
+        </Section>
+
+        <Section num="09" label="See also" id="see-also">
           <ul className="list-none space-y-1">
             <li>
               <a
