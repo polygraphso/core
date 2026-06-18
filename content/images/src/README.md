@@ -39,6 +39,8 @@ Options: `--out <path>`, `--caption "<text>"`, `--size <WxH>` (default `1500x820
 
 The card mirrors the harness's readable output: a `→ checks` block with each category's plain-English label (`C-01 tool-output injection`, `S-01 prompt injection / context poisoning`, …) and status, a failing/skipped row highlighted.
 
+**The `$ …` command on every card is a real, zero-install command a reader can run** — `npx -p @polygraphso/litmus polygraphso-litmus litmus <target>` (servers) / `… polygraphso-litmus-skill <path>` (skills) — not a display label. For skill cards the argument is the **actual graded path** (from `--skill <dir>`); `--cmd` overrides it, and with `--from-skill-json` and no `--cmd` it falls back to a literal `<path-to-skill>` placeholder rather than guessing a path that wouldn't resolve. So prefer `--skill <dir>` for a card you want to be copy-paste reproducible.
+
 > **pnpm + flags:** positional targets forward fine (`pnpm card npm/x`). If pnpm ever swallows a `--flag`, add a `--` separator: `pnpm card npm/x -- --out z.png`. Or call the script directly: `node content/images/src/gen-card.mjs npm/x --out z.png`.
 
 ## How a card is built (data → PNG)

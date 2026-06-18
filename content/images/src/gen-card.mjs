@@ -198,7 +198,7 @@ function buildCardHtml(bundle, displayTarget) {
   <div class="terminal">
     <div class="bar"><div class="dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div><div class="title">litmus — grade</div></div>
     <div class="pane">
-      <div class="cmd"><span class="ps1">$ </span>polygraphso-litmus litmus ${esc(displayTarget)}</div>
+      <div class="cmd cmd-sm"><span class="ps1">$ </span>npx -p @polygraphso/litmus polygraphso-litmus litmus ${esc(displayTarget)}</div>
       <div class="out">
         <span class="line"><span class="arrow">→</span> ${esc(bundle.methodologyVersion || "litmus")} · ${esc(bundle.serverRef)}</span>
         ${checksBlock(bundle.categories || [], CATEGORY_META)}
@@ -272,10 +272,12 @@ if (opts.html) {
   const skillPath = opts.skill ? resolve(opts.skill).replace(/\/+$/, "") : null;
   const displayName = opts.name || basename(String(skillPath || safety.skillRef || "skill").replace(/\/+$/, ""));
   // The card shows the exact command a developer runs (zero-install npx), with the
-  // home dir collapsed to ~ for legibility. --cmd overrides; falls back to the name.
+  // home dir collapsed to ~ for legibility. Prefer the REAL graded path (--skill);
+  // --cmd overrides; otherwise fall back to an honest <path-to-skill> placeholder —
+  // never a guessed path that wouldn't resolve.
   const home = process.env.HOME || "";
   const cmdArg = opts.cmd
-    || (skillPath ? (home && skillPath.startsWith(home) ? "~" + skillPath.slice(home.length) : skillPath) : `~/.claude/skills/${displayName}`);
+    || (skillPath ? (home && skillPath.startsWith(home) ? "~" + skillPath.slice(home.length) : skillPath) : "<path-to-skill>");
   const out = opts.out || join(IMAGES_DIR, `skill-${String(safety.grade).toLowerCase()}-${slug(displayName)}.png`);
   const tmp = join(tmpdir(), `pg-skill-card-${process.pid}.html`);
   writeFileSync(tmp, buildSkillCardHtml(safety, displayName, cmdArg));
