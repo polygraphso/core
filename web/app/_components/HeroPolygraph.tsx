@@ -60,7 +60,10 @@ export async function HeroPolygraph() {
     <div className="border hairline bg-parchment-50 mb-5">
       <div className="flex items-center justify-between px-3 py-1.5 border-b hairline font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
         <span className="whitespace-nowrap">latest polygraph</span>
-        <span className="text-ink whitespace-nowrap">litmus-v1</span>
+        {/* Data-driven from the run's evidence (matches ChecksSoFarView) so the
+            badge tracks the methodology the grade was actually produced under,
+            instead of drifting on a hardcoded version string. */}
+        <span className="text-ink whitespace-nowrap">{run.methodologyVersion}</span>
       </div>
       <div className="px-3 py-3 flex items-start gap-4">
         <span

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { HoneypotField } from "@/app/_components/HoneypotField";
 
 // Free "grade this server" intake. target + email (+ optional note) →
 // POST /api/grade-requests → confirmation with the demand count. No
@@ -28,6 +29,7 @@ export function RequestForm() {
   const [target, setTarget] = useState("");
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
+  const [company, setCompany] = useState(""); // honeypot
   const [state, setState] = useState<"idle" | "submitting" | "ok" | "error">("idle");
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<{ created: boolean; demand: number } | null>(null);
@@ -54,6 +56,7 @@ export function RequestForm() {
           target: target.trim(),
           email: email.trim(),
           note: note.trim() || undefined,
+          company,
         }),
       });
       const body = (await res.json()) as {
@@ -122,6 +125,7 @@ export function RequestForm() {
 
   return (
     <form onSubmit={submit} className="border hairline bg-parchment-50" noValidate>
+      <HoneypotField value={company} onChange={setCompany} />
       <div className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
         <span>request a grade</span>
         <span className="hidden sm:inline">free · email-gated</span>

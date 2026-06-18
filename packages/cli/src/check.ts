@@ -7,8 +7,10 @@
  * marker that scans as a line of output, not decoration.
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { NETWORK_FAILURE_LINE, checkUrl } from "./api.js";
-import { RefParseError, canonicalRef, parseRef } from "./identity.js";
+import { RefParseError, canonicalRef, parseRef, type ParsedRef } from "./identity.js";
 
 type ApiResponse =
   | {
@@ -21,6 +23,10 @@ type ApiResponse =
         resolved_version?: string | null;
       } | null;
       notify_url: string;
+      /** The version in play (installed/pinned, else registry latest). */
+      current_version?: string | null;
+      /** false when a different (older) graded version is shown as a fallback. */
+      version_match?: boolean | null;
     }
   | {
       status: "not_available";
@@ -28,6 +34,25 @@ type ApiResponse =
     };
 
 const GRADES = new Set(["A", "B", "C", "D", "F"]);
+
+/**
+ * The version of an npm package as installed in the current project, so a bare
+ * `polygraphso check npm/foo` reports the grade for the version you'd actually
+ * run. Reads the top-level `node_modules/<pkg>/package.json` (covers hoisted
+ * npm/pnpm/yarn installs); null when not installed, leaving the server to
+ * resolve the registry's current latest. npm only — pypi/github resolve server-side.
+ */
+function installedNpmVersion(parsed: ParsedRef): string | null {
+  if (parsed.registry !== "npm") return null;
+  const pkg = parsed.owner ? `${parsed.owner}/${parsed.name}` : parsed.name;
+  try {
+    const path = join(process.cwd(), "node_modules", ...pkg.split("/"), "package.json");
+    const json = JSON.parse(readFileSync(path, "utf8")) as { version?: unknown };
+    return typeof json.version === "string" ? json.version : null;
+  } catch {
+    return null;
+  }
+}
 
 const USAGE_HINT = [
   "polygraphso check requires a registry-prefixed ref.",
@@ -58,11 +83,13 @@ export async function runCheck(args: readonly string[]): Promise<number> {
     throw err;
   }
 
-  // Send the version when pinned (the API looks up that exact version's grade);
-  // a bare ref returns the latest graded version. The versionless canonical keys
-  // the server identity and the demand counter either way.
+  // Resolve the version in play: a pinned ref is exact; otherwise pin the
+  // locally-installed version so we report the grade for what you'd actually run.
+  // If nothing is installed, send the bare ref and the server resolves the
+  // registry's current latest. The versionless canonical keys the demand counter.
   const canonical = canonicalRef(parsed);
-  const serverRef = parsed.version ? `${canonical}@${parsed.version}` : canonical;
+  const effectiveVersion = parsed.version ?? installedNpmVersion(parsed);
+  const serverRef = effectiveVersion ? `${canonical}@${effectiveVersion}` : canonical;
 
   let res: Response;
   try {
@@ -104,13 +131,22 @@ export async function runCheck(args: readonly string[]): Promise<number> {
     const detail = body.polygraph_detail ?? null;
     const method = detail?.methodology_version ?? "litmus";
     const date = detail?.computed_at ? detail.computed_at.slice(0, 10) : null;
-    const ver = detail?.resolved_version ? ` · version ${detail.resolved_version}` : "";
+    const gradedVer = detail?.resolved_version ?? null;
+    const ver = gradedVer ? ` · version ${gradedVer}` : "";
     const polyLine = `→ polygraph: ${body.polygraph}${ver} · ${method}${date ? ` · ${date}` : ""}`;
+    const lines = [polyLine];
+    // Freshness: the graded version differs from the version in play.
+    const currentVer = body.current_version ?? null;
+    if (body.version_match === false && currentVer && gradedVer && currentVer !== gradedVer) {
+      lines.push(`→ note: graded ${gradedVer}; your version is ${currentVer} (not yet graded)`);
+    }
     const evidence = detail?.evidence_url;
-    const tailLine = evidence
-      ? `→ evidence → ${evidence.replace(/^https?:\/\//, "")}`
-      : `→ details → polygraph.so/#checks`;
-    process.stdout.write(`${polyLine}\n${tailLine}\n`);
+    lines.push(
+      evidence
+        ? `→ evidence → ${evidence.replace(/^https?:\/\//, "")}`
+        : `→ details → polygraph.so/#checks`,
+    );
+    process.stdout.write(lines.join("\n") + "\n");
     return 0;
   }
 

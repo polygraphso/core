@@ -15,6 +15,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { ServerRefParseError, parseServerRef, serverKey } from "@/lib/identity";
+import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
 
 const EMAIL_MAX_LEN = 254;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -47,6 +48,9 @@ function parseTarget(
 }
 
 export async function POST(request: Request) {
+  const limited = await enforceRateLimit(request, "grade-requests", { max: 10, windowSeconds: 60 });
+  if (limited) return limited;
+
   let payload: unknown;
   try {
     payload = await request.json();
@@ -57,11 +61,18 @@ export async function POST(request: Request) {
     );
   }
 
-  const { target, email, note } = (payload ?? {}) as {
+  const { target, email, note, company } = (payload ?? {}) as {
     target?: unknown;
     email?: unknown;
     note?: unknown;
+    company?: unknown;
   };
+
+  // Honeypot: a hidden field real users leave blank. A bot that fills it gets a
+  // silent success and no write — no signal that it was caught.
+  if (honeypotTripped(company)) {
+    return NextResponse.json({ ok: true, created: false, demand: 0 });
+  }
 
   if (typeof target !== "string" || target.trim().length === 0) {
     return NextResponse.json(

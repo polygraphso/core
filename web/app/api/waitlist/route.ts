@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
 
 // Practical max from RFC 5321; longer addresses are not deliverable in
 // practice and the regex below assumes a bounded input.
@@ -29,6 +30,9 @@ function getSupabase() {
 }
 
 export async function POST(request: Request) {
+  const limited = await enforceRateLimit(request, "waitlist", { max: 10, windowSeconds: 60 });
+  if (limited) return limited;
+
   let payload: unknown;
   try {
     payload = await request.json();
@@ -39,11 +43,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const { email, role, source } = (payload ?? {}) as {
+  const { email, role, source, company } = (payload ?? {}) as {
     email?: unknown;
     role?: unknown;
     source?: unknown;
+    company?: unknown;
   };
+
+  // Honeypot: hidden field; a bot that fills it gets a silent ok and no write.
+  if (honeypotTripped(company)) {
+    return NextResponse.json({ ok: true });
+  }
 
   if (typeof email !== "string") {
     return NextResponse.json(
