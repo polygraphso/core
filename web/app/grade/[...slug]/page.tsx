@@ -6,6 +6,15 @@ import { findLatestConfirmedByServerVersion } from "@/lib/attestations/store";
 
 export const dynamic = "force-dynamic";
 
+/** Decode a single path segment; fall back to the raw value on malformed input. */
+function decodeSegment(s: string): string {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+}
+
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleDateString("en-US", {
@@ -25,7 +34,10 @@ export default async function GradePage({
 }) {
   const { slug } = await params;
   const { v } = await searchParams;
-  const serverKey = slug.join("/");
+  // Next does not URL-decode catch-all segments, so a scoped server key like
+  // `npm/@scope/pkg` arrives as `npm/%40scope/pkg`. Decode each segment back to
+  // the canonical server key the grade is stored under.
+  const serverKey = slug.map(decodeSegment).join("/");
 
   const db = getSupabaseAdmin();
   if (!db) notFound();
