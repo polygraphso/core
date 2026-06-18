@@ -59,9 +59,10 @@ export function Hero() {
           {/* Subhead v0.4 — concrete-first for cold readers; the insider
               terms (MCP, re-runnable) drop to the mono line below. */}
           <p className="mt-8 max-w-xl text-ink-muted text-lg leading-relaxed">
-            AI agents plug into third-party tools that can hijack them or
-            leak your data. We run those tools through an adversarial test
-            and publish a letter grade &mdash; free to read, public, evidence
+            AI agents plug into third-party tools and load skills that can
+            hijack them or leak your data. We run those tools through an
+            adversarial test, scan those skills for the same tricks, and
+            publish a letter grade &mdash; free to read, public, evidence
             attached.
           </p>
 
