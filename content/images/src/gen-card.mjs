@@ -7,11 +7,15 @@
  *
  * Modes:
  *   node gen-card.mjs <target> [opts]      grade <target> and render its card
+ *   node gen-card.mjs --skill <dir> [opts] grade a Claude Code skill (static
+ *                                          scan, no Docker) and render its card
  *   node gen-card.mjs --html <file> [opts] render an existing HTML (leaderboard,
  *                                          reproducibility) — no grading
  *
  * Options:
- *   --from-json <file>   use an existing `litmus --json` bundle (skip the run)
+ *   --from-json <file>       use an existing `litmus --json` bundle (skip the run)
+ *   --from-skill-json <file> use an existing `litmus-skill --json` bundle
+ *   --name <display>         skill card: name shown on the card (default: dir name)
  *   --out <path>         output PNG (default: content/images/grade-<g>-<slug>.png)
  *   --caption "<text>"   editorial line under the card (default: grade-aware)
  *   --size <WxH>         render size (default 1500x820)
@@ -29,7 +33,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 
@@ -45,6 +49,10 @@ for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (a === "--html") opts.html = argv[++i];
   else if (a === "--from-json") opts.fromJson = argv[++i];
+  else if (a === "--skill") opts.skill = argv[++i];
+  else if (a === "--from-skill-json") opts.fromSkillJson = argv[++i];
+  else if (a === "--name") opts.name = argv[++i];
+  else if (a === "--cmd") opts.cmd = argv[++i];
   else if (a === "--out") opts.out = argv[++i];
   else if (a === "--caption") opts.caption = argv[++i];
   else if (a === "--size") opts.size = argv[++i];
@@ -130,27 +138,59 @@ function render(htmlPath, outPath) {
 const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
 const truncFp = (fp) => { const h = String(fp).replace(/^0x/, ""); return `0x${h.slice(0, 4)}…${h.slice(-4)}`; };
 
-function catToken(code, status) {
-  const color = status === "pass" ? "var(--green)"
+// Plain-English labels (mirror @polygraphso/litmus CATEGORY_META / SKILL_CATEGORY_META)
+// so the card reads like the harness output, not a wall of probe codes.
+const CATEGORY_META = {
+  "C-01": "tool-output injection",
+  "C-02": "permission / egress overreach",
+  "C-03": "sensitive-data handling",
+  "C-04": "adversarial-input handling",
+};
+const SKILL_CATEGORY_META = {
+  "S-01": "prompt injection / context poisoning",
+  "S-03": "data-exfiltration instructions",
+  "S-04": "dangerous bundled commands",
+  "S-05": "tool / permission overreach",
+};
+
+function statusColor(code, status) {
+  return status === "pass" ? "var(--green)"
     : status === "fail" ? (code === "C-02" ? "var(--amber)" : "var(--red)")
     : status === "partial" ? "var(--amber)" : "var(--dim)";
-  const label = status === "skipped" ? "skipped" : status;
-  const token = `${code} <span style="color:${color}">${label}</span>`;
-  return (status === "fail" || status === "skipped")
-    ? `<span class="hl-line">${token}</span>` : token;
+}
+
+// The `→ checks` block: one aligned row per category (code · label · status),
+// mirroring the harness's readable output. `ch` columns keep the monospace
+// label/status columns aligned regardless of label width, and a failing or
+// skipped row is highlighted.
+function checksBlock(cats, labels) {
+  if (!cats.length) return "";
+  const labelCols = Math.max(...cats.map((c) => (labels[c.code] || c.code).length)) + 2;
+  const rows = cats
+    .map((c) => {
+      const label = labels[c.code] || c.code;
+      const st = c.status === "skipped" ? "skipped" : c.status;
+      const hl = c.status === "fail" || c.status === "skipped" ? " hl" : "";
+      return (
+        `<span class="chk${hl}" style="grid-template-columns:6ch ${labelCols}ch auto">` +
+        `<span class="ccode">${esc(c.code)}</span>` +
+        `<span class="clabel">${esc(label)}</span>` +
+        `<span class="cstat" style="color:${statusColor(c.code, c.status)}">${esc(st)}</span>` +
+        `</span>`
+      );
+    })
+    .join("");
+  return `<span class="line"><span class="arrow">→</span> checks</span><div class="checks">${rows}</div>`;
 }
 
 const DEFAULT_CAPTION = {
-  A: "all three behavioral probes pass. the harness is open and deterministic — re-run it and you get the same grade.",
-  B: "remote target — egress isn't observable without the sandbox, so it caps at B. injection + data checks pass.",
+  A: "all four behavioral checks pass. the harness is open and deterministic — re-run it and you get the same grade.",
+  B: "remote target — egress isn't observable without the sandbox, so it caps at B. the other checks pass.",
   D: "undeclared egress caught in the sandbox. no injection or data leak — a probe-cited, reproducible result.",
-  F: "a disqualifying C-01/C-03 failure. a dated, reproducible litmus measurement, not an accusation.",
+  F: "a disqualifying injection or data-leak failure. a dated, reproducible litmus measurement, not an accusation.",
 };
 
 function buildCardHtml(bundle, displayTarget) {
-  const cats = bundle.categories || [];
-  const get = (code) => cats.find((c) => c.code === code)?.status ?? "skipped";
-  const line = ["C-01", "C-02", "C-03"].map((c) => catToken(c, get(c))).join(" · ");
   const grade = bundle.grade;
   const caption = opts.caption ?? DEFAULT_CAPTION[grade] ?? "a reproducible litmus grade.";
   return `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head>
@@ -161,7 +201,7 @@ function buildCardHtml(bundle, displayTarget) {
       <div class="cmd"><span class="ps1">$ </span>polygraphso-litmus litmus ${esc(displayTarget)}</div>
       <div class="out">
         <span class="line"><span class="arrow">→</span> ${esc(bundle.methodologyVersion || "litmus")} · ${esc(bundle.serverRef)}</span>
-        <span class="line"><span class="arrow">→</span> ${line}</span>
+        ${checksBlock(bundle.categories || [], CATEGORY_META)}
         <span class="line"><span class="arrow">→</span> fingerprint <span class="fp">${truncFp(bundle.toolDefsFingerprint)}</span></span>
         <span class="line"><span class="arrow">→</span> grade: <span class="grade ${grade}">${grade}</span></span>
         <span class="rationale">${esc(bundle.gradeRationale || "")}</span>
@@ -170,6 +210,37 @@ function buildCardHtml(bundle, displayTarget) {
   </div>
   <div class="caption">${caption}</div>
   <div class="brand">polygraph · <b>${esc(bundle.methodologyVersion || "litmus")}</b></div>
+</body></html>`;
+}
+
+const DEFAULT_SKILL_CAPTION = {
+  A: "a static safety scan of a real, widely-used skill — clean. an A is a clean static scan, not behavioral proof.",
+  B: "static checks pass, but a category couldn't be exercised — so it caps at B. an A needs every check to run.",
+  D: "a dangerous bundled command, caught by a static scan. no injection or exfil instruction — capped at D.",
+  F: "a disqualifying injection or exfil instruction in the skill body. a dated, reproducible static measurement.",
+};
+
+function buildSkillCardHtml(bundle, displayName, cmdArg) {
+  const grade = bundle.grade;
+  const caption = opts.caption ?? DEFAULT_SKILL_CAPTION[grade] ?? "a reproducible static safety grade.";
+  const version = bundle.methodologyVersion || "litmus-skill-v1";
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head>
+<body>
+  <div class="terminal">
+    <div class="bar"><div class="dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div><div class="title">litmus — skill</div></div>
+    <div class="pane">
+      <div class="cmd cmd-sm"><span class="ps1">$ </span>npx -p @polygraphso/litmus polygraphso-litmus-skill ${esc(cmdArg)}</div>
+      <div class="out">
+        <span class="line"><span class="arrow">→</span> ${esc(version)} · ${esc(displayName)}</span>
+        ${checksBlock(bundle.categories || [], SKILL_CATEGORY_META)}
+        <span class="line"><span class="arrow">→</span> hash <span class="fp">${truncFp(bundle.contentHash)}</span></span>
+        <span class="line"><span class="arrow">→</span> grade: <span class="grade ${grade}">${grade}</span></span>
+        <span class="rationale">${esc(bundle.gradeRationale || "")}</span>
+      </div>
+    </div>
+  </div>
+  <div class="caption">${caption}</div>
+  <div class="brand">polygraph · <b>${esc(version)}</b></div>
 </body></html>`;
 }
 
@@ -183,6 +254,33 @@ if (opts.html) {
   const out = opts.out || join(IMAGES_DIR, `${slug(opts.html.replace(/\.html$/, ""))}.png`);
   console.log(`rendering ${opts.html} → ${out} (${W}×${H})`);
   render(resolve(opts.html), resolve(out));
+  console.log("done.");
+} else if (opts.skill || opts.fromSkillJson) {
+  // Skill card: static safety grade of a Claude Code skill (no execution).
+  let safety;
+  if (opts.fromSkillJson) {
+    const j = JSON.parse(readFileSync(opts.fromSkillJson, "utf8"));
+    safety = j.safety ?? j; // accept the {safety,quality} envelope or a bare safety bundle
+  } else {
+    const cliArgs = ["-y", "-p", "@polygraphso/litmus", "polygraphso-litmus-skill", opts.skill, "--json"];
+    console.error(`running: npx ${cliArgs.join(" ")}`);
+    const stdout = execFileSync("npx", cliArgs, {
+      encoding: "utf8", maxBuffer: 64 * 1024 * 1024, stdio: ["ignore", "pipe", "inherit"],
+    });
+    safety = JSON.parse(stdout).safety;
+  }
+  const skillPath = opts.skill ? resolve(opts.skill).replace(/\/+$/, "") : null;
+  const displayName = opts.name || basename(String(skillPath || safety.skillRef || "skill").replace(/\/+$/, ""));
+  // The card shows the exact command a developer runs (zero-install npx), with the
+  // home dir collapsed to ~ for legibility. --cmd overrides; falls back to the name.
+  const home = process.env.HOME || "";
+  const cmdArg = opts.cmd
+    || (skillPath ? (home && skillPath.startsWith(home) ? "~" + skillPath.slice(home.length) : skillPath) : `~/.claude/skills/${displayName}`);
+  const out = opts.out || join(IMAGES_DIR, `skill-${String(safety.grade).toLowerCase()}-${slug(displayName)}.png`);
+  const tmp = join(tmpdir(), `pg-skill-card-${process.pid}.html`);
+  writeFileSync(tmp, buildSkillCardHtml(safety, displayName, cmdArg));
+  console.log(`skill ${safety.grade} · ${displayName} → ${out} (${W}×${H})`);
+  render(tmp, resolve(out));
   console.log("done.");
 } else {
   if (!target && !opts.fromJson) die("need a <target> (e.g. npm/@scope/name) or --from-json <file>. See --help in the header.");

@@ -23,15 +23,21 @@ pnpm card npm/@modelcontextprotocol/server-filesystem
 pnpm card https://mcp.deepwiki.com/mcp
 pnpm card https://mcp.example.com --bearer "$TOKEN"
 
-# reuse an existing `litmus --json` bundle (no re-run)
+# grade a Claude Code skill and render its card (static scan — no Docker)
+pnpm card --skill ~/.claude/plugins/.../skills/frontend-design --name frontend-design
+
+# reuse an existing `litmus --json` / `litmus-skill --json` bundle (no re-run)
 pnpm card --from-json /tmp/bundle.json --out content/images/my-card.png
+pnpm card --from-skill-json /tmp/skill.json --name frontend-design
 
 # render a static template (leaderboard / reproducibility)
 pnpm card --html content/images/src/leaderboard.html \
   --out content/images/06-popular-mcp-servers-leaderboard.png --size 1620x820
 ```
 
-Options: `--out <path>`, `--caption "<text>"`, `--size <WxH>` (default `1500x820`), `--from-json <file>`, `--bearer <token>`, `--header "K: V"`. Default output is `content/images/grade-<grade>-<slug>.png`.
+Options: `--out <path>`, `--caption "<text>"`, `--size <WxH>` (default `1500x820`), `--from-json <file>`, `--skill <dir>`, `--from-skill-json <file>`, `--name <display>`, `--bearer <token>`, `--header "K: V"`. Default output is `content/images/grade-<grade>-<slug>.png` (servers) or `content/images/skill-<grade>-<slug>.png` (skills).
+
+The card mirrors the harness's readable output: a `→ checks` block with each category's plain-English label (`C-01 tool-output injection`, `S-01 prompt injection / context poisoning`, …) and status, a failing/skipped row highlighted.
 
 > **pnpm + flags:** positional targets forward fine (`pnpm card npm/x`). If pnpm ever swallows a `--flag`, add a `--` separator: `pnpm card npm/x -- --out z.png`. Or call the script directly: `node content/images/src/gen-card.mjs npm/x --out z.png`.
 
