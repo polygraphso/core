@@ -24,7 +24,7 @@
 - Create `web/lib/attestations/encode.ts` — canonical serialize, `evidenceHash`, `evidenceURI`, field assembly + EAS encoding (pure).
 - Create `web/lib/attestations/eas.ts` — EAS client: `attestGrade` (chain I/O).
 - Create `web/lib/attestations/store.ts` — `grade_attestations` reads/writes + pure join helper.
-- Create `web/db/grade_attestations.sql` — table DDL (run manually in Supabase).
+- Create `packages/core/supabase/migrations/<timestamp>_grade_attestations.sql` — table DDL + RLS + service-role grant, in the Supabase migration pipeline (matches the repo convention; supersedes the earlier standalone `web/db/grade_attestations.sql`).
 - Create `web/scripts/register-schema.ts` — one-off schema registration.
 - Create `web/proxy.ts` — env-token gate for `/admin/*` and `/api/admin/*`. (Next.js 16 renamed the `middleware` convention to `proxy`: file is `proxy.ts`, export is `proxy`. Logic is identical to a classic middleware.)
 - Create `web/app/admin/login/page.tsx` + `web/app/api/admin/login/route.ts` — login.
@@ -549,51 +549,17 @@ git commit -m "feat: assemble and EAS-encode grade attestation fields"
 ## Task 7: Database table
 
 **Files:**
-- Create: `web/db/grade_attestations.sql`
+- Create: `packages/core/supabase/migrations/<timestamp>_grade_attestations.sql`
 
-`hosted_run_id` is stored as `text` (no FK) so it works regardless of whether `hosted_runs.id` is `bigint` or `uuid`; we only ever look it up by equality.
+A timestamped Supabase migration matching the repo convention (see existing migrations like `..._grade_requests.sql` / `..._rate_limits.sql`): `create table if not exists`, indexes, `enable row level security`, and `grant all ... to service_role, postgres` — with **no anon policy**, so RLS denies the anon key (the project's hardened posture). `hosted_run_id` is `text` (no FK) so it matches regardless of the `hosted_runs.id` type; we only look it up by equality. Status carries a `check (status in ('pending','confirmed','failed'))` constraint.
 
-- [ ] **Step 1: Write the DDL**
+> **Note:** the original plan shipped this as a standalone `web/db/grade_attestations.sql` applied by hand. After merging `main` (which introduced the migration pipeline + RLS/grant conventions), it was converted into a proper migration so prod is reproducible and consistent. If a table was already created by hand, drop it once (`drop table if exists grade_attestations;`) and apply the migration so it is the authoritative definition.
 
-Create `web/db/grade_attestations.sql`:
-```sql
--- Run once in the Supabase SQL editor (and once per environment/project).
--- Records each on-chain EAS attestation attempt for a published grade.
-create table if not exists grade_attestations (
-  id                bigint generated always as identity primary key,
-  hosted_run_id     text        not null,
-  server            text        not null,
-  version           text        not null default '',
-  grade             text        not null,
-  schema_uid        text        not null,
-  attestation_uid   text,
-  tx_hash           text,
-  chain_id          integer     not null,
-  attester_address  text,
-  evidence_hash     text        not null,
-  status            text        not null default 'pending',  -- pending | confirmed | failed
-  error             text,
-  created_at        timestamptz not null default now(),
-  confirmed_at      timestamptz
-);
+- [ ] **Step 1: Write the migration** with the table, indexes, RLS, and grant per the convention above.
 
-create index if not exists grade_attestations_run_idx
-  on grade_attestations (hosted_run_id);
-create index if not exists grade_attestations_server_version_idx
-  on grade_attestations (server, version);
-```
+- [ ] **Step 2: Apply it** via the Supabase migration tooling (`supabase db push` / migration up) for each environment.
 
-- [ ] **Step 2: Apply it**
-
-In the Supabase dashboard → SQL editor, paste and run the file contents.
-Expected: "Success. No rows returned." Verify the table exists under Table editor.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add web/db/grade_attestations.sql
-git commit -m "feat: add grade_attestations table DDL"
-```
+- [ ] **Step 3: Commit** the migration file.
 
 ---
 
