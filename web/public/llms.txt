@@ -1,6 +1,6 @@
 # polygraph.so
 
-> Independent behavioral polygraphs for AI agents and MCP servers. We run MCP servers through the litmus test — a reproducible behavioral harness that connects like an agent and watches what the server actually does — and publish the grade with the evidence. Not vendor self-claims, not gameable user reviews. No graded party pays us or gets review or approval rights over their grade.
+> Independent behavioral polygraphs for AI agents, MCP servers, and Claude Code / Agent Skills. We run MCP servers through the litmus test — a reproducible behavioral harness that connects like an agent and watches what the server actually does — and statically grade skills (a SKILL.md + bundle) for prompt injection, exfiltration, and dangerous bundled code; both are published with the evidence. Not vendor self-claims, not gameable user reviews. No graded party pays us or gets review or approval rights over their grade.
 
 ## What we produce
 
@@ -8,15 +8,28 @@ For each MCP server we track, we issue a **polygraph**: a **grade** (A, B, D, or
 
 Published behavioral grades are rolling out. Until a server's grade is published, `polygraph` is reported as `null` and the adoption tier is what's live.
 
-## The litmus test (methodologyVersion: litmus-v1)
+For each **skill** we grade, we issue a **safety grade** (A, B, D, or F) from a deterministic static scan of its bytes, anchored by a **content hash** — a sha256 of the whole skill directory. The grade certifies those exact bytes; a consumer re-hashes the skill before installing and refuses on mismatch (the same rug-pull guard a server fingerprint gives). A skill **A means static-clean, not "safe to run unsupervised"** — it is not behavioral proof. Each skill grade is paired with a **separate, advisory quality signal** (well-formed / issues / malformed) — never a letter, never minted. The safety grade needs no LLM key; the optional quality judging does.
 
-Five probes across three checks:
+## The litmus test (methodologyVersion: litmus-v5)
 
-- **C-01 Tool-output injection** — do the server's descriptions or outputs try to hijack the calling agent? Scans for instruction mimicry, hidden unicode, markdown/link tricks. Fail → grade F.
-- **C-02 Permission overreach** — any outbound network attempt in a default-deny sandbox during a no-expected-egress run. Fail → grade D. For remote servers (or without Docker) this check is recorded as `skipped` — not a pass — and the grade caps at B.
+Nine probes across four checks:
+
+- **C-01 Tool-output injection** — do the server's tool descriptions or outputs try to hijack the calling agent (including one tool's output weaponized as another's input)? Static scan, dynamic bait calls, and second-order chaining for instruction mimicry, hidden unicode, markdown/link tricks. Fail → grade F.
+- **C-02 Permission / egress overreach** — outbound network beyond the server's declared/baseline allowlist (matched on host **and** port) in a hardened default-deny sandbox, plus a declared-permission honesty check. Fail → grade D. For remote servers (or without Docker) the egress check is recorded as `skipped` — not a pass — and the grade caps at B.
 - **C-03 Sensitive-data handling** — planted canaries (fake keys, PII strings, bearer tokens) must not surface in outputs or egress. Fail → grade F.
+- **C-04 Adversarial-input handling** — on malformed/oversized and jailbreak inputs the server must not crash, leak internals (a stack trace), or amplify the hostile input. Fail → grade D.
 
-All three pass in the sandbox → A. Full spec: https://polygraph.so/methodology
+All four pass → A (there is no C: F is a proven injection/leak, D an overreach/robustness failure). Full spec: https://polygraph.so/methodology
+
+## The skill litmus (methodologyVersion: litmus-skill-v1)
+
+A skill is static content (a SKILL.md + optional bundle), so the skill litmus is a **deterministic static scan** of its bytes — no execution, no sandbox. Three safety checks:
+
+- **S-01 Prompt injection / context poisoning** — does the instruction body try to hijack the agent that loads it (override framing, role tags, hidden unicode)? Fail → grade F.
+- **S-03 Data-exfiltration instructions** — does the body instruct sending credentials/secrets to a sink? Fail → grade F.
+- **S-04 Dangerous bundled commands** — pipe-to-shell, reverse shells, obfuscated payloads in bundled executable scripts. Fail → grade D.
+
+All pass → A. The grade is anchored by a whole-directory **content hash**, and a separate, advisory **quality signal** (well-formed / issues / malformed; never a letter, never minted) reports whether the skill is well-formed and — optionally, LLM-judged — honest and coherent. Being static, an A is static-clean, not behavioral proof.
 
 ## Vocabulary
 
@@ -26,6 +39,9 @@ All three pass in the sandbox → A. Full spec: https://polygraph.so/methodology
 - **Fingerprint** — sha256 of the canonicalized tool surface the grade certifies.
 - **Adoption tier** — `top10` / `top25` / `top50` / `top100`, by adoption.
 - **Server ref** — registry-prefixed identifier for an MCP server (format below).
+- **Skill ref** — identifier for a skill: `source/owner/repo#path` (e.g. `github/anthropics/skills#skills/pdf`).
+- **Content hash** — sha256 of the whole skill directory the grade certifies; the consumer re-hashes before install (the skill analogue of a server fingerprint).
+- **Quality signal** — the advisory, never-lettered skill output (well-formed / issues / malformed + optional honesty/coherence axes); separate from the safety grade and never minted.
 
 ## How to query
 
@@ -60,7 +76,7 @@ Version is optional. Lookups are versionless: two CLI calls for `1.0.0` and `1.0
 
 No graded party pays us. No graded party gets review or approval rights over their grade. Significant failures go to the vendor before they go public.
 
-Sequenced roadmap (no dates promised): litmus-v1 harness (live) → first public grades on registry servers (publishing after review) → timestamped, independently verifiable grade records with evidence attached → hardware-attested runs so third parties can verify a grade came from the real harness.
+Sequenced roadmap (no dates promised): litmus-v5 harness (live) → first public grades on registry servers (publishing after review) → timestamped, independently verifiable grade records with evidence attached → hardware-attested runs so third parties can verify a grade came from the real harness.
 
 ## Where to learn more
 

@@ -34,6 +34,9 @@ app/
 │   ├── Problem.tsx         # § 01
 │   ├── HowWeTest.tsx       # § 02 — categories mirror litmus-test.md
 │   ├── WhereWeSit.tsx      # § 03 — three-axis table
+│   ├── ChecksSoFar.tsx     # § 03 "Browse the checks we've run" — fetches published hosted_runs (server)
+│   ├── ChecksSoFarView.tsx # the run browser: search + All/MCP servers/Skills type filter
+│   ├── checksMapper.ts     # hosted_runs row → Run; maps server (C-01..C-04) AND skill (S-01/S-03/S-04) rows
 │   ├── GradesUpdates.tsx   # quiet down-page "notify me when grades publish" tile
 │   ├── Footer.tsx          # tagline + vision + contact + disclosures
 │   ├── SectionHeader.tsx
@@ -72,3 +75,5 @@ The brief is firm: *if real grades aren't ready, the page isn't ready.* Track bo
 ## Spec source-of-truth
 
 `§ 02 How we test` in `app/_components/HowWeTest.tsx` is anchored to `litmus-test.md` (litmus-v5). Four categories, nine probes, all live: **C-01** (1.1, 1.2, 1.3), **C-02** (2.1, 2.2), **C-03** (4.1, 4.2), **C-04** (3.1, 3.2). **Secrets handling is not in the spec** — do not re-add without updating the spec first.
+
+`§ 03 Browse the checks we've run` (`ChecksSoFar` / `ChecksSoFarView`) renders **both** MCP-server grades and **Claude Code skill** grades from `hosted_runs`, with a search box and an `All / MCP servers / Skills` type filter. Skill grades come from a **separate** methodology, `litmus-skill-v1` — a deterministic static scan (**S-01** prompt injection, **S-03** data-exfiltration instructions, **S-04** dangerous commands in bundled scripts) anchored by a whole-directory **content hash**, plus an advisory, never-lettered quality signal. A skill **A means static-clean, not behavioral proof.** The server-vs-skill split keys off `target_kind` and the per-kind row mapping lives in `checksMapper.ts` (server `C-01..C-04` vs skill `S-01/S-03/S-04`).
