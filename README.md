@@ -1,6 +1,6 @@
 # polygraph
 
-Source-of-truth code repo for **polygraph.so** — independent, lab-evaluated trust grades for AI agents. (Originally `poligrafo.ai`; renamed for findability.)
+Source-of-truth code repo for **polygraph.so** — independent, lab-evaluated trust grades for AI agents: MCP servers (behavioral litmus) and Claude Code / Agent Skills (static litmus). (Originally `poligrafo.ai`; renamed for findability.)
 
 ## Layout
 

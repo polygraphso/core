@@ -11,6 +11,8 @@ export type Run = {
   id: string;
   label: string;
   kind: string;
+  /** Coarse class for the browse filter: an MCP server or a skill. */
+  category: "mcp" | "skill";
   grade: LitmusGrade;
   rows: Array<[string, string]>;
   rationale: string;
@@ -21,14 +23,18 @@ export type Run = {
 export interface HostedRunRow {
   id: string;
   target: string;
-  target_kind: "registry_ref" | "remote_url";
+  target_kind: "registry_ref" | "remote_url" | "skill";
   grade: LitmusGrade;
   rationale: string;
-  evidence: StoredEvidence;
+  /** Server rows carry an EvidenceBundle; skill rows a SkillEvidenceBundle. */
+  evidence: StoredEvidence | SkillStoredEvidence;
   tool_defs_fingerprint?: string | null;
   c01?: string | null;
   c02?: string | null;
   c03?: string | null;
+  /** Skill rows only: the whole-directory content hash + the advisory quality bundle. */
+  content_hash?: string | null;
+  quality_signal?: QualitySignal | null;
 }
 
 interface TargetDescriptor {
@@ -59,10 +65,41 @@ interface EvidenceBundle {
 
 type StoredEvidence = EvidenceBundle & { displayLabel?: string };
 
+// ── Skill litmus (litmus-skill-v1) ───────────────────────────────────────────
+// A skill's categories carry findings directly (no `probes`), and there is no
+// live tool surface — the anchor is a whole-directory content hash.
+interface SkillCategoryResult {
+  code: string;
+  status: "pass" | "fail" | "skipped";
+  reason?: string | null;
+  findings?: Finding[];
+}
+interface SkillEvidenceBundle {
+  skillRef?: string;
+  contentHash?: string;
+  categories: SkillCategoryResult[];
+  methodologyVersion: string;
+}
+type SkillStoredEvidence = SkillEvidenceBundle & { displayLabel?: string };
+
+export interface QualitySignal {
+  verdict?: string;
+  judged?: { axes?: Array<{ axis: string; rating: string }> } | null;
+}
+
 const CATEGORY_LABELS: Record<string, string> = {
   "C-01": "C-01 tool-output injection",
   "C-02": "C-02 permission overreach",
   "C-03": "C-03 sensitive-data handling",
+};
+
+// Plain, human labels on the public card — the methodology IDs (S-01/S-03/S-04,
+// with intentional gaps where S-02/S-05 are advisory-only) would read as "broken"
+// next to a contiguous list. The codes live on the methodology page.
+const SKILL_CATEGORY_LABELS: Record<string, string> = {
+  "S-01": "prompt injection",
+  "S-03": "exfil instructions",
+  "S-04": "dangerous commands",
 };
 
 const FINDING_PHRASES: Record<string, string> = {
@@ -71,6 +108,10 @@ const FINDING_PHRASES: Record<string, string> = {
   "invisible-unicode": "invisible unicode in tool surface",
   "markdown-trick": "markdown trick in tool surface",
   egress: "unexpected egress during sandbox run",
+  // skill litmus (litmus-skill-v1)
+  "exfil-instruction": "data-exfiltration instruction in the skill body",
+  "dangerous-command": "dangerous command in a bundled script",
+  "over-broad-trigger": "over-broad activation trigger",
 };
 
 function shortFingerprint(fp: string): string {
@@ -137,16 +178,64 @@ function displayLabel(row: HostedRunRow): string {
 }
 
 function evidenceBundle(row: HostedRunRow): EvidenceBundle {
-  const { displayLabel: _label, ...bundle } = row.evidence;
+  // Only called on the server branch (skill rows return early in rowToRun).
+  const { displayLabel: _label, ...bundle } = row.evidence as StoredEvidence;
   return bundle;
 }
 
+function skillFailDetail(category: SkillCategoryResult): string {
+  if (category.reason) return category.reason;
+  const finding =
+    category.findings?.find((f) => f.severity === "high") ?? category.findings?.[0];
+  if (!finding) return "check failed";
+  return FINDING_PHRASES[finding.kind] ?? finding.kind.replace(/-/g, " ");
+}
+
+function formatSkillCategory(category: SkillCategoryResult | undefined): string {
+  if (!category) return "—";
+  if (category.status === "pass") return "pass";
+  if (category.status === "skipped") {
+    return category.reason ? `skipped — ${category.reason}` : "skipped";
+  }
+  return `fail — ${skillFailDetail(category)}`;
+}
+
+function skillBundleToRows(
+  bundle: SkillEvidenceBundle,
+  quality: QualitySignal | null | undefined,
+): Array<[string, string]> {
+  const rows: Array<[string, string]> = [["skill", bundle.skillRef ?? "—"]];
+  for (const code of ["S-01", "S-03", "S-04"]) {
+    const category = bundle.categories.find((c) => c.code === code);
+    rows.push([SKILL_CATEGORY_LABELS[code] ?? code, formatSkillCategory(category)]);
+  }
+  if (quality?.verdict) rows.push(["quality", quality.verdict]);
+  if (bundle.contentHash) rows.push(["content hash", shortFingerprint(bundle.contentHash)]);
+  return rows;
+}
+
+function skillRowToRun(row: HostedRunRow): Run {
+  const { displayLabel: label, ...bundle } = row.evidence as SkillStoredEvidence;
+  return {
+    id: row.id,
+    label: label ?? row.target,
+    kind: "skill",
+    category: "skill",
+    grade: row.grade,
+    rows: skillBundleToRows(bundle, row.quality_signal),
+    rationale: row.rationale,
+    methodologyVersion: bundle.methodologyVersion,
+  };
+}
+
 export function rowToRun(row: HostedRunRow): Run {
+  if (row.target_kind === "skill") return skillRowToRun(row);
   const bundle = evidenceBundle(row);
   return {
     id: row.id,
     label: displayLabel(row),
     kind: displayKind(row.target_kind),
+    category: "mcp",
     grade: row.grade,
     rows: bundleToRows(bundle),
     rationale: row.rationale,
