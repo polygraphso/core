@@ -74,7 +74,7 @@ export function Hero() {
               <span aria-hidden className="font-mono text-base leading-none">
                 $
               </span>
-              <span>Install the CLI</span>
+              <span>Check a server</span>
             </a>
             <a
               href="#checks"

@@ -85,7 +85,7 @@ export function InstallCard() {
           </p>
           <a
             href="cursor://anysphere.cursor-deeplink/mcp/install?name=polygraph-litmus&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIi1wIiwiQHBvbHlncmFwaHNvL2xpdG11cyIsInBvbHlncmFwaHNvLWxpdG11cy1tY3AiXSwiZW52Ijp7IlBPTFlHUkFQSF9BUElfVVJMIjoiaHR0cHM6Ly9wb2x5Z3JhcGguc28ifX0="
-            className="inline-flex items-center gap-2 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted hover:text-ink border hairline bg-parchment-50 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2.5 font-mono text-[12px] uppercase tracking-[0.16em] text-oxblood border border-oxblood hover:bg-oxblood hover:text-parchment transition-colors"
           >
             Add to Cursor <span aria-hidden>→</span>
           </a>
