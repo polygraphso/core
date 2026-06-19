@@ -57,6 +57,12 @@ export const metadata: Metadata = {
       "Behavioral polygraphs for AI agents and MCP servers — grades anyone can re-run. No graded party pays us.",
   },
   robots: { index: true, follow: true },
+  verification: {
+    other: {
+      "talentapp:project_verification":
+        "2626516e5949995e1f2465ca00631341262f9e478e95f210086d950d55e1bd88a5a836619dae5bef591b7d80cbfeeefc858c13480e5db5a5683820493fd17629",
+    },
+  },
 };
 
 export default function RootLayout({
