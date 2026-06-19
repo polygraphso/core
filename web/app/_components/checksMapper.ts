@@ -118,10 +118,14 @@ function shortFingerprint(fp: string): string {
   return fp.length > 14 ? `${fp.slice(0, 6)}…${fp.slice(-4)}` : fp;
 }
 
-function targetLabel(target: TargetDescriptor | undefined): string {
+// Show the clean canonical ref (npm/…, pypi/…, or an https URL), never the raw
+// launch command: a sandboxed run's `command` is the full `docker run …` invocation
+// (egress-sniff image, mount paths, hardening flags) — internal noise, not something
+// a reader runs. The ref comes from the row; `target.command` is never surfaced.
+function targetLabel(target: TargetDescriptor | undefined, ref?: string): string {
+  if (ref) return ref;
   if (!target) return "—";
   if (target.kind === "http" && target.url) return target.url;
-  if (target.kind === "stdio" && target.command) return target.command;
   return target.kind;
 }
 
@@ -150,9 +154,9 @@ function formatCategoryValue(category: CategoryResult | undefined): string {
   return `fail — ${failDetail(category)}`;
 }
 
-export function bundleToRows(bundle: EvidenceBundle): Array<[string, string]> {
+export function bundleToRows(bundle: EvidenceBundle, ref?: string): Array<[string, string]> {
   const rows: Array<[string, string]> = [
-    ["target", targetLabel(bundle.target)],
+    ["target", targetLabel(bundle.target, ref)],
     ["transport", transportLabel(bundle.target)],
   ];
 
@@ -237,7 +241,7 @@ export function rowToRun(row: HostedRunRow): Run {
     kind: displayKind(row.target_kind),
     category: "mcp",
     grade: row.grade,
-    rows: bundleToRows(bundle),
+    rows: bundleToRows(bundle, row.target),
     rationale: row.rationale,
     methodologyVersion: bundle.methodologyVersion,
   };

@@ -9,10 +9,12 @@ export function Problem() {
           {/* The hero subhead now states the problem — this section keeps
               only the headline and the three sharp points beside it. */}
           <p className="font-serif text-2xl md:text-[28px] leading-snug text-ink max-w-3xl">
-            The MCP ecosystem grew faster than anyone&rsquo;s ability to polygraph it.
+            MCP servers and Agent Skills grew faster than anyone&rsquo;s ability
+            to polygraph them.
           </p>
           <p className="mt-6 text-ink-muted text-lg leading-relaxed max-w-2xl">
-            You need evidence anyone can check.
+            Agents now install and run skills off marketplaces unvetted. You
+            need evidence anyone can check.
           </p>
         </div>
         <aside className="md:col-span-4">
