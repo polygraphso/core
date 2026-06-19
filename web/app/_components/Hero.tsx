@@ -1,5 +1,4 @@
 import { PolygraphTrace } from "./PolygraphTrace";
-import { InstallCard } from "./InstallCard";
 import { HeroPolygraph } from "./HeroPolygraph";
 
 // The skim skeleton: the whole model in three beats, for readers who won't
@@ -25,7 +24,7 @@ const BEATS: Array<[string, string, string]> = [
 export function Hero() {
   return (
     <section className="relative">
-      <div className="mx-auto max-w-6xl px-6 pt-16 pb-24 md:pt-24 md:pb-32 grid md:grid-cols-12 gap-10 md:gap-16">
+      <div className="mx-auto max-w-6xl px-6 pt-16 pb-24 md:pt-24 md:pb-32 grid md:grid-cols-12 gap-10 md:gap-16 md:items-center">
         <div className="md:col-span-7 fade-up">
           <p className="font-serif italic text-ink-muted text-xl md:text-2xl mb-7 max-w-xl leading-snug">
             Catch the tools your agent can&rsquo;t trust before they touch
@@ -90,7 +89,6 @@ export function Hero() {
           style={{ animationDelay: "120ms" }}
         >
           <HeroPolygraph />
-          <InstallCard />
         </div>
       </div>
 

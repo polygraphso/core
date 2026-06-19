@@ -35,7 +35,7 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
 
   return (
     <section id="checks" className="mx-auto max-w-6xl px-6 py-20 md:py-28 scroll-mt-12">
-      <SectionHeader number="§ 03" label="Completed checks" title="Browse the checks we've run.">
+      <SectionHeader number="§ 04" label="Completed checks" title="Browse the checks we've run.">
         Every entry is a real litmus harness run against an MCP server or a Claude Code
         skill we exercised the way an agent would — graded, fingerprinted, and published
         here as we go. Search by name, or filter by type. Each row shows the methodology
