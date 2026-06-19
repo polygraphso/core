@@ -14,6 +14,18 @@ const GRADE_CMD =
 const ANY_CLIENT_CMD = "npx -y -p @polygraphso/litmus polygraphso-litmus-mcp";
 const CLAUDE_CODE_CMD = "/plugin install polygraph@polygraphso";
 
+// The standard MCP config — the same JSON for Cursor (~/.cursor/mcp.json),
+// Claude Desktop (claude_desktop_config.json), and any other MCP client.
+const MCP_CONFIG_JSON = `{
+  "mcpServers": {
+    "polygraph-litmus": {
+      "command": "npx",
+      "args": ["-y", "-p", "@polygraphso/litmus", "polygraphso-litmus-mcp"],
+      "env": { "POLYGRAPH_API_URL": "https://polygraph.so" }
+    }
+  }
+}`;
+
 export function Install() {
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -54,8 +66,9 @@ export function Install() {
           <p className="mt-3 font-mono text-[11px] text-ink-faint leading-relaxed">
             One click &mdash; installs the MCP server (
             <span className="text-ink-muted">run_litmus</span>,{" "}
-            <span className="text-ink-muted">verify_attestation</span>). Or add it
-            to <span className="text-ink-muted">~/.cursor/mcp.json</span> by hand.
+            <span className="text-ink-muted">verify_attestation</span>). Prefer to
+            edit <span className="text-ink-muted">~/.cursor/mcp.json</span>? Use the
+            config below.
           </p>
         </div>
 
@@ -87,10 +100,27 @@ export function Install() {
             <span className="text-ink-muted">
               /plugin marketplace add polygraphso/litmus
             </span>
-            . Claude Desktop: add the server to{" "}
+            . Claude Desktop: paste the config below into{" "}
             <span className="text-ink-muted">claude_desktop_config.json</span>.
           </p>
         </div>
+      </div>
+
+      {/* Manual setup — one config, identical for every MCP client */}
+      <div className="mt-4 border hairline bg-parchment-50 p-5">
+        <p className="section-label mb-2">Manual setup &mdash; any MCP client</p>
+        <p className="mb-3 font-mono text-[11px] text-ink-faint leading-relaxed">
+          Same config everywhere &mdash; paste into{" "}
+          <span className="text-ink-muted">~/.cursor/mcp.json</span> (Cursor),{" "}
+          <span className="text-ink-muted">claude_desktop_config.json</span>{" "}
+          (Claude Desktop), or your client&rsquo;s MCP config:
+        </p>
+        <Command
+          cmd={MCP_CONFIG_JSON}
+          prefix=""
+          copied={copied === "config"}
+          onCopy={() => copy("config", MCP_CONFIG_JSON)}
+        />
       </div>
     </section>
   );
