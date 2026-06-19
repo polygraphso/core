@@ -81,6 +81,25 @@ export function InstallCard() {
 
         <div className="mt-5 pt-4 border-t hairline">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint mb-2.5">
+            add to your agent
+          </p>
+          <a
+            href="cursor://anysphere.cursor-deeplink/mcp/install?name=polygraph-litmus&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIi1wIiwiQHBvbHlncmFwaHNvL2xpdG11cyIsInBvbHlncmFwaHNvLWxpdG11cy1tY3AiXSwiZW52Ijp7IlBPTFlHUkFQSF9BUElfVVJMIjoiaHR0cHM6Ly9wb2x5Z3JhcGguc28ifX0="
+            className="inline-flex items-center gap-2 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted hover:text-ink border hairline bg-parchment-50 transition-colors"
+          >
+            Add to Cursor <span aria-hidden>→</span>
+          </a>
+          <p className="mt-3 font-mono text-[11px] text-ink-faint leading-relaxed">
+            One-click for Cursor &mdash; adds the polygraph MCP server (
+            <span className="text-ink-muted">run_litmus</span>,{" "}
+            <span className="text-ink-muted">verify_attestation</span>). Claude Code:{" "}
+            <span className="text-ink-muted">/plugin install polygraph@polygraphso</span>; any MCP
+            client: <span className="text-ink-muted">npx -y -p @polygraphso/litmus polygraphso-litmus-mcp</span>.
+          </p>
+        </div>
+
+        <div className="mt-5 pt-4 border-t hairline">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint mb-2.5">
             grade an agent skill
           </p>
           <div className="relative">
