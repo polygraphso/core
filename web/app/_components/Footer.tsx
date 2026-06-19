@@ -12,15 +12,15 @@ export function Footer() {
             </div>
             <ul className="space-y-2 font-mono text-[11.5px] text-ink whitespace-nowrap">
               <li>
-                <code className="text-ink">polygraphso check &lt;ref&gt;</code>
+                <code className="text-ink">polygraphso-litmus litmus &lt;ref&gt;</code>
               </li>
               <li>
-                <code className="text-ink">polygraphso list</code>
+                <code className="text-ink">polygraphso-litmus-mcp</code>
               </li>
             </ul>
             <p className="mt-3 text-ink-faint font-sans text-[11.5px] leading-relaxed">
-              <code className="text-ink-muted">npm i -g polygraphso</code>, or{" "}
-              <code className="text-ink-muted">npx</code>.
+              <code className="text-ink-muted">npm i -g @polygraphso/litmus</code>,
+              or <code className="text-ink-muted">npx -p @polygraphso/litmus</code>.
             </p>
             <p className="mt-3 font-sans text-[11.5px] leading-relaxed">
               <a
