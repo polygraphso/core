@@ -30,11 +30,12 @@ export const metadata: Metadata = {
     template: "%s · polygraph.so",
   },
   description:
-    "We polygraph AI tools so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run. No graded party pays us. Free public polygraphs; CLI for sub-second checks.",
+    "We polygraph AI tools so you don't have to. A behavioral litmus test for MCP servers and a static safety scan for Agent Skills — a grade backed by evidence anyone can re-run. No graded party pays us. Free public polygraphs; CLI for sub-second checks.",
   applicationName: "polygraph",
   keywords: [
     "MCP",
     "AI agents",
+    "Agent Skills",
     "agent security",
     "MCP server evaluation",
     "behavioral testing",
@@ -44,7 +45,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "polygraph.so — behavioral polygraphs for AI agents",
     description:
-      "We polygraph AI tools so you don't have to. A behavioral litmus test for MCP servers — a grade backed by evidence anyone can re-run.",
+      "We polygraph AI tools so you don't have to. A behavioral litmus test for MCP servers and a static safety scan for Agent Skills — a grade backed by evidence anyone can re-run.",
     url: "https://polygraph.so",
     siteName: "polygraph.so",
     locale: "en_US",
@@ -54,7 +55,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "polygraph.so",
     description:
-      "Behavioral polygraphs for AI agents and MCP servers — grades anyone can re-run. No graded party pays us.",
+      "Behavioral grades for MCP servers and static safety scans for Agent Skills — grades anyone can re-run. No graded party pays us.",
   },
   robots: { index: true, follow: true },
   verification: {
