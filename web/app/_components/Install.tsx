@@ -9,7 +9,8 @@ import { SectionHeader } from "./SectionHeader";
 const CURSOR_DEEPLINK =
   "cursor://anysphere.cursor-deeplink/mcp/install?name=polygraph-litmus&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIi1wIiwiQHBvbHlncmFwaHNvL2xpdG11cyIsInBvbHlncmFwaHNvLWxpdG11cy1tY3AiXSwiZW52Ijp7IlBPTFlHUkFQSF9BUElfVVJMIjoiaHR0cHM6Ly9wb2x5Z3JhcGguc28ifX0=";
 
-const CHECK_CMD = "npx polygraphso check <mcp-server>";
+const GRADE_CMD =
+  "npx -y -p @polygraphso/litmus polygraphso-litmus litmus <mcp-server>";
 const ANY_CLIENT_CMD = "npx -y -p @polygraphso/litmus polygraphso-litmus-mcp";
 const CLAUDE_CODE_CMD = "/plugin install polygraph@polygraphso";
 
@@ -34,10 +35,10 @@ export function Install() {
       <SectionHeader
         number="§ 03"
         label="Install"
-        title="Put polygraph in your agent &mdash; or check a server from the terminal."
+        title="Run polygraph in your agent &mdash; or grade a server from your terminal."
       >
-        Free and public. Grade lookups are a sub-second call; the harness that
-        produces grades is the same open package, run locally.
+        The open litmus harness grades a server A&ndash;F with reproducible,
+        content-addressed evidence. Add it to your agent, or run it yourself.
       </SectionHeader>
 
       <div className="grid md:grid-cols-3 gap-4">
@@ -58,16 +59,16 @@ export function Install() {
           </p>
         </div>
 
-        {/* Terminal — the lookup CLI */}
+        {/* Terminal — run the litmus harness directly */}
         <div className="border hairline bg-parchment-50 p-5 flex flex-col">
           <p className="section-label mb-3">Terminal</p>
           <Command
-            cmd={CHECK_CMD}
-            copied={copied === "check"}
-            onCopy={() => copy("check", CHECK_CMD)}
+            cmd={GRADE_CMD}
+            copied={copied === "grade"}
+            onCopy={() => copy("grade", GRADE_CMD)}
           />
           <p className="mt-3 font-mono text-[11px] text-ink-faint leading-relaxed">
-            Look up a server&rsquo;s grade. Run the harness in any MCP client with{" "}
+            Grade a server yourself. Or wire the MCP server into any client with{" "}
             <span className="text-ink-muted">{ANY_CLIENT_CMD}</span>.
           </p>
         </div>
