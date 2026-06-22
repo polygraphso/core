@@ -1,0 +1,342 @@
+/**
+ * /mcp/<registry>/<owner>/<name> — the per-server grade report and the home for
+ * the embeddable badge/card snippets. The inline badge and the card both link
+ * here, so it's the verifiable destination behind every embed: grade, the three
+ * onchain category slots, methodology, and how to reproduce the result.
+ *
+ * Versionless: the catch-all ref is canonicalized to its server key and the
+ * latest published grade is shown (see lib/badgeData). An ungraded server gets a
+ * "request a grade" funnel rather than a dead page.
+ */
+
+import { cache } from "react";
+import type { Metadata } from "next";
+import Link from "next/link";
+import { decodeRef, loadGrade } from "@/lib/badgeData";
+import { GRADE_HEX } from "@/lib/gradeColors";
+import type { LitmusGrade, PolygraphDetail } from "@/lib/hostedGrades";
+import { EmbedSnippets } from "./_components/EmbedSnippets";
+
+const ORIGIN = "https://polygraph.so";
+
+// generateMetadata and the page both need the grade; cache() collapses them to
+// one query per request.
+const getGrade = cache(loadGrade);
+
+// Cache the rendered report for 10 min per ref; a regrade surfaces within the
+// window. The badge/card images carry the heavier, shorter cache.
+export const revalidate = 600;
+
+type Params = Promise<{ ref?: string[] }>;
+
+/** Catch-all segments → canonical server key, or null if unparseable. */
+function keyFromParams(parts: string[] | undefined): string | null {
+  if (!parts || parts.length === 0) return null;
+  // Next hands catch-all segments percent-encoded to the page render (so a
+  // scope `@scope` arrives as `%40scope`). Decode each segment back to its
+  // literal form — a no-op when already decoded — so the key matches the DB
+  // target (`npm/@scope/name`) and the on-page URLs read cleanly.
+  let raw: string;
+  try {
+    raw = parts.map((s) => decodeURIComponent(s)).join("/");
+  } catch {
+    return null; // malformed percent-encoding in the path
+  }
+  return decodeRef(raw);
+}
+
+function shortFingerprint(fp: string | null): string | null {
+  if (!fp) return null;
+  if (fp.length <= 16) return fp;
+  return `${fp.slice(0, 8)}…${fp.slice(-5)}`;
+}
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { ref } = await params;
+  const key = keyFromParams(ref);
+  if (!key) {
+    return { title: "MCP server grade", robots: { index: false, follow: true } };
+  }
+  const canonical = `/mcp/${key}`;
+  const cardUrl = `/api/badge/card?server=${key}`;
+  const result = await getGrade(key);
+  if (result) {
+    const title = `polygraph: ${key} — grade ${result.grade}`;
+    return {
+      title,
+      description: `${key} scored ${result.grade} on the polygraph behavioral litmus (${result.detail.methodology_version}). A reproducible, evidence-backed grade.`,
+      alternates: { canonical },
+      openGraph: { title, url: canonical, images: [cardUrl] },
+      twitter: { card: "summary_large_image", images: [cardUrl] },
+      robots: { index: true, follow: true },
+    };
+  }
+  const title = `polygraph: ${key} — not yet graded`;
+  return {
+    title,
+    description: `${key} hasn't been graded by polygraph yet. Request a behavioral litmus grade.`,
+    alternates: { canonical },
+    openGraph: { title, url: canonical, images: [cardUrl] },
+    robots: { index: false, follow: true },
+  };
+}
+
+export default async function McpServerPage({ params }: { params: Params }) {
+  const { ref } = await params;
+  const key = keyFromParams(ref);
+
+  return (
+    <main className="flex-1">
+      <section className="mx-auto max-w-3xl px-6 pt-20 pb-24 md:pt-24 md:pb-32">
+        <div className="border-t hairline pt-6 mb-10">
+          <div className="flex items-baseline gap-4">
+            <span className="section-label tabular">§ MCP</span>
+            <span className="section-label">/</span>
+            <span className="section-label">Behavioral grade</span>
+          </div>
+        </div>
+
+        {!key ? <Fallback /> : <Report serverKey={key} />}
+      </section>
+    </main>
+  );
+}
+
+async function Report({ serverKey }: { serverKey: string }) {
+  const result = await getGrade(serverKey);
+  const badgeUrl = `${ORIGIN}/api/badge?server=${serverKey}`;
+  const cardUrl = `${ORIGIN}/api/badge/card?server=${serverKey}`;
+  const pageUrl = `${ORIGIN}/mcp/${serverKey}`;
+
+  return result ? (
+    <Graded
+      serverKey={serverKey}
+      grade={result.grade}
+      detail={result.detail}
+      badgeUrl={badgeUrl}
+      cardUrl={cardUrl}
+      pageUrl={pageUrl}
+    />
+  ) : (
+    <Ungraded serverKey={serverKey} badgeUrl={badgeUrl} cardUrl={cardUrl} pageUrl={pageUrl} />
+  );
+}
+
+const CATEGORY_LABELS: Array<{ code: "C-01" | "C-02" | "C-03"; name: string }> = [
+  { code: "C-01", name: "Tool-output injection" },
+  { code: "C-02", name: "Permission / egress overreach" },
+  { code: "C-03", name: "Sensitive-data handling" },
+];
+
+function statusFor(detail: PolygraphDetail, code: "C-01" | "C-02" | "C-03"): string | null {
+  if (code === "C-01") return detail.c01;
+  if (code === "C-02") return detail.c02;
+  return detail.c03;
+}
+
+function Graded({
+  serverKey,
+  grade,
+  detail,
+  badgeUrl,
+  cardUrl,
+  pageUrl,
+}: {
+  serverKey: string;
+  grade: LitmusGrade;
+  detail: PolygraphDetail;
+  badgeUrl: string;
+  cardUrl: string;
+  pageUrl: string;
+}) {
+  const fp = shortFingerprint(detail.tool_defs_fingerprint);
+  const dated = detail.computed_at?.slice(0, 10) ?? null;
+
+  return (
+    <>
+      <div className="flex items-start gap-6">
+        <span
+          className="font-serif text-7xl md:text-8xl leading-none shrink-0"
+          style={{ color: GRADE_HEX[grade] }}
+          aria-label={`Grade ${grade}`}
+        >
+          {grade}
+        </span>
+        <div className="min-w-0">
+          <h1 className="font-mono text-lg md:text-xl text-ink break-words leading-snug">
+            {serverKey}
+          </h1>
+          <p className="mt-2 font-mono text-[11.5px] text-ink-faint leading-relaxed">
+            {detail.resolved_version ? (
+              <>
+                graded version{" "}
+                <span className="text-ink-muted">{detail.resolved_version}</span> ·{" "}
+              </>
+            ) : null}
+            <Link
+              href="/methodology"
+              className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+            >
+              {detail.methodology_version}
+            </Link>
+            {dated ? <> · {dated}</> : null}
+          </p>
+        </div>
+      </div>
+
+      {/* category breakdown */}
+      <dl className="mt-10 border-t hairline">
+        {CATEGORY_LABELS.map(({ code, name }) => {
+          const status = statusFor(detail, code);
+          const passing = status === "pass";
+          return (
+            <div
+              key={code}
+              className="flex items-baseline justify-between gap-4 border-b hairline py-3"
+            >
+              <dt className="font-mono text-[12px] text-ink-muted">
+                <span className="text-ink-faint">{code}</span> {name}
+              </dt>
+              <dd
+                className="font-mono text-[12px] shrink-0"
+                style={{ color: passing ? GRADE_HEX.A : "var(--color-oxblood)" }}
+              >
+                {status ?? "—"}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+
+      {fp ? (
+        <p className="mt-3 font-mono text-[11px] text-ink-faint">
+          tool-defs fingerprint · <span className="text-ink-muted">{fp}</span>
+        </p>
+      ) : null}
+
+      {detail.rationale ? (
+        <p className="mt-8 font-sans text-[13.5px] text-ink-muted leading-relaxed max-w-xl">
+          <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink">
+            Why {grade}:
+          </span>{" "}
+          {detail.rationale}
+        </p>
+      ) : null}
+
+      {/* reproduce — trust rests on re-runnability, not on a claim */}
+      <div className="mt-12 border-t hairline pt-6">
+        <h2 className="font-serif text-lg text-ink mb-2">Reproduce this grade</h2>
+        <p className="font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl">
+          The harness is open and deterministic. Re-run it against the same server and
+          compare the grade and fingerprint — a false grade is{" "}
+          <Link
+            href="/methodology#reproducibility"
+            className="text-ink border-b hairline border-dotted hover:text-oxblood transition-colors"
+          >
+            falsifiable, not merely disputable
+          </Link>
+          .
+        </p>
+        <pre className="mt-3 overflow-x-auto rounded-sm border hairline bg-parchment-50 px-4 py-3 font-mono text-[12.5px] text-ink">
+          <code>npx -p @polygraphso/litmus polygraphso-litmus {serverKey}</code>
+        </pre>
+      </div>
+
+      {/* embed */}
+      <div className="mt-12 border-t hairline pt-6">
+        <h2 className="font-serif text-lg text-ink mb-1">Embed this badge</h2>
+        <p className="font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl mb-5">
+          Drop it in a README, docs site, or package page. It always shows the current
+          published grade and links back here.
+        </p>
+        <div className="mb-5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={badgeUrl} alt={`polygraph grade ${grade}`} height={20} />
+        </div>
+        <EmbedSnippets badgeUrl={badgeUrl} cardUrl={cardUrl} pageUrl={pageUrl} />
+      </div>
+    </>
+  );
+}
+
+function Ungraded({
+  serverKey,
+  badgeUrl,
+  cardUrl,
+  pageUrl,
+}: {
+  serverKey: string;
+  badgeUrl: string;
+  cardUrl: string;
+  pageUrl: string;
+}) {
+  return (
+    <>
+      <h1 className="font-serif text-3xl md:text-4xl tracking-tight text-ink leading-[1.1] max-w-2xl">
+        <span className="font-mono text-[0.7em] text-ink bg-parchment-200 px-1.5 py-0.5 align-baseline">
+          {serverKey}
+        </span>{" "}
+        hasn&rsquo;t been graded yet.
+      </h1>
+
+      <p className="mt-6 max-w-xl text-ink-muted leading-relaxed">
+        No published polygraph for this server. Unevaluated is neither safe nor unsafe —
+        it just means the litmus battery hasn&rsquo;t been run against it.
+      </p>
+
+      <div className="mt-8 flex flex-wrap gap-3">
+        <Link
+          href={`/notify?for=${serverKey}`}
+          className="inline-flex items-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors"
+        >
+          Notify me when it&rsquo;s graded
+        </Link>
+        <Link
+          href="/request"
+          className="inline-flex items-center gap-2 border hairline px-5 py-3 font-mono text-sm tracking-wide text-ink-muted hover:text-ink transition-colors"
+        >
+          Request a grade now
+        </Link>
+      </div>
+
+      <div className="mt-12 border-t hairline pt-6">
+        <h2 className="font-serif text-lg text-ink mb-1">Embed the badge anyway</h2>
+        <p className="font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl mb-5">
+          It reads <span className="font-mono">unrated</span> today and updates itself to
+          the grade the moment one publishes — no edit needed.
+        </p>
+        <div className="mb-5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={badgeUrl} alt="polygraph grade unrated" height={20} />
+        </div>
+        <EmbedSnippets badgeUrl={badgeUrl} cardUrl={cardUrl} pageUrl={pageUrl} />
+      </div>
+    </>
+  );
+}
+
+function Fallback() {
+  return (
+    <>
+      <h1 className="font-serif text-3xl md:text-4xl tracking-tight text-ink leading-[1.1] max-w-2xl">
+        This page expects a server reference.
+      </h1>
+      <p className="mt-6 max-w-xl text-ink-muted leading-relaxed">
+        Address a server by its registry-prefixed ref in the path, for example:
+      </p>
+      <pre className="mt-6 border hairline bg-parchment-50 px-4 py-4 font-mono text-sm text-ink overflow-x-auto">
+        <code>/mcp/npm/@modelcontextprotocol/server-filesystem</code>
+      </pre>
+      <p className="mt-6 max-w-xl text-ink-muted leading-relaxed">
+        See the{" "}
+        <Link
+          href="/docs/api#server-ref"
+          className="text-ink border-b hairline border-dotted hover:text-oxblood transition-colors"
+        >
+          server-ref format
+        </Link>{" "}
+        for the three registry variants.
+      </p>
+    </>
+  );
+}
