@@ -18,6 +18,11 @@ const C = {
 
 export { C as OG_COLORS };
 
+// The signature polygraph waveform, drawn on a 0 0 1072 64 viewBox. Exported so
+// the grade card (app/api/badge/card) can reuse the exact same trace.
+export const WAVE_PATH =
+  "M0 32 L250 32 L268 22 L286 44 L304 32 L322 4 L338 60 L354 2 L370 62 L386 6 L402 60 L418 20 L434 46 L450 14 L466 52 L482 32 L760 32 L788 24 L816 42 L844 32 L1072 32";
+
 export function Frame({
   rightLabel,
   footerLeft = "BASELINE · ADVERSARIAL PROBES · BASELINE",
@@ -93,7 +98,7 @@ export function Frame({
           strokeDasharray="3 6"
         />
         <path
-          d="M0 32 L250 32 L268 22 L286 44 L304 32 L322 4 L338 60 L354 2 L370 62 L386 6 L402 60 L418 20 L434 46 L450 14 L466 52 L482 32 L760 32 L788 24 L816 42 L844 32 L1072 32"
+          d={WAVE_PATH}
           fill="none"
           stroke={C.oxblood}
           strokeWidth={2.4}
