@@ -39,7 +39,7 @@ export function EmbedYourGrade() {
       <div className="grid md:grid-cols-2 gap-4 items-start">
         {/* The card — the fuller visual. On mobile it drops below the badge,
             where the crisp inline badge + snippet are the actionable part. */}
-        <div className="order-2 md:order-1 border hairline bg-parchment-50 p-5">
+        <div className="order-2 md:order-1 min-w-0 border hairline bg-parchment-50 p-5">
           <p className="section-label mb-3">The card</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -53,7 +53,7 @@ export function EmbedYourGrade() {
         </div>
 
         {/* The inline badge + the snippet to copy */}
-        <div className="order-1 md:order-2 border hairline bg-parchment-50 p-5 flex flex-col">
+        <div className="order-1 md:order-2 min-w-0 border hairline bg-parchment-50 p-5 flex flex-col">
           <p className="section-label mb-3">The inline badge</p>
           <div className="flex items-center gap-3 mb-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -64,7 +64,7 @@ export function EmbedYourGrade() {
           </div>
 
           <div className="relative">
-            <pre className="font-mono text-[11.5px] leading-6 text-ink bg-parchment border hairline px-3 py-2.5 pr-16 whitespace-pre-wrap break-words">
+            <pre className="font-mono text-[11.5px] leading-6 text-ink bg-parchment border hairline px-3 py-2.5 pr-16 whitespace-pre-wrap break-all">
               {SNIPPET}
             </pre>
             <button
