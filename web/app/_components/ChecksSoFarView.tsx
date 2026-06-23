@@ -141,6 +141,16 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
                         </span>{" "}
                         {run.rationale}
                       </p>
+                      {run.href ? (
+                        <div className="px-3 pb-3">
+                          <a
+                            href={run.href}
+                            className="font-mono text-[11px] text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+                          >
+                            View full report &amp; embed badge →
+                          </a>
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                 </>
@@ -166,6 +176,28 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
             for one email per publishing drop.
           </p>
         </div>
+      </div>
+
+      {/* Embed-your-grade callout — the maintainer-facing discovery hook for the badge. */}
+      <div className="mt-4 max-w-3xl border hairline bg-parchment-50 px-4 py-3.5 flex flex-col gap-3 sm:flex-row sm:items-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/api/badge?server=npm/@modelcontextprotocol/server-filesystem"
+          alt="Example polygraph grade badge"
+          height={20}
+          className="shrink-0"
+        />
+        <p className="font-mono text-[11px] text-ink-faint leading-relaxed">
+          Maintain an MCP server?{" "}
+          <span className="text-ink-muted">Embed its live grade</span> in your README; it
+          updates itself when the grade changes.{" "}
+          <a
+            href="/docs/api#badge"
+            className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+          >
+            See how →
+          </a>
+        </p>
       </div>
     </section>
   );
