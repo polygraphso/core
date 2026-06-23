@@ -51,6 +51,13 @@ function shortFingerprint(fp: string | null): string | null {
   return `${fp.slice(0, 8)}…${fp.slice(-5)}`;
 }
 
+/** Category status → color: pass green, skip/none neutral, fail/partial oxblood. */
+function statusColor(status: string | null): string {
+  if (status === "pass") return GRADE_HEX.A;
+  if (!status || status.startsWith("skip")) return "var(--color-ink-faint)";
+  return "var(--color-oxblood)";
+}
+
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { ref } = await params;
   const key = keyFromParams(ref);
@@ -188,7 +195,6 @@ function Graded({
       <dl className="mt-10 border-t hairline">
         {CATEGORY_LABELS.map(({ code, name }) => {
           const status = statusFor(detail, code);
-          const passing = status === "pass";
           return (
             <div
               key={code}
@@ -197,10 +203,7 @@ function Graded({
               <dt className="font-mono text-[12px] text-ink-muted">
                 <span className="text-ink-faint">{code}</span> {name}
               </dt>
-              <dd
-                className="font-mono text-[12px] shrink-0"
-                style={{ color: passing ? GRADE_HEX.A : "var(--color-oxblood)" }}
-              >
+              <dd className="font-mono text-[12px] text-right" style={{ color: statusColor(status) }}>
                 {status ?? "—"}
               </dd>
             </div>
