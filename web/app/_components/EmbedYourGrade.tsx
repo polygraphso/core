@@ -37,8 +37,9 @@ export function EmbedYourGrade() {
       </SectionHeader>
 
       <div className="grid md:grid-cols-2 gap-4 items-start">
-        {/* The card — the fuller visual */}
-        <div className="border hairline bg-parchment-50 p-5">
+        {/* The card — the fuller visual. On mobile it drops below the badge,
+            where the crisp inline badge + snippet are the actionable part. */}
+        <div className="order-2 md:order-1 border hairline bg-parchment-50 p-5">
           <p className="section-label mb-3">The card</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -52,7 +53,7 @@ export function EmbedYourGrade() {
         </div>
 
         {/* The inline badge + the snippet to copy */}
-        <div className="border hairline bg-parchment-50 p-5 flex flex-col">
+        <div className="order-1 md:order-2 border hairline bg-parchment-50 p-5 flex flex-col">
           <p className="section-label mb-3">The inline badge</p>
           <div className="flex items-center gap-3 mb-4">
             {/* eslint-disable-next-line @next/next/no-img-element */}
