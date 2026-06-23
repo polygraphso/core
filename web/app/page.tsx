@@ -8,6 +8,9 @@ import { Timeline } from "./_components/Timeline";
 import { TokenNote } from "./_components/TokenNote";
 import { GradesUpdates } from "./_components/GradesUpdates";
 
+// ISR so grades published after the last deploy surface without a redeploy.
+export const revalidate = 600;
+
 export default function Home() {
   return (
     <main className="flex-1">
