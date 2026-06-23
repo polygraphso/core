@@ -5,6 +5,7 @@
 import { MobileNav } from "./MobileNav";
 
 const NAV: Array<{ href: string; label: string }> = [
+  { href: "/rankings", label: "Index" },
   { href: "/#install", label: "Install" },
   { href: "/#checks", label: "Checks" },
   { href: "/#badge", label: "Get a badge" },
