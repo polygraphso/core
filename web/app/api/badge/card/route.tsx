@@ -57,6 +57,11 @@ function Card({
   detail: PolygraphDetail | null;
 }) {
   const accent = grade ? GRADE_HEX[grade] : UNRATED_HEX;
+  // Split the ref so the package name reads as the subject and the registry
+  // path stays quiet context.
+  const lastSlash = serverRef.lastIndexOf("/");
+  const refPrefix = lastSlash >= 0 ? serverRef.slice(0, lastSlash + 1) : "";
+  const refName = lastSlash >= 0 ? serverRef.slice(lastSlash + 1) : serverRef;
   return (
     <div
       style={{
@@ -79,45 +84,47 @@ function Card({
         <div style={{ fontSize: 13, letterSpacing: 3, color: C.faint }}>BEHAVIORAL GRADE</div>
       </div>
 
-      {/* main row: grade letter + detail */}
-      <div style={{ display: "flex", alignItems: "center", flex: 1, marginTop: 6 }}>
+      {/* main row: grade letter + identity */}
+      <div style={{ display: "flex", alignItems: "center", flex: 1 }}>
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            marginRight: 30,
+            marginRight: 34,
+            fontFamily: "Source Serif 4",
+            fontWeight: 600,
+            fontSize: 112,
+            lineHeight: 1,
+            color: accent,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              fontFamily: "Source Serif 4",
-              fontWeight: 600,
-              fontSize: grade ? 104 : 88,
-              lineHeight: 1,
-              color: accent,
-            }}
-          >
-            {grade ?? "—"}
-          </div>
-          <div style={{ display: "flex", fontSize: 11, letterSpacing: 3, color: C.faint, marginTop: 4 }}>
-            {grade ? "GRADE" : "UNRATED"}
-          </div>
+          {grade ?? "–"}
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
+          {refPrefix ? (
+            <div
+              style={{
+                display: "flex",
+                fontFamily: "IBM Plex Mono",
+                fontSize: 14,
+                letterSpacing: 1,
+                color: C.faint,
+              }}
+            >
+              {refPrefix}
+            </div>
+          ) : null}
           <div
             style={{
               display: "flex",
               fontFamily: "Source Serif 4",
               fontWeight: 600,
-              fontSize: 25,
-              lineHeight: 1.12,
+              fontSize: 30,
+              lineHeight: 1.05,
               color: C.ink,
             }}
           >
-            {serverRef}
+            {refName}
           </div>
 
           {grade && detail ? (
@@ -133,8 +140,8 @@ function Card({
               </div>
             </>
           ) : (
-            <div style={{ display: "flex", marginTop: 12, fontSize: 16, color: C.muted }}>
-              Not yet graded — request a polygraph at polygraph.so
+            <div style={{ display: "flex", marginTop: 12, fontSize: 15, color: C.muted }}>
+              Not yet graded · request a polygraph at polygraph.so
             </div>
           )}
         </div>
