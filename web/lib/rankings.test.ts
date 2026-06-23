@@ -34,6 +34,9 @@ describe("formatAdoptionSignal", () => {
     expect(formatAdoptionSignal({ gh_stars: 1500 })).toBe("1.5K ★");
     expect(formatAdoptionSignal({})).toBe("—");
   });
+  it("drops fractional noise for large thousands (331K not 331.1K)", () => {
+    expect(formatAdoptionSignal({ npm_downloads_last_month: 331_100 })).toBe("331K npm/mo");
+  });
 });
 
 describe("dedupeAndRank", () => {

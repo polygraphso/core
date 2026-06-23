@@ -28,6 +28,12 @@ function statusColor(status: string | null): string {
   return "var(--color-oxblood)";
 }
 
+function statusGlyph(status: string | null): string {
+  if (status === "pass") return "✓";
+  if (!status || status.startsWith("skip")) return "–";
+  return "✕";
+}
+
 export default async function RankingsPage() {
   const db = getSupabaseAdmin();
   let rows: RankingRow[] = [];
@@ -114,15 +120,17 @@ export default async function RankingsPage() {
                     </td>
                     <td className="py-3">
                       {row.grade ? (
-                        <span className="flex gap-2">
+                        <span className="flex gap-3">
                           {[row.c01, row.c02, row.c03].map((s, i) => (
                             <span
                               key={i}
                               aria-label={s ?? "n/a"}
                               title={s ?? "n/a"}
-                              className="inline-block w-2.5 h-2.5"
-                              style={{ backgroundColor: statusColor(s) }}
-                            />
+                              className="font-mono text-[13px] leading-none"
+                              style={{ color: statusColor(s) }}
+                            >
+                              {statusGlyph(s)}
+                            </span>
                           ))}
                         </span>
                       ) : (

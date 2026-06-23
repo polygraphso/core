@@ -52,7 +52,7 @@ export interface RankingRow {
 }
 
 const VALID_GRADES = new Set(["A", "B", "C", "D", "F"]);
-const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
+const compact = new Intl.NumberFormat("en", { notation: "compact", maximumSignificantDigits: 3 });
 
 /** Human adoption signal: npm monthly, else PyPI monthly, else GitHub stars, else "—". */
 export function formatAdoptionSignal(c: RankingComponents): string {
