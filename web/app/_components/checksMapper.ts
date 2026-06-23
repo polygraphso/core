@@ -18,6 +18,10 @@ export type Run = {
   rationale: string;
   /** The methodology version this grade was produced under (e.g. "litmus-v2"). */
   methodologyVersion: string;
+  /** Link to the per-server grade page, set only for registry-ref MCP servers
+   *  (remote URLs and skills have no /mcp page). Drives the "view full report
+   *  & embed badge" affordance. */
+  href?: string;
 };
 
 export interface HostedRunRow {
@@ -244,5 +248,8 @@ export function rowToRun(row: HostedRunRow): Run {
     rows: bundleToRows(bundle, row.target),
     rationale: row.rationale,
     methodologyVersion: bundle.methodologyVersion,
+    // Only registry refs have a /mcp page; a remote_url target isn't a parseable
+    // server ref. The page canonicalizes the ref, so passing target as-is is safe.
+    href: row.target_kind === "registry_ref" ? `/mcp/${row.target}` : undefined,
   };
 }

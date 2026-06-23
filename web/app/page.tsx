@@ -3,6 +3,7 @@ import { Problem } from "./_components/Problem";
 import { HowWeTest } from "./_components/HowWeTest";
 import { Install } from "./_components/Install";
 import { ChecksSoFar } from "./_components/ChecksSoFar";
+import { EmbedYourGrade } from "./_components/EmbedYourGrade";
 import { Timeline } from "./_components/Timeline";
 import { TokenNote } from "./_components/TokenNote";
 import { GradesUpdates } from "./_components/GradesUpdates";
@@ -15,6 +16,7 @@ export default function Home() {
       <HowWeTest />
       <Install />
       <ChecksSoFar />
+      <EmbedYourGrade />
       <Timeline />
       <TokenNote />
       <GradesUpdates />
