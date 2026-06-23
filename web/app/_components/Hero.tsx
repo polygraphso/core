@@ -25,7 +25,7 @@ export function Hero() {
   return (
     <section className="relative">
       <div className="mx-auto max-w-6xl px-6 pt-16 pb-24 md:pt-24 md:pb-32 grid md:grid-cols-12 gap-10 md:gap-16 md:items-center">
-        <div className="md:col-span-7 fade-up">
+        <div className="md:col-span-7 fade-up min-w-0">
           <p className="font-serif italic text-ink-muted text-xl md:text-2xl mb-7 max-w-xl leading-snug">
             Catch the tools your agent can&rsquo;t trust before they touch
             your data.
@@ -85,7 +85,7 @@ export function Hero() {
         </div>
 
         <div
-          className="md:col-span-5 fade-up"
+          className="md:col-span-5 fade-up min-w-0"
           style={{ animationDelay: "120ms" }}
         >
           <HeroPolygraph />
