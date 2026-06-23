@@ -21,6 +21,19 @@ export const GRADE_HEX: Record<LitmusGrade, string> = {
 };
 
 /**
+ * Grade letter → hex, brightened for legibility on the dark badge pill. The
+ * GRADE_HEX values are tuned for the parchment ground and read as muddy on ink,
+ * so the inline badge (lib/badgeSvg) uses these lifted variants instead.
+ */
+export const DARK_GRADE_HEX: Record<LitmusGrade, string> = {
+  A: "#6aa56f",
+  B: "#8cad5e",
+  C: "#d39a45",
+  D: "#db7a4a",
+  F: "#cf5567",
+};
+
+/**
  * Grade letter → CSS variable, for in-DOM React components that want to stay
  * theme-aware (e.g. ChecksSoFarView). The values resolve to GRADE_HEX above.
  */
