@@ -11,8 +11,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "seed": "node --env-file=../../.env --import tsx ./src/seed/seed.ts",
+    "seed:ci": "node --import tsx ./src/seed/seed.ts",
     "probe": "node --env-file=../../.env --import tsx ./src/scripts/probe.ts",
     "score": "node --env-file=../../.env --import tsx ./src/scripts/score.ts",
+    "score:ci": "node --import tsx ./src/scripts/score.ts",
     "top": "node --env-file=../../.env --import tsx ./src/scripts/top.ts",
     "poll": "node --env-file=../../.env --import tsx ./src/scripts/poll.ts"
   },
