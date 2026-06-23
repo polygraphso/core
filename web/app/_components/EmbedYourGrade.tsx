@@ -25,10 +25,10 @@ export function EmbedYourGrade() {
   }
 
   return (
-    <section id="embed" className="mx-auto max-w-6xl px-6 py-20 md:py-28 scroll-mt-24">
+    <section id="badge" className="mx-auto max-w-6xl px-6 py-20 md:py-28 scroll-mt-24">
       <SectionHeader
         number="§ 05"
-        label="Embed"
+        label="Get a badge"
         title="Show your grade where developers look."
       >
         Maintain an MCP server we&rsquo;ve graded? Put its live polygraph on your

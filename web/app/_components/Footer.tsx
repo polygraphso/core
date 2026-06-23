@@ -33,9 +33,9 @@ export function Footer() {
             <p className="mt-1.5 font-sans text-[11.5px] leading-relaxed">
               <a
                 className="text-ink hover:text-oxblood transition-colors"
-                href="/#embed"
+                href="/#badge"
               >
-                Embed a badge →
+                Get a badge →
               </a>
             </p>
             <p className="mt-1.5 font-sans text-[11.5px] leading-relaxed">
