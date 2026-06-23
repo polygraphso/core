@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { SectionHeader } from "./SectionHeader";
 
-// A real graded server stands in as the example — the previews render an actual
-// grade, and the snippet is the template a maintainer swaps their own ref into.
-const EXAMPLE = "npm/@modelcontextprotocol/server-filesystem";
+// Polygraph's own graded server stands in as the example — we eat our own dog
+// food (graded A under the open harness). The previews render a real grade, and
+// the snippet is the template a maintainer swaps their own ref into.
+const EXAMPLE = "npm/@polygraphso/litmus";
 const BADGE_SRC = `/api/badge?server=${EXAMPLE}`;
 const CARD_SRC = `/api/badge/card?server=${EXAMPLE}`;
 const PAGE_HREF = `/mcp/${EXAMPLE}`;
