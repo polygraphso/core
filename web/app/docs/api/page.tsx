@@ -313,7 +313,44 @@ pypi/mcp-server-fetch`}
           </p>
         </Section>
 
-        <Section num="07" label="See also" id="see-also">
+        <Section num="07" label="Embeddable badge" id="badge">
+          <p>
+            A live grade badge any server can embed — in a README, on npm, or on a
+            docs site. Three artifacts, all keyed by the same server ref, all
+            served from the canonical grade so they update themselves when a grade
+            changes.
+          </p>
+          <Method verb="GET" path="/api/badge?server=<ref>" />
+          <p>
+            A small inline SVG pill (<Inline>image/svg+xml</Inline>) —{" "}
+            <Inline>polygraph · A</Inline>, colored by grade. An ungraded server
+            renders a muted <Inline>unrated</Inline> pill rather than an error, so
+            it&rsquo;s safe to embed before a grade exists.
+          </p>
+          <Method verb="GET" path="/api/badge/card?server=<ref>" />
+          <p>
+            A larger card image (<Inline>image/png</Inline>) with the grade, the
+            three category slots, and the methodology version.
+          </p>
+          <Method verb="GET" path="/mcp/<ref>" />
+          <p>
+            The human-readable grade report the badge and card link to — category
+            breakdown, fingerprint, and the command to reproduce the grade. It
+            also hosts ready-to-copy embed snippets.
+          </p>
+          <h3 className="font-serif text-lg text-ink mt-6 mb-2">Markdown</h3>
+          <Code>
+{`[![polygraph](https://polygraph.so/api/badge?server=npm/@modelcontextprotocol/server-filesystem)](https://polygraph.so/mcp/npm/@modelcontextprotocol/server-filesystem)`}
+          </Code>
+          <p className="text-sm">
+            <span className="text-ink-faint">Note · </span>the ref is passed
+            unencoded in the query string (<Inline>/</Inline> and{" "}
+            <Inline>@</Inline> are legal there). Images are cached at the CDN; a
+            regrade propagates within the hour.
+          </p>
+        </Section>
+
+        <Section num="08" label="See also" id="see-also">
           <ul className="list-none space-y-1">
             <li>
               <a

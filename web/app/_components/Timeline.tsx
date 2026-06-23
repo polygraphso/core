@@ -40,7 +40,7 @@ export function Timeline() {
   return (
     <section id="timeline" className="mx-auto max-w-6xl px-6 py-20 md:py-28">
       <SectionHeader
-        number="§ 05"
+        number="§ 06"
         label="Timeline"
         title="Where this is going."
       >

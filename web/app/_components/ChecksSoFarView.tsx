@@ -2,15 +2,8 @@
 
 import { useState } from "react";
 import { SectionHeader } from "./SectionHeader";
+import { GRADE_VAR } from "@/lib/gradeColors";
 import type { Run } from "./checksMapper";
-
-const GRADE_COLOR: Record<Run["grade"], string> = {
-  A: "var(--color-grade-a)",
-  B: "var(--color-grade-b)",
-  C: "var(--color-grade-c)",
-  D: "var(--color-grade-d)",
-  F: "var(--color-grade-f)",
-};
 
 type KindFilter = "all" | "mcp" | "skill";
 
@@ -128,7 +121,7 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
                       <div className="px-3 py-3 flex gap-4">
                         <span
                           className="font-serif text-4xl leading-none shrink-0"
-                          style={{ color: GRADE_COLOR[run.grade] }}
+                          style={{ color: GRADE_VAR[run.grade] }}
                           aria-label={`Grade ${run.grade}`}
                         >
                           {run.grade}
@@ -148,6 +141,16 @@ export function ChecksSoFarView({ runs }: { runs: Run[] }) {
                         </span>{" "}
                         {run.rationale}
                       </p>
+                      {run.href ? (
+                        <div className="px-3 pb-3">
+                          <a
+                            href={run.href}
+                            className="font-mono text-[11px] text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+                          >
+                            View full report &amp; embed badge →
+                          </a>
+                        </div>
+                      ) : null}
                     </div>
                   ) : null}
                 </>

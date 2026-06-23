@@ -2,16 +2,19 @@
 // identical chrome (no per-page drift). Nav links are absolute so they work
 // from any route: the #anchors jump to homepage sections, the rest navigate.
 
+import { MobileNav } from "./MobileNav";
+
 const NAV: Array<{ href: string; label: string }> = [
   { href: "/#install", label: "Install" },
   { href: "/#checks", label: "Checks" },
+  { href: "/#badge", label: "Get a badge" },
   { href: "/request", label: "Request" },
   { href: "/methodology", label: "Methodology" },
 ];
 
 export function SiteHeader() {
   return (
-    <header className="border-b hairline">
+    <header className="relative border-b hairline">
       <div className="mx-auto max-w-6xl px-6 py-3 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
         <a href="/" className="flex items-center gap-3 hover:text-ink transition-colors">
           <span
@@ -31,6 +34,7 @@ export function SiteHeader() {
             </a>
           ))}
         </nav>
+        <MobileNav items={NAV} />
       </div>
     </header>
   );
