@@ -82,6 +82,32 @@ export function Hero() {
               See completed checks ↓
             </a>
           </div>
+
+          {/* We grade ourselves — our own live polygraph badge, links to the report. */}
+          <div className="mt-9 flex items-center gap-3">
+            <a
+              href="/mcp/npm/@polygraphso/litmus"
+              aria-label="polygraph grade for @polygraphso/litmus"
+              className="inline-flex shrink-0"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/api/badge?server=npm/@polygraphso/litmus"
+                alt="polygraph grade: A"
+                height={20}
+              />
+            </a>
+            <span className="font-mono text-[11px] text-ink-faint leading-relaxed">
+              We polygraph ourselves, too &mdash;{" "}
+              <a
+                href="/mcp/npm/@polygraphso/litmus"
+                className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+              >
+                see the report
+              </a>
+              .
+            </span>
+          </div>
         </div>
 
         <div
