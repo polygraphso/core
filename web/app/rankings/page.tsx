@@ -14,14 +14,16 @@ import {
 export const metadata: Metadata = {
   title: "The MCP Security Index",
   description:
-    "The most-adopted MCP servers, ranked by adoption and graded for behavior with the open litmus harness. A grade is a measurement, not a guarantee — re-run it yourself.",
+    "MCP servers graded for behavior with the open litmus harness, ranked by adoption. A grade is a measurement, not a guarantee — re-run it yourself.",
   alternates: { canonical: "/rankings" },
 };
 
 // Re-render at most every 10 min; a fresh score run or regrade surfaces within the window.
 export const revalidate = 600;
 
-const TOP_N = 50;
+// Upper bound on the adoption universe we pull; we then keep only graded servers.
+// Comfortably covers the full scored set (~78 today).
+const ADOPTION_UNIVERSE = 200;
 
 function statusColor(status: string | null): string {
   if (status === "pass") return GRADE_HEX.A;
@@ -75,14 +77,17 @@ export default async function RankingsPage() {
   let lastRefreshed = "";
   if (db) {
     const [ranked, grades] = await Promise.all([
-      fetchTopRanked(db, TOP_N),
+      // Pull the full scored set so every graded server is covered, then keep
+      // only graded servers (below) — the index shows graded MCPs, ranked by adoption.
+      fetchTopRanked(db, ADOPTION_UNIVERSE),
       fetchPublishedGradeDetailMap(db),
     ]);
-    rows = mergeRankings(ranked, grades);
     // Newest score timestamp across the ranked set — ISO strings compare lexically.
     lastRefreshed = ranked.reduce((max, r) => (r.computedAt > max ? r.computedAt : max), "");
+    rows = mergeRankings(ranked, grades)
+      .filter((r) => r.grade !== null)
+      .map((r, i) => ({ ...r, rank: i + 1 }));
   }
-  const gradedCount = rows.filter((r) => r.grade !== null).length;
   const refreshedDate = lastRefreshed ? lastRefreshed.slice(0, 10) : null;
 
   return (
@@ -94,20 +99,19 @@ export default async function RankingsPage() {
             The MCP Security Index
           </h1>
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
-            The most-adopted MCP servers, ordered by adoption and graded for
-            behavior — what each server <em>does</em> when exercised the way an
-            agent would.
+            MCP servers graded for behavior, ordered by adoption — what each server{" "}
+            <em>does</em> when exercised the way an agent would.
           </p>
           <p className="mt-4 max-w-2xl text-ink-muted leading-relaxed text-sm">
             {rows.length > 0 ? (
               <>
-                {gradedCount} of the top {rows.length} graded
+                {rows.length} {rows.length === 1 ? "server" : "servers"} graded, ranked by adoption
                 {refreshedDate ? <> · adoption data as of {refreshedDate}</> : null}. A grade is
                 a measurement, not a guarantee; every grade links to a report you
                 can re-run yourself.
               </>
             ) : (
-              <>Rankings are being computed. Check back shortly.</>
+              <>No graded servers yet. Check back shortly.</>
             )}
           </p>
         </header>
@@ -250,8 +254,11 @@ export default async function RankingsPage() {
           right above monthly downloads) — a composite of downloads (npm / PyPI), GitHub stars,
           dependents and release velocity. It measures{" "}
           <span className="text-ink-muted">reach, not safety</span>: the litmus grade is the only
-          safety verdict. Grades come from the open litmus harness; ungraded servers can be
-          requested. See the{" "}
+          safety verdict. Grades come from the open litmus harness; you can{" "}
+          <Link href="/request" className="border-b hairline border-dotted hover:text-oxblood">
+            request a grade
+          </Link>{" "}
+          for a server, or read the{" "}
           <Link href="/methodology" className="border-b hairline border-dotted hover:text-oxblood">
             methodology
           </Link>
