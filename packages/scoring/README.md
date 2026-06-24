@@ -42,7 +42,7 @@ pnpm --filter @polygraph/scoring score -- --dry-run           # compute + rank, 
 pnpm --filter @polygraph/scoring score -- --limit 10 --dry-run
 ```
 
-At 78 servers and ~6 adapters per npm server (sequential across servers, parallel within), expect ~5-10 minutes for a full run. Phase 5 will wrap this in a daily cron.
+At 78 servers and ~6 adapters per npm server (sequential across servers, parallel within), expect ~5-10 minutes for a full run. Scheduled via `.github/workflows/score.yml` (daily 06:17 UTC; `workflow_dispatch` for manual runs). Secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SCORING_GITHUB_TOKEN`.
 
 ## Top — read current rankings as JSON
 

@@ -60,8 +60,25 @@ export interface ScoreRunResult {
   skipped: Array<{ server_id: string; reason: string }>;
 }
 
-interface SnapshotResult {
-  snapshot: ComponentSnapshot;
+/**
+ * Wrap a single optional adapter call so that a failure (timeout, 429, any
+ * network error after retries) degrades to null — exactly how a 404 is
+ * already handled and weight-redistributed — rather than aborting the whole
+ * server scrape. A warn-level log names the adapter and server so the
+ * failure is visible without being fatal.
+ */
+export async function tryAdapter<T>(
+  label: string,
+  serverLabel: string,
+  fn: () => Promise<T | null>,
+): Promise<T | null> {
+  try {
+    return await fn();
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.warn(`[scoring] adapter ${label} failed for ${serverLabel} (degraded to absent): ${reason}`);
+    return null;
+  }
 }
 
 /** What a single server's adapter pass produced — both the snapshot and the
@@ -80,6 +97,7 @@ async function scrapeNpmServer(
   identities: Partial<Record<IdentitySource, string>>,
 ): Promise<ServerScrape> {
   const pkg = server.owner ? `${server.owner}/${server.name}` : server.name;
+  const serverLabel = `npm/${pkg}`;
   const npm = await fetchNpm(pkg);
   const gh = npm?.github_owner_repo ?? null;
 
@@ -89,14 +107,17 @@ async function scrapeNpmServer(
   const glamaPair = glamaIdent ? glamaIdent.split("/", 2) : null;
   const smitheryIdent = identities.smithery;
 
+  // Each optional adapter is wrapped in tryAdapter so a single timeout /
+  // 429 / network error degrades that signal to absent (null) rather than
+  // aborting the whole server scrape.
   const [github, openssf, depsdev, glama, smithery] = await Promise.all([
-    gh ? fetchGitHub(gh.owner, gh.repo) : Promise.resolve(null),
-    gh ? fetchOpenSSF(gh.owner, gh.repo) : Promise.resolve(null),
-    fetchDepsDev(pkg, "npm"),
+    gh ? tryAdapter("github", serverLabel, () => fetchGitHub(gh.owner, gh.repo)) : Promise.resolve(null),
+    gh ? tryAdapter("openssf", serverLabel, () => fetchOpenSSF(gh.owner, gh.repo)) : Promise.resolve(null),
+    tryAdapter("depsdev", serverLabel, () => fetchDepsDev(pkg, "npm")),
     glamaPair && glamaPair[0] && glamaPair[1]
-      ? fetchGlama(glamaPair[0], glamaPair[1])
+      ? tryAdapter("glama", serverLabel, () => fetchGlama(glamaPair[0]!, glamaPair[1]!))
       : Promise.resolve(null),
-    smitheryIdent ? fetchSmithery(smitheryIdent) : Promise.resolve(null),
+    smitheryIdent ? tryAdapter("smithery", serverLabel, () => fetchSmithery(smitheryIdent)) : Promise.resolve(null),
   ]);
 
   return {
@@ -120,13 +141,17 @@ async function scrapeNpmServer(
 }
 
 async function scrapePypiServer(server: ServerRow): Promise<ServerScrape> {
+  const serverLabel = `pypi/${server.name}`;
   const pypi = await fetchPypi(server.name);
   const gh = pypi?.github_owner_repo ?? null;
 
+  // Each optional adapter is wrapped in tryAdapter so a single timeout /
+  // 429 / network error degrades that signal to absent (null) rather than
+  // aborting the whole server scrape.
   const [github, openssf, depsdev] = await Promise.all([
-    gh ? fetchGitHub(gh.owner, gh.repo) : Promise.resolve(null),
-    gh ? fetchOpenSSF(gh.owner, gh.repo) : Promise.resolve(null),
-    fetchDepsDev(server.name, "pypi"),
+    gh ? tryAdapter("github", serverLabel, () => fetchGitHub(gh.owner, gh.repo)) : Promise.resolve(null),
+    gh ? tryAdapter("openssf", serverLabel, () => fetchOpenSSF(gh.owner, gh.repo)) : Promise.resolve(null),
+    tryAdapter("depsdev", serverLabel, () => fetchDepsDev(server.name, "pypi")),
   ]);
 
   return {
@@ -153,9 +178,12 @@ async function scrapeGithubServer(server: ServerRow): Promise<ServerScrape> {
   if (!server.owner) {
     throw new Error(`github server ${server.id} has no owner — invariant violation`);
   }
+  const serverLabel = `github/${server.owner}/${server.name}`;
+  // Each adapter is wrapped in tryAdapter so a single failure degrades that
+  // signal to absent (null) rather than aborting the whole server scrape.
   const [github, openssf] = await Promise.all([
-    fetchGitHub(server.owner, server.name),
-    fetchOpenSSF(server.owner, server.name),
+    tryAdapter("github", serverLabel, () => fetchGitHub(server.owner!, server.name)),
+    tryAdapter("openssf", serverLabel, () => fetchOpenSSF(server.owner!, server.name)),
   ]);
   return {
     server_id: server.id,

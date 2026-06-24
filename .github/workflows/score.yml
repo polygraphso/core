@@ -1,0 +1,38 @@
+# .github/workflows/score.yml
+name: adoption-score
+
+on:
+  schedule:
+    - cron: "17 6 * * *" # daily 06:17 UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: adoption-score
+  cancel-in-progress: false
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Seed (idempotent — picks up servers.yaml changes)
+        run: pnpm --filter @polygraph/scoring seed:ci
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.SCORING_GITHUB_TOKEN }}
+      - name: Score
+        run: pnpm --filter @polygraph/scoring score:ci
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.SCORING_GITHUB_TOKEN }}
