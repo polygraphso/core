@@ -110,11 +110,25 @@ describe("dedupeAndRank", () => {
 describe("gradeMapFromRows", () => {
   it("keeps the first (newest) published grade per target and drops invalid grades", () => {
     const map = gradeMapFromRows([
-      { target: "npm/@a/x", grade: "A", c01: "pass", c02: "pass", c03: "pass" },
+      {
+        target: "npm/@a/x",
+        grade: "A",
+        c01: "pass",
+        c02: "pass",
+        c03: "pass",
+        categories: [{ code: "C-04", status: "pass" }],
+      },
       { target: "npm/@a/x", grade: "F", c01: "fail", c02: "pass", c03: "pass" }, // stale
       { target: "pypi/z", grade: null, c01: null, c02: null, c03: null }, // dropped
     ]);
-    expect(map.get("npm/@a/x")).toEqual({ grade: "A", c01: "pass", c02: "pass", c03: "pass" });
+    // c04 comes from evidence->categories; absent categories → null
+    expect(map.get("npm/@a/x")).toEqual({
+      grade: "A",
+      c01: "pass",
+      c02: "pass",
+      c03: "pass",
+      c04: "pass",
+    });
     expect(map.has("pypi/z")).toBe(false);
   });
 });
@@ -126,10 +140,10 @@ describe("mergeRankings", () => {
       { rank: 2, registry: "pypi", owner: null, name: "z", score: 80, adoptionScore: 60, computedAt: "2026-06-24", components: {} },
     ];
     const grades = new Map<string, RankingGrade>([
-      ["npm/@a/x", { grade: "A", c01: "pass", c02: "skip", c03: "pass" }],
+      ["npm/@a/x", { grade: "A", c01: "pass", c02: "skip", c03: "pass", c04: "pass" }],
     ]);
     const rows = mergeRankings(ranked, grades);
-    expect(rows[0]).toMatchObject({ serverKey: "npm/@a/x", grade: "A", c02: "skip", adoptionSignal: "10 ★", adoptionScore: 95 });
-    expect(rows[1]).toMatchObject({ serverKey: "pypi/z", grade: null, adoptionSignal: "—", adoptionScore: 60 });
+    expect(rows[0]).toMatchObject({ serverKey: "npm/@a/x", grade: "A", c02: "skip", c04: "pass", adoptionSignal: "10 ★", adoptionScore: 95 });
+    expect(rows[1]).toMatchObject({ serverKey: "pypi/z", grade: null, c04: null, adoptionSignal: "—", adoptionScore: 60 });
   });
 });

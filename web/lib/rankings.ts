@@ -63,6 +63,8 @@ export interface RankingGrade {
   c01: string | null;
   c02: string | null;
   c03: string | null;
+  /** C-04 adversarial-input handling — read from the evidence bundle (no flat column). */
+  c04: string | null;
 }
 
 export interface RankingRow {
@@ -77,6 +79,7 @@ export interface RankingRow {
   c01: string | null;
   c02: string | null;
   c03: string | null;
+  c04: string | null;
 }
 
 const VALID_GRADES = new Set(["A", "B", "C", "D", "F"]);
@@ -171,13 +174,16 @@ export function gradeMapFromRows(
     c01: string | null;
     c02: string | null;
     c03: string | null;
+    /** evidence->categories — C-04's status is read from here (no flat column). */
+    categories?: Array<{ code?: string | null; status?: string | null }> | null;
   }>,
 ): Map<string, RankingGrade> {
   const map = new Map<string, RankingGrade>();
   for (const r of rows) {
     if (map.has(r.target)) continue; // rows arrive newest-first
     if (r.grade && VALID_GRADES.has(r.grade)) {
-      map.set(r.target, { grade: r.grade as LitmusGrade, c01: r.c01, c02: r.c02, c03: r.c03 });
+      const c04 = r.categories?.find((c) => c.code === "C-04")?.status ?? null;
+      map.set(r.target, { grade: r.grade as LitmusGrade, c01: r.c01, c02: r.c02, c03: r.c03, c04 });
     }
   }
   return map;
@@ -201,6 +207,7 @@ export function mergeRankings(
       c01: g?.c01 ?? null,
       c02: g?.c02 ?? null,
       c03: g?.c03 ?? null,
+      c04: g?.c04 ?? null,
     };
   });
 }
@@ -229,7 +236,9 @@ export async function fetchPublishedGradeDetailMap(
 ): Promise<Map<string, RankingGrade>> {
   const { data, error } = await db
     .from("hosted_runs")
-    .select("target, grade, c01, c02, c03, published_at")
+    // `categories:evidence->categories` pulls just the category list (not the
+    // heavy toolDefs) so we can read the off-chain C-04 status.
+    .select("target, grade, c01, c02, c03, categories:evidence->categories, published_at")
     .eq("target_kind", "registry_ref")
     .eq("status", "complete")
     .not("published_at", "is", null)
@@ -245,6 +254,7 @@ export async function fetchPublishedGradeDetailMap(
       c01: string | null;
       c02: string | null;
       c03: string | null;
+      categories?: Array<{ code?: string | null; status?: string | null }> | null;
     }>,
   );
 }

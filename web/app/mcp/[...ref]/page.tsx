@@ -204,16 +204,18 @@ function AdoptionSignals({ adoption }: { adoption: ServerAdoption | null }) {
   );
 }
 
-const CATEGORY_LABELS: Array<{ code: "C-01" | "C-02" | "C-03"; name: string }> = [
+const CATEGORY_LABELS: Array<{ code: "C-01" | "C-02" | "C-03" | "C-04"; name: string }> = [
   { code: "C-01", name: "Tool-output injection" },
   { code: "C-02", name: "Permission / egress overreach" },
   { code: "C-03", name: "Sensitive-data handling" },
+  { code: "C-04", name: "Adversarial-input handling" },
 ];
 
-function statusFor(detail: PolygraphDetail, code: "C-01" | "C-02" | "C-03"): string | null {
+function statusFor(detail: PolygraphDetail, code: "C-01" | "C-02" | "C-03" | "C-04"): string | null {
   if (code === "C-01") return detail.c01;
   if (code === "C-02") return detail.c02;
-  return detail.c03;
+  if (code === "C-03") return detail.c03;
+  return detail.c04;
 }
 
 function Graded({

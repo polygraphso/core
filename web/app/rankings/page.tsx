@@ -120,12 +120,12 @@ export default async function RankingsPage() {
                   <th className="py-2.5 pl-1 pr-4 font-normal text-right w-12">#</th>
                   <th className="py-2.5 pr-5 font-normal text-left">Server</th>
                   <th className="py-2.5 pr-5 font-normal text-left w-16">Grade</th>
-                  <th className="py-2.5 pr-5 font-normal text-left w-24">
+                  <th className="py-2.5 pr-5 font-normal text-left w-32">
                     <InfoTip label="Checks" align="left">
                       <span className="font-semibold">Per-category checks</span> (✓ pass · ✕ fail ·
                       – not run): 01 tool-output injection · 02 egress overreach · 03
-                      sensitive-data handling. C-04 (adversarial input) folds into the overall
-                      grade — not a separate slot.
+                      sensitive-data handling · 04 adversarial-input handling. C-01–03 are the
+                      on-chain slots; C-04 is read from the evidence bundle.
                     </InfoTip>
                   </th>
                   <th className="py-2.5 pr-1 font-normal text-right w-28">
@@ -180,16 +180,17 @@ export default async function RankingsPage() {
                       </td>
                       <td className="py-3.5 pr-5">
                         {graded ? (
-                          <span className="flex gap-3.5" aria-label="category checks">
-                            {[row.c01, row.c02, row.c03].map((s, i) => (
+                          <span className="flex gap-2.5" aria-label="category checks">
+                            {[row.c01, row.c02, row.c03, row.c04].map((s, i) => (
                               <span
                                 key={i}
-                                aria-label={`${["C-01", "C-02", "C-03"][i]} ${s ?? "not run"}`}
+                                aria-label={`${["C-01", "C-02", "C-03", "C-04"][i]} ${s ?? "not run"}`}
                                 title={`${
                                   [
                                     "C-01 tool-output injection",
                                     "C-02 egress overreach",
                                     "C-03 sensitive-data handling",
+                                    "C-04 adversarial-input handling",
                                   ][i]
                                 }: ${s ?? "not run"}`}
                                 className="flex items-baseline gap-1"
@@ -240,7 +241,7 @@ export default async function RankingsPage() {
             </span>
             <span className="text-ink-faint/80">
               C-01 tool-output injection · C-02 egress overreach · C-03 sensitive-data handling ·
-              C-04 adversarial input (folds into the grade, not a separate slot)
+              C-04 adversarial-input handling
             </span>
           </p>
         ) : null}
