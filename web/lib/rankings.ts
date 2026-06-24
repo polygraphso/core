@@ -70,7 +70,7 @@ export interface RankingGrade {
 export interface RankingRow {
   rank: number;
   serverKey: string;
-  registry: Registry;
+  registry: Registry | "remote";
   /** 0–100 adoption score that determines the rank. */
   adoptionScore: number;
   /** Human-readable reach proxy (monthly downloads / stars). */
@@ -80,6 +80,10 @@ export interface RankingRow {
   c02: string | null;
   c03: string | null;
   c04: string | null;
+  /** A remote/hosted endpoint (graded over HTTPS): no registry adoption, egress
+   *  unverifiable, so it caps at B. Listed below the adoption-ranked registry
+   *  servers, with adoption shown as "—" and no report-page link. */
+  remote?: boolean;
 }
 
 const VALID_GRADES = new Set(["A", "B", "C", "D", "F"]);
@@ -257,6 +261,63 @@ export async function fetchPublishedGradeDetailMap(
       categories?: Array<{ code?: string | null; status?: string | null }> | null;
     }>,
   );
+}
+
+/** Display host for a remote endpoint target ("https://mcp.morpho.org/" → "mcp.morpho.org"). */
+function remoteHost(target: string): string {
+  try {
+    return new URL(target).host;
+  } catch {
+    return target.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  }
+}
+
+/**
+ * Published remote_url grades as ranking rows. Remote/hosted endpoints have no
+ * registry-package adoption, so they are not adoption-ranked — the caller appends
+ * them below the registry servers. Egress can't be sandboxed on a server we don't
+ * host, so a clean one caps at B. Sorted by grade then host for a stable order.
+ */
+export async function fetchPublishedRemoteGrades(db: SupabaseClient): Promise<RankingRow[]> {
+  const { data, error } = await db
+    .from("hosted_runs")
+    .select("target, grade, c01, c02, c03, categories:evidence->categories, published_at")
+    .eq("target_kind", "remote_url")
+    .eq("status", "complete")
+    .not("published_at", "is", null)
+    .order("published_at", { ascending: false });
+  if (error) {
+    console.warn("[rankings] remote grade read soft-failed:", error.message);
+    return [];
+  }
+  const map = gradeMapFromRows(
+    (data ?? []) as Array<{
+      target: string;
+      grade: string | null;
+      c01: string | null;
+      c02: string | null;
+      c03: string | null;
+      categories?: Array<{ code?: string | null; status?: string | null }> | null;
+    }>,
+  );
+  const rows: RankingRow[] = [];
+  for (const [target, g] of map) {
+    rows.push({
+      rank: 0,
+      serverKey: remoteHost(target),
+      registry: "remote",
+      adoptionScore: 0,
+      adoptionSignal: "—",
+      grade: g.grade,
+      c01: g.c01,
+      c02: g.c02,
+      c03: g.c03,
+      c04: g.c04,
+      remote: true,
+    });
+  }
+  rows.sort((a, b) => (a.grade ?? "").localeCompare(b.grade ?? "") || a.serverKey.localeCompare(b.serverKey));
+  return rows;
 }
 
 export interface ServerAdoption {

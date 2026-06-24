@@ -6,6 +6,7 @@ import { GRADE_HEX, UNRATED_HEX } from "@/lib/gradeColors";
 import type { RankingRow } from "@/lib/rankings";
 
 const PAGE_SIZE = 20;
+const GRADE_ORDER = ["A", "B", "C", "D", "F"] as const;
 
 function statusColor(status: string | null): string {
   if (status === "pass") return GRADE_HEX.A;
@@ -52,15 +53,56 @@ function InfoTip({
   );
 }
 
-/** Graded servers ranked by adoption, with client-side search + pagination. */
+/** A grade filter pill: the letter in its grade color + the count in that grade. */
+function GradeChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`rounded-sm border px-2.5 py-1 leading-none transition-colors ${
+        active
+          ? "border-oxblood text-oxblood font-medium"
+          : "hairline text-ink-muted hover:border-oxblood hover:text-oxblood"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Graded servers ranked by adoption, with client-side search + grade filter + pagination. */
 export function RankingsTable({ rows }: { rows: RankingRow[] }) {
   const [query, setQuery] = useState("");
+  const [grade, setGrade] = useState<string | null>(null);
   const [page, setPage] = useState(0);
+
+  // Grade distribution across the full set — powers the filter pills and makes
+  // the spread legible at a glance (an all-A list reads as a stated fact, not a
+  // missing feature). Only grades that actually occur get a pill.
+  const counts = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const r of rows) if (r.grade) m.set(r.grade, (m.get(r.grade) ?? 0) + 1);
+    return m;
+  }, [rows]);
+  const presentGrades = useMemo(() => GRADE_ORDER.filter((g) => counts.has(g)), [counts]);
 
   const q = query.trim().toLowerCase();
   const filtered = useMemo(
-    () => (q ? rows.filter((r) => r.serverKey.toLowerCase().includes(q)) : rows),
-    [rows, q],
+    () =>
+      rows.filter(
+        (r) =>
+          (!q || r.serverKey.toLowerCase().includes(q)) && (!grade || r.grade === grade),
+      ),
+    [rows, q, grade],
   );
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pageCount - 1);
@@ -68,6 +110,36 @@ export function RankingsTable({ rows }: { rows: RankingRow[] }) {
 
   return (
     <div>
+      {presentGrades.length > 1 ? (
+        <div className="mb-3 flex flex-wrap items-center gap-1.5 font-mono text-[11px]">
+          <span className="mr-1 uppercase tracking-[0.13em] text-[10px] text-ink-faint">
+            Grade
+          </span>
+          <GradeChip
+            active={grade === null}
+            onClick={() => {
+              setGrade(null);
+              setPage(0);
+            }}
+          >
+            All <span className="tabular text-ink-faint">{rows.length}</span>
+          </GradeChip>
+          {presentGrades.map((g) => (
+            <GradeChip
+              key={g}
+              active={grade === g}
+              onClick={() => {
+                setGrade(grade === g ? null : g);
+                setPage(0);
+              }}
+            >
+              <span style={{ color: GRADE_HEX[g] }}>{g}</span>{" "}
+              <span className="tabular text-ink-faint">{counts.get(g)}</span>
+            </GradeChip>
+          ))}
+        </div>
+      ) : null}
+
       <div className="mb-4 flex items-baseline justify-between gap-4">
         <input
           type="search"
@@ -82,13 +154,14 @@ export function RankingsTable({ rows }: { rows: RankingRow[] }) {
         />
         <span className="shrink-0 font-mono text-[11px] text-ink-faint tabular">
           {filtered.length} {filtered.length === 1 ? "server" : "servers"}
-          {q && filtered.length !== rows.length ? ` of ${rows.length}` : ""}
+          {filtered.length !== rows.length ? ` of ${rows.length}` : ""}
         </span>
       </div>
 
       {filtered.length === 0 ? (
         <p className="border-t hairline py-8 text-center font-mono text-[12px] text-ink-faint">
-          No servers match “{query.trim()}”.
+          No {grade ? `grade-${grade} ` : ""}servers
+          {q ? <> match “{query.trim()}”</> : null}.
         </p>
       ) : (
         <div className="overflow-x-auto">
@@ -124,17 +197,29 @@ export function RankingsTable({ rows }: { rows: RankingRow[] }) {
                     className="group align-middle border-b border-rule-soft/60 transition-colors hover:bg-parchment-200/40"
                   >
                     <td className="py-3.5 pl-1 pr-4 text-right tabular text-ink-faint">
-                      {row.rank}
+                      {row.remote ? "—" : row.rank}
                     </td>
                     <td className="py-3.5 pr-5">
-                      <Link
-                        href={`/mcp/${row.serverKey}`}
-                        className={`break-all transition-colors group-hover:text-oxblood ${
-                          graded ? "text-ink" : "text-ink-muted"
-                        }`}
-                      >
-                        {row.serverKey}
-                      </Link>
+                      {row.remote ? (
+                        <span className="break-all text-ink">
+                          {row.serverKey}
+                          <span
+                            className="ml-2 align-middle rounded-sm border border-ink/20 px-1 py-px text-[9px] uppercase tracking-wider text-ink-faint"
+                            title="Hosted endpoint graded over HTTPS — egress can't be sandboxed, so it caps at B."
+                          >
+                            live
+                          </span>
+                        </span>
+                      ) : (
+                        <Link
+                          href={`/mcp/${row.serverKey}`}
+                          className={`break-all transition-colors group-hover:text-oxblood ${
+                            graded ? "text-ink" : "text-ink-muted"
+                          }`}
+                        >
+                          {row.serverKey}
+                        </Link>
+                      )}
                     </td>
                     <td className="py-3.5 pr-5">
                       {graded ? (
@@ -189,11 +274,19 @@ export function RankingsTable({ rows }: { rows: RankingRow[] }) {
                       )}
                     </td>
                     <td className="py-3.5 pr-1 text-right whitespace-nowrap leading-tight">
-                      <span className="tabular text-ink">{Math.round(row.adoptionScore)}</span>
-                      <span className="tabular text-[10px] text-ink-faint">/100</span>
-                      <span className="block tabular text-[10.5px] text-ink-faint">
-                        {row.adoptionSignal}
-                      </span>
+                      {row.remote ? (
+                        <span className="tabular text-ink-faint" title="No registry adoption — hosted endpoint">
+                          —
+                        </span>
+                      ) : (
+                        <>
+                          <span className="tabular text-ink">{Math.round(row.adoptionScore)}</span>
+                          <span className="tabular text-[10px] text-ink-faint">/100</span>
+                          <span className="block tabular text-[10.5px] text-ink-faint">
+                            {row.adoptionSignal}
+                          </span>
+                        </>
+                      )}
                     </td>
                   </tr>
                 );
