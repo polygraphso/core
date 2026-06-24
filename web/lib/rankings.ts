@@ -237,7 +237,7 @@ export async function fetchPublishedGradeDetailMap(
   const { data, error } = await db
     .from("hosted_runs")
     // `categories:evidence->categories` pulls just the category list (not the
-    // heavy toolDefs) so we can read the off-chain C-04 status.
+    // heavy toolDefs) so we can read the C-04 status.
     .select("target, grade, c01, c02, c03, categories:evidence->categories, published_at")
     .eq("target_kind", "registry_ref")
     .eq("status", "complete")

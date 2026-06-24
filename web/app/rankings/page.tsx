@@ -124,8 +124,7 @@ export default async function RankingsPage() {
                     <InfoTip label="Checks" align="left">
                       <span className="font-semibold">Per-category checks</span> (✓ pass · ✕ fail ·
                       – not run): 01 tool-output injection · 02 egress overreach · 03
-                      sensitive-data handling · 04 adversarial-input handling. C-01–03 are the
-                      on-chain slots; C-04 is read from the evidence bundle.
+                      sensitive-data handling · 04 adversarial-input handling.
                     </InfoTip>
                   </th>
                   <th className="py-2.5 pr-1 font-normal text-right w-28">

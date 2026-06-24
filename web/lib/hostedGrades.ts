@@ -54,8 +54,8 @@ export interface PolygraphDetail {
   c01: string | null;
   c02: string | null;
   c03: string | null;
-  /** C-04 adversarial-input handling. Off-chain (no flat column) — read from the
-   *  evidence bundle; affects the grade but isn't one of the three on-chain slots. */
+  /** C-04 adversarial-input handling — no flat column; read from the evidence bundle.
+   *  Affects the letter grade like the others. */
   c04: string | null;
   tool_defs_fingerprint: string | null;
   methodology_version: string;
@@ -91,7 +91,7 @@ export function detailFromRow(
       c01: categoryStatus(bundle, "C-01") ?? row.c01 ?? null,
       c02: categoryStatus(bundle, "C-02") ?? row.c02 ?? null,
       c03: categoryStatus(bundle, "C-03") ?? row.c03 ?? null,
-      // No flat column for C-04 (off-chain) — evidence bundle only.
+      // No flat column for C-04 — read from the evidence bundle.
       c04: categoryStatus(bundle, "C-04"),
       tool_defs_fingerprint:
         bundle?.toolDefsFingerprint ?? row.tool_defs_fingerprint ?? null,
