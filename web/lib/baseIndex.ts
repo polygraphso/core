@@ -16,6 +16,7 @@ import "server-only";
 
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { decodeRef, refToPath } from "@/lib/badgeData";
+import { fetchAdoptionForServer } from "@/lib/rankings";
 import {
   HOSTED_GRADE_COLUMNS,
   detailFromRow,
@@ -107,6 +108,8 @@ export interface GradedEntry extends BaseEntry {
   completedAt: string | null;
   /** Path-safe ref for the canonical /mcp/<…> report (null when no own MCP). */
   reportPath: string | null;
+  /** Daily adoption score (0–100, reach not safety); null for remote-only / untracked. */
+  adoptionScore: number | null;
 }
 
 /** Latest grade for one `target`, any publish state, ordered by completion. */
@@ -140,12 +143,16 @@ export async function loadBaseIndex(): Promise<GradedEntry[]> {
   for (const e of BASE_ENTRIES) {
     const g = e.target ? await latestForTarget(db, e.target) : null;
     const key = e.mcpRef ? decodeRef(e.mcpRef) : null;
+    // Adoption is registry-only — fetchAdoptionForServer parses the ref and
+    // returns null for a remote URL or an untracked package.
+    const adoption = db && e.mcpRef ? await fetchAdoptionForServer(db, e.mcpRef) : null;
     out.push({
       ...e,
       grade: g?.grade ?? null,
       detail: g?.detail ?? null,
       completedAt: g?.completedAt ?? null,
       reportPath: key ? refToPath(key) : null,
+      adoptionScore: adoption ? Math.round(adoption.adoptionScore) : null,
     });
   }
   return out;

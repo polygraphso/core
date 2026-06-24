@@ -100,9 +100,21 @@ function PendingCell({ e }: { e: GradedEntry }) {
   return <>no MCP</>;
 }
 
+/** Daily adoption score (reach, 0–100) — registry-only; remote/untracked show "—". */
+function AdoptCell({ e }: { e: GradedEntry }) {
+  return (
+    <div
+      className="font-mono text-[11px] tabular text-center"
+      title="Adoption (reach, 0–100): downloads + stars + dependents + release velocity — not safety"
+    >
+      {e.adoptionScore != null ? <span className="text-ink-muted">{e.adoptionScore}</span> : <span className="text-ink-faint">—</span>}
+    </div>
+  );
+}
+
 function DesktopRow({ e }: { e: GradedEntry }) {
   return (
-    <div className="hidden md:grid grid-cols-[2.75rem_minmax(120px,1.25fr)_minmax(150px,1.9fr)_8.5rem_5.5rem_4.5rem] items-center gap-x-5 px-3 py-3 border-t hairline transition-colors hover:bg-[#efe8d6]">
+    <div className="hidden md:grid grid-cols-[2.75rem_minmax(110px,1.2fr)_minmax(140px,1.75fr)_8.5rem_3rem_5rem_4.5rem] items-center gap-x-5 px-3 py-3 border-t hairline transition-colors hover:bg-[#efe8d6]">
       <div>{e.grade ? <Stamp grade={e.grade} /> : <span className="font-mono text-[12px] text-ink-faint">{e.ownMcp ? "·" : "—"}</span>}</div>
       <div className="min-w-0">
         <ProjectLink e={e} />
@@ -122,6 +134,7 @@ function DesktopRow({ e }: { e: GradedEntry }) {
           <PendingCell e={e} />
         </div>
       )}
+      <AdoptCell e={e} />
       <div className="font-mono text-[10.5px] text-ink-faint tabular">{e.detail?.tool_defs_fingerprint ? `${e.detail.tool_defs_fingerprint.slice(0, 10)}…` : "—"}</div>
       <div className="font-mono text-[10.5px] text-ink-faint tabular">{e.completedAt ? e.completedAt.slice(0, 10) : "—"}</div>
     </div>
@@ -152,6 +165,7 @@ function MobileCard({ e }: { e: GradedEntry }) {
             ) : (
               <span className="text-ink-faint">{e.ownMcp ? `grade pending${e.pending ? ` · ${e.pending}` : ""}` : "no standalone MCP"}</span>
             )}
+            {e.adoptionScore != null ? <span className="text-ink-faint"> · reach {e.adoptionScore}/100</span> : null}
           </div>
         </div>
       </div>
@@ -241,11 +255,12 @@ export default async function BaseIndexPage() {
         </figure>
 
         {/* Header row (desktop) */}
-        <div className="hidden md:grid grid-cols-[2.75rem_minmax(120px,1.25fr)_minmax(150px,1.9fr)_8.5rem_5.5rem_4.5rem] items-center gap-x-5 px-3 pb-1 section-label">
+        <div className="hidden md:grid grid-cols-[2.75rem_minmax(110px,1.2fr)_minmax(140px,1.75fr)_8.5rem_3rem_5rem_4.5rem] items-center gap-x-5 px-3 pb-1 section-label">
           <div>Grade</div>
           <div>Project</div>
           <div>MCP server</div>
           <div className="grid grid-cols-3 gap-x-3 text-center w-[8.5rem]"><span>C-01</span><span>C-02</span><span>C-03</span></div>
+          <div className="text-center">Reach</div>
           <div>Surface</div>
           <div>Graded</div>
         </div>
