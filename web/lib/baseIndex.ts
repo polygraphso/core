@@ -17,6 +17,7 @@ import "server-only";
  */
 
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { decodeRef, refToPath } from "@/lib/badgeData";
 import {
   HOSTED_GRADE_COLUMNS,
   detailFromRow,
@@ -77,6 +78,8 @@ export interface GradedEntry extends BaseEntry {
   grade: LitmusGrade | null;
   detail: PolygraphDetail | null;
   completedAt: string | null;
+  /** Path-safe ref for the canonical /mcp/<…> report (null when no own MCP). */
+  reportPath: string | null;
 }
 
 /** Latest grade for one `target`, any publish state, ordered by completion. */
@@ -109,7 +112,14 @@ export async function loadBaseIndex(): Promise<GradedEntry[]> {
   const out: GradedEntry[] = [];
   for (const e of BASE_ENTRIES) {
     const g = e.target ? await latestForTarget(db, e.target) : null;
-    out.push({ ...e, grade: g?.grade ?? null, detail: g?.detail ?? null, completedAt: g?.completedAt ?? null });
+    const key = e.mcpRef ? decodeRef(e.mcpRef) : null;
+    out.push({
+      ...e,
+      grade: g?.grade ?? null,
+      detail: g?.detail ?? null,
+      completedAt: g?.completedAt ?? null,
+      reportPath: key ? refToPath(key) : null,
+    });
   }
   return out;
 }

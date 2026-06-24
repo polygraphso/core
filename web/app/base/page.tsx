@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { loadBaseIndex, type GradedEntry } from "@/lib/baseIndex";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import type { LitmusGrade } from "@/lib/hostedGrades";
@@ -56,6 +57,22 @@ function Check({ status }: { status: string | null }) {
 
 const CHECKS = "grid grid-cols-3 gap-x-3 text-center w-[8.5rem]";
 
+/** The MCP-server cell: a link to the canonical /mcp report when one exists. */
+function RefCell({ e, size }: { e: GradedEntry; size: string }) {
+  if (!e.mcpRef) return <span className={`font-mono ${size} text-ink-faint`}>{e.note}</span>;
+  const ref = <code className={`font-mono ${size} break-all`}>{e.mcpRef}</code>;
+  return e.reportPath ? (
+    <Link
+      href={`/mcp/${e.reportPath}`}
+      className="text-ink-muted underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
+    >
+      {ref}
+    </Link>
+  ) : (
+    <span className="text-ink-muted">{ref}</span>
+  );
+}
+
 function DesktopRow({ e }: { e: GradedEntry }) {
   return (
     <div className="hidden md:grid grid-cols-[2.75rem_minmax(120px,1.25fr)_minmax(150px,1.9fr)_8.5rem_5.5rem_4.5rem] items-center gap-x-5 px-3 py-3 border-t hairline transition-colors hover:bg-[#efe8d6]">
@@ -65,9 +82,7 @@ function DesktopRow({ e }: { e: GradedEntry }) {
         {e.category ? <div className="font-mono text-[10px] text-ink-faint uppercase tracking-[0.12em]">{e.category}</div> : null}
       </div>
       <div className="min-w-0">
-        {e.mcpRef
-          ? <code className="font-mono text-[11.5px] text-ink-muted break-all">{e.mcpRef}</code>
-          : <span className="font-mono text-[11px] text-ink-faint">{e.note}</span>}
+        <RefCell e={e} size="text-[11.5px]" />
       </div>
       {e.grade ? (
         <div className={CHECKS}>
@@ -98,9 +113,7 @@ function MobileCard({ e }: { e: GradedEntry }) {
           </div>
           {e.category ? <div className="font-mono text-[10px] text-ink-faint uppercase tracking-[0.12em]">{e.category}</div> : null}
           <div className="mt-1.5">
-            {e.mcpRef
-              ? <code className="font-mono text-[11px] text-ink-muted break-all">{e.mcpRef}</code>
-              : <span className="font-mono text-[11px] text-ink-faint">{e.note}</span>}
+            <RefCell e={e} size="text-[11px]" />
           </div>
           <div className="mt-2 font-mono text-[11px]">
             {e.grade ? (
@@ -207,6 +220,11 @@ export default async function BaseIndexPage() {
           C-01 tool-output injection · C-02 permission/egress overreach · C-03 sensitive-data handling ·
           C-04 adversarial input (off-table; caps the letter at D). Surface = tool-definitions fingerprint
           (sha256, first bytes). Reproduce any grade by re-running the open harness against the same ref.
+          Each server links to its polygraph report; see the full{" "}
+          <Link href="/rankings" className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">
+            MCP Security Index
+          </Link>
+          .
         </p>
       </article>
     </main>

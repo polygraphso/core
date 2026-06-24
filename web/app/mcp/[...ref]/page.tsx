@@ -12,7 +12,7 @@
 import { cache } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { decodeRef, loadGrade } from "@/lib/badgeData";
+import { decodeRef, loadGrade, refToPath, isRemoteKey } from "@/lib/badgeData";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import type { LitmusGrade, PolygraphDetail } from "@/lib/hostedGrades";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -73,8 +73,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   if (!key) {
     return { title: "MCP server grade", robots: { index: false, follow: true } };
   }
-  const canonical = `/mcp/${key}`;
-  const cardUrl = `/api/badge/card?server=${key}`;
+  const path = refToPath(key);
+  const canonical = `/mcp/${path}`;
+  const cardUrl = `/api/badge/card?server=${path}`;
   const result = await getGrade(key);
   if (result) {
     const title = `polygraph: ${key} — grade ${result.grade}`;
@@ -84,7 +85,9 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
       alternates: { canonical },
       openGraph: { title, url: canonical, images: [cardUrl] },
       twitter: { card: "summary_large_image", images: [cardUrl] },
-      robots: { index: true, follow: true },
+      // Registry grades are version-pinned and indexable; a remote endpoint is
+      // mutable/unversioned, so its report stays out of the index.
+      robots: { index: !isRemoteKey(key), follow: true },
     };
   }
   const title = `polygraph: ${key} — not yet graded`;
@@ -119,10 +122,15 @@ export default async function McpServerPage({ params }: { params: Params }) {
 }
 
 async function Report({ serverKey }: { serverKey: string }) {
-  const [result, adoption] = await Promise.all([getGrade(serverKey), getAdoption(serverKey)]);
-  const badgeUrl = `${ORIGIN}/api/badge?server=${serverKey}`;
-  const cardUrl = `${ORIGIN}/api/badge/card?server=${serverKey}`;
-  const pageUrl = `${ORIGIN}/mcp/${serverKey}`;
+  // Adoption ranking is registry-only; a remote endpoint has no adoption row.
+  const [result, adoption] = await Promise.all([
+    getGrade(serverKey),
+    isRemoteKey(serverKey) ? Promise.resolve(null) : getAdoption(serverKey),
+  ]);
+  const path = refToPath(serverKey);
+  const badgeUrl = `${ORIGIN}/api/badge?server=${path}`;
+  const cardUrl = `${ORIGIN}/api/badge/card?server=${path}`;
+  const pageUrl = `${ORIGIN}/mcp/${path}`;
 
   return result ? (
     <Graded
