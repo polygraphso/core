@@ -6,6 +6,7 @@ import { GRADE_HEX } from "@/lib/gradeColors";
 import {
   fetchTopRanked,
   fetchPublishedGradeDetailMap,
+  fetchPublishedRemoteGrades,
   mergeRankings,
   type RankingRow,
 } from "@/lib/rankings";
@@ -30,19 +31,26 @@ export default async function RankingsPage() {
   let rows: RankingRow[] = [];
   let lastRefreshed = "";
   if (db) {
-    const [ranked, grades] = await Promise.all([
+    const [ranked, grades, remote] = await Promise.all([
       // Pull the full scored set so every graded server is covered, then keep
       // only graded servers (below) — the index shows graded MCPs, ranked by adoption.
       fetchTopRanked(db, ADOPTION_UNIVERSE),
       fetchPublishedGradeDetailMap(db),
+      fetchPublishedRemoteGrades(db),
     ]);
     // Newest score timestamp across the ranked set — ISO strings compare lexically.
     lastRefreshed = ranked.reduce((max, r) => (r.computedAt > max ? r.computedAt : max), "");
-    rows = mergeRankings(ranked, grades)
+    const registryRows = mergeRankings(ranked, grades)
       .filter((r) => r.grade !== null)
       .map((r, i) => ({ ...r, rank: i + 1 }));
+    // Remote/hosted endpoints carry no adoption rank — append them after the
+    // adoption-ranked registry servers (the table shows "—" for their rank + adoption).
+    const remoteRows = remote.map((r, i) => ({ ...r, rank: registryRows.length + i + 1 }));
+    rows = [...registryRows, ...remoteRows];
   }
   const refreshedDate = lastRefreshed ? lastRefreshed.slice(0, 10) : null;
+  const liveCount = rows.filter((r) => r.remote).length;
+  const registryCount = rows.length - liveCount;
 
   return (
     <main className="flex-1">
@@ -59,10 +67,12 @@ export default async function RankingsPage() {
           <p className="mt-4 max-w-2xl text-ink-muted leading-relaxed text-sm">
             {rows.length > 0 ? (
               <>
-                {rows.length} {rows.length === 1 ? "server" : "servers"} graded, ranked by adoption
+                {registryCount} {registryCount === 1 ? "server" : "servers"} graded, ranked by adoption
+                {liveCount > 0 ? (
+                  <> · {liveCount} live {liveCount === 1 ? "endpoint" : "endpoints"} (hosted, egress unverified)</>
+                ) : null}
                 {refreshedDate ? <> · adoption data as of {refreshedDate}</> : null}. A grade is
-                a measurement, not a guarantee; every grade links to a report you
-                can re-run yourself.
+                a measurement, not a guarantee; you can re-run the open harness yourself.
               </>
             ) : (
               <>No graded servers yet. Check back shortly.</>
