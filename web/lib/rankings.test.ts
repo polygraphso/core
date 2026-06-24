@@ -40,21 +40,29 @@ describe("formatAdoptionSignal", () => {
 });
 
 describe("dedupeAndRank", () => {
-  it("dedupes by version_id (newest-first input), sorts by score desc, ranks, and limits", () => {
+  it("sorts by score desc, assigns ranks, and limits", () => {
     const rows = [
-      joined("v1", 50, "2026-06-23", { registry: "npm", owner: "@a", name: "x" }),
-      joined("v1", 10, "2026-06-22", { registry: "npm", owner: "@a", name: "x" }), // stale dup
-      joined("v2", 90, "2026-06-23", { registry: "npm", owner: null, name: "y" }),
-      joined("v3", 70, "2026-06-23", { registry: "pypi", owner: null, name: "z" }),
+      joined("v2", 90, "2026-06-24", { registry: "npm", owner: null, name: "y" }),
+      joined("v3", 70, "2026-06-24", { registry: "pypi", owner: null, name: "z" }),
+      joined("v1", 50, "2026-06-24", { registry: "npm", owner: "@a", name: "x" }),
     ];
     const out = dedupeAndRank(rows, 2);
-    expect(out.map((r) => [r.rank, r.name])).toEqual([
-      [1, "y"],
-      [2, "z"],
-    ]);
+    expect(out.map((r) => [r.rank, r.name])).toEqual([[1, "y"], [2, "z"]]);
   });
+
+  it("dedupes by SERVER across versions, keeping the newest-scored row (input is computed_at desc)", () => {
+    const rows = [
+      joined("vNew", 60, "2026-06-24", { registry: "npm", owner: "@a", name: "x" }),
+      joined("vOld", 80, "2026-05-19", { registry: "npm", owner: "@a", name: "x" }),
+      joined("v2", 50, "2026-06-24", { registry: "npm", owner: null, name: "y" }),
+    ];
+    const out = dedupeAndRank(rows, 10);
+    expect(out.filter((r) => r.name === "x")).toHaveLength(1);
+    expect(out.map((r) => [r.name, r.score])).toEqual([["x", 60], ["y", 50]]);
+  });
+
   it("skips rows missing the server FK join rather than throwing", () => {
-    const out = dedupeAndRank([joined("v1", 5, "2026-06-23", null)], 10);
+    const out = dedupeAndRank([joined("v1", 5, "2026-06-24", null)], 10);
     expect(out).toEqual([]);
   });
 });

@@ -68,21 +68,23 @@ export function formatAdoptionSignal(c: RankingComponents): string {
   return "—";
 }
 
-/** Dedupe by version (input is newest-first), sort by score desc, take top `limit`, assign rank. */
 export function dedupeAndRank(rows: JoinedScoreRow[], limit: number): RankedServer[] {
+  // Input is ordered by computed_at desc, so the first row seen for a server is
+  // its most-recently-scored version. Dedupe by SERVER (not version_id) so a
+  // server that shipped a new version doesn't show up twice.
   const seen = new Set<string>();
-  const latest: JoinedScoreRow[] = [];
-  for (const row of rows) {
-    if (seen.has(row.version_id)) continue;
-    seen.add(row.version_id);
-    latest.push(row);
-  }
-  latest.sort((a, b) => Number(b.score) - Number(a.score));
-
   const out: RankedServer[] = [];
-  for (const row of latest) {
+  const picked: Array<{ s: NonNullable<NonNullable<JoinedScoreRow["versions"]>["servers"]>; row: JoinedScoreRow }> = [];
+  for (const row of rows) {
     const s = row.versions?.servers;
     if (!s) continue; // skip rows missing the FK join rather than throwing
+    const key = `${s.registry}/${s.owner ?? ""}/${s.name}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    picked.push({ s, row });
+  }
+  picked.sort((a, b) => Number(b.row.score) - Number(a.row.score));
+  for (const { s, row } of picked) {
     out.push({
       rank: out.length + 1,
       registry: s.registry,
