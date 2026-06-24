@@ -139,6 +139,36 @@ export async function fetchPublishedGrade(
   return detailFromRow(data as HostedGradeRow);
 }
 
+/**
+ * Latest PUBLISHED grade for a remote https MCP endpoint (`target_kind='remote_url'`),
+ * matched on the stored target URL. The graded URL may have been stored with or
+ * without a trailing slash, so we match both forms. Remote endpoints are mutable
+ * and unversioned — there is no `resolved_version` to pin.
+ */
+export async function fetchPublishedGradeRemote(
+  db: SupabaseClient,
+  urlKey: string,
+): Promise<{ grade: LitmusGrade; detail: PolygraphDetail } | null> {
+  const bare = urlKey.replace(/\/+$/, "");
+  const variants = Array.from(new Set([bare, `${bare}/`]));
+  const { data, error } = await db
+    .from("hosted_runs")
+    .select(HOSTED_GRADE_COLUMNS)
+    .in("target", variants)
+    .eq("target_kind", "remote_url")
+    .eq("status", "complete")
+    .not("published_at", "is", null)
+    .order("published_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.warn("[hostedGrades] remote grade lookup soft-failed:", error.message);
+    return null;
+  }
+  if (!data) return null;
+  return detailFromRow(data as HostedGradeRow);
+}
+
 /** All published registry grades, keyed by target (versionless server_key),
  *  for the list endpoint's in-memory join. */
 export async function fetchPublishedGradeMap(
