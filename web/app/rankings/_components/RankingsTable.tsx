@@ -197,17 +197,29 @@ export function RankingsTable({ rows }: { rows: RankingRow[] }) {
                     className="group align-middle border-b border-rule-soft/60 transition-colors hover:bg-parchment-200/40"
                   >
                     <td className="py-3.5 pl-1 pr-4 text-right tabular text-ink-faint">
-                      {row.rank}
+                      {row.remote ? "—" : row.rank}
                     </td>
                     <td className="py-3.5 pr-5">
-                      <Link
-                        href={`/mcp/${row.serverKey}`}
-                        className={`break-all transition-colors group-hover:text-oxblood ${
-                          graded ? "text-ink" : "text-ink-muted"
-                        }`}
-                      >
-                        {row.serverKey}
-                      </Link>
+                      {row.remote ? (
+                        <span className="break-all text-ink">
+                          {row.serverKey}
+                          <span
+                            className="ml-2 align-middle rounded-sm border border-ink/20 px-1 py-px text-[9px] uppercase tracking-wider text-ink-faint"
+                            title="Hosted endpoint graded over HTTPS — egress can't be sandboxed, so it caps at B."
+                          >
+                            live
+                          </span>
+                        </span>
+                      ) : (
+                        <Link
+                          href={`/mcp/${row.serverKey}`}
+                          className={`break-all transition-colors group-hover:text-oxblood ${
+                            graded ? "text-ink" : "text-ink-muted"
+                          }`}
+                        >
+                          {row.serverKey}
+                        </Link>
+                      )}
                     </td>
                     <td className="py-3.5 pr-5">
                       {graded ? (
@@ -262,11 +274,19 @@ export function RankingsTable({ rows }: { rows: RankingRow[] }) {
                       )}
                     </td>
                     <td className="py-3.5 pr-1 text-right whitespace-nowrap leading-tight">
-                      <span className="tabular text-ink">{Math.round(row.adoptionScore)}</span>
-                      <span className="tabular text-[10px] text-ink-faint">/100</span>
-                      <span className="block tabular text-[10.5px] text-ink-faint">
-                        {row.adoptionSignal}
-                      </span>
+                      {row.remote ? (
+                        <span className="tabular text-ink-faint" title="No registry adoption — hosted endpoint">
+                          —
+                        </span>
+                      ) : (
+                        <>
+                          <span className="tabular text-ink">{Math.round(row.adoptionScore)}</span>
+                          <span className="tabular text-[10px] text-ink-faint">/100</span>
+                          <span className="block tabular text-[10.5px] text-ink-faint">
+                            {row.adoptionSignal}
+                          </span>
+                        </>
+                      )}
                     </td>
                   </tr>
                 );
