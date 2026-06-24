@@ -85,8 +85,22 @@ export default async function RankingsPage() {
                   <th className="py-2.5 pl-1 pr-4 font-normal text-right w-12">#</th>
                   <th className="py-2.5 pr-5 font-normal text-left">Server</th>
                   <th className="py-2.5 pr-5 font-normal text-left w-16">Grade</th>
-                  <th className="py-2.5 pr-5 font-normal text-left w-24">Checks</th>
-                  <th className="py-2.5 pr-1 font-normal text-right w-28">Adoption</th>
+                  <th className="py-2.5 pr-5 font-normal text-left w-24">
+                    <span
+                      className="cursor-help border-b border-dotted border-ink-faint/50"
+                      title="Per-category checks (✓ pass · ✕ fail · – not run): 01 tool-output injection · 02 egress overreach · 03 sensitive-data handling. C-04 (adversarial input) is graded too but folds into the overall grade — it is not a separate published slot."
+                    >
+                      Checks
+                    </span>
+                  </th>
+                  <th className="py-2.5 pr-1 font-normal text-right w-28">
+                    <span
+                      className="cursor-help border-b border-dotted border-ink-faint/50"
+                      title="Adoption score (0–100): downloads + stars + dependents + release velocity, normalized across tracked servers — reach, not safety. The figure below is monthly downloads."
+                    >
+                      Adoption
+                    </span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -164,12 +178,8 @@ export default async function RankingsPage() {
                         )}
                       </td>
                       <td className="py-3.5 pr-1 text-right whitespace-nowrap leading-tight">
-                        <span
-                          className="tabular text-ink"
-                          title="Adoption score (0–100): downloads + stars + dependents + release velocity"
-                        >
-                          {Math.round(row.adoptionScore)}
-                        </span>
+                        <span className="tabular text-ink">{Math.round(row.adoptionScore)}</span>
+                        <span className="tabular text-[10px] text-ink-faint">/100</span>
                         <span className="block tabular text-[10.5px] text-ink-faint">
                           {row.adoptionSignal}
                         </span>
@@ -194,7 +204,8 @@ export default async function RankingsPage() {
               <span className="text-ink-faint">–</span> not run
             </span>
             <span className="text-ink-faint/80">
-              C-01 tool-output injection · C-02 egress overreach · C-03 sensitive-data handling
+              C-01 tool-output injection · C-02 egress overreach · C-03 sensitive-data handling ·
+              C-04 adversarial input (folds into the grade, not a separate slot)
             </span>
           </p>
         ) : null}
