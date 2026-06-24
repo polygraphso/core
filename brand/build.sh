@@ -84,8 +84,8 @@ magick -size 1280x640 "xc:$PARCHMENT" \
   -annotate +820+156 "so" \
   `# Positioning headline (two lines)` \
   -fill "$MUTED" -font "$SERIF" -pointsize 38 \
-  -annotate +296+278 "Independent, lab-evaluated" \
-  -annotate +296+330 "trust grades for AI agents." \
+  -annotate +296+278 "We polygraph AI tools" \
+  -annotate +296+330 "so you don’t have to." \
   `# Bottom rule + polygraph trace echo` \
   -fill none -stroke "$RULE" -strokewidth 1 \
   -draw "stroke-dasharray 4,8 line 64,540 1216,540" \
