@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   formatAdoptionSignal,
+  adoptionMetrics,
   dedupeAndRank,
   gradeMapFromRows,
   mergeRankings,
@@ -36,6 +37,24 @@ describe("formatAdoptionSignal", () => {
   });
   it("drops fractional noise for large thousands (331K not 331.1K)", () => {
     expect(formatAdoptionSignal({ npm_downloads_last_month: 331_100 })).toBe("331K npm/mo");
+  });
+});
+
+describe("adoptionMetrics", () => {
+  it("lists present signals with labels and formatting, skipping absent ones", () => {
+    const m = adoptionMetrics({
+      npm_downloads_last_month: 1_145_441,
+      gh_stars: 87_634,
+      gh_forks: null,
+      depsdev_dependents_count: 18,
+      npm_last_publish_date: "2026-01-14T16:03:10.655Z",
+    });
+    expect(m).toEqual([
+      { label: "npm downloads (30d)", value: "1,145,441" },
+      { label: "GitHub stars", value: "87,634" },
+      { label: "Dependents (deps.dev)", value: "18" },
+      { label: "Last published", value: "2026-01-14" },
+    ]);
   });
 });
 

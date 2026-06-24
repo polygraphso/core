@@ -10,6 +10,13 @@ export interface RankingComponents {
   npm_downloads_last_month?: number | null;
   pypi_downloads_last_month?: number | null;
   gh_stars?: number | null;
+  gh_forks?: number | null;
+  gh_contributors?: number | null;
+  depsdev_dependents_count?: number | null;
+  openssf_aggregate?: number | null;
+  smithery_use_count?: number | null;
+  npm_last_publish_date?: string | null;
+  pypi_last_release_date?: string | null;
   /** Per-dimension breakdown (0–100). `adoption` is the public ranking key. */
   dimensions?: {
     adoption?: number;
@@ -18,6 +25,12 @@ export interface RankingComponents {
     risk?: number;
   } | null;
   [key: string]: unknown;
+}
+
+/** One raw adoption input, formatted for display. */
+export interface AdoptionMetric {
+  label: string;
+  value: string;
 }
 
 export interface RankedServer {
@@ -81,6 +94,32 @@ export function formatAdoptionSignal(c: RankingComponents): string {
     return `${compact.format(c.gh_stars)} ★`;
   }
   return "—";
+}
+
+function fmtInt(n: unknown): string | null {
+  return typeof n === "number" && Number.isFinite(n) ? Math.round(n).toLocaleString("en-US") : null;
+}
+
+function fmtDate(d: unknown): string | null {
+  return typeof d === "string" && d.length >= 10 ? d.slice(0, 10) : null;
+}
+
+/** The raw signals that fed the adoption score, formatted; present ones only, in display order. */
+export function adoptionMetrics(c: RankingComponents): AdoptionMetric[] {
+  const out: AdoptionMetric[] = [];
+  const add = (label: string, value: string | null) => {
+    if (value !== null) out.push({ label, value });
+  };
+  add("npm downloads (30d)", fmtInt(c.npm_downloads_last_month));
+  add("PyPI downloads (30d)", fmtInt(c.pypi_downloads_last_month));
+  add("GitHub stars", fmtInt(c.gh_stars));
+  add("Forks", fmtInt(c.gh_forks));
+  add("Contributors", fmtInt(c.gh_contributors));
+  add("Dependents (deps.dev)", fmtInt(c.depsdev_dependents_count));
+  add("OpenSSF score", fmtInt(c.openssf_aggregate));
+  add("Smithery installs", fmtInt(c.smithery_use_count));
+  add("Last published", fmtDate(c.npm_last_publish_date) ?? fmtDate(c.pypi_last_release_date));
+  return out;
 }
 
 /** The 0–100 adoption dimension from a score row, or 0 when absent. */
@@ -217,6 +256,8 @@ export interface ServerAdoption {
   adoptionSignal: string;
   /** ISO timestamp of the newest score row used. */
   computedAt: string;
+  /** The raw signals behind the score, formatted for display. */
+  metrics: AdoptionMetric[];
 }
 
 type EmbeddedScoreRow = {
@@ -274,5 +315,6 @@ export async function fetchAdoptionForServer(
     adoptionScore: adoptionDimension(latest.components),
     adoptionSignal: formatAdoptionSignal(latest.components),
     computedAt: latest.computed_at,
+    metrics: adoptionMetrics(latest.components),
   };
 }

@@ -169,6 +169,41 @@ function AdoptionLine({ adoption }: { adoption: ServerAdoption | null }) {
   );
 }
 
+/** Explains the adoption score and lists the raw signals that fed it. */
+function AdoptionSignals({ adoption }: { adoption: ServerAdoption | null }) {
+  if (!adoption || adoption.metrics.length === 0) return null;
+  return (
+    <div className="mt-12 border-t hairline pt-6">
+      <h2 className="font-serif text-lg text-ink mb-2">Adoption signals</h2>
+      <p className="font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl mb-4">
+        The <span className="text-ink">{Math.round(adoption.adoptionScore)} / 100</span> adoption
+        score blends the raw signals below — downloads, stars, dependents and release velocity —
+        normalized across every tracked server. It measures{" "}
+        <span className="text-ink">reach, not safety</span>; the litmus grade is the safety
+        verdict. See the{" "}
+        <Link
+          href="/methodology"
+          className="text-ink border-b hairline border-dotted hover:text-oxblood transition-colors"
+        >
+          methodology
+        </Link>
+        .
+      </p>
+      <dl className="border-t hairline">
+        {adoption.metrics.map((m) => (
+          <div
+            key={m.label}
+            className="flex items-baseline justify-between gap-4 border-b hairline py-2"
+          >
+            <dt className="font-mono text-[12px] text-ink-muted">{m.label}</dt>
+            <dd className="font-mono text-[12px] text-ink tabular text-right">{m.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
 const CATEGORY_LABELS: Array<{ code: "C-01" | "C-02" | "C-03"; name: string }> = [
   { code: "C-01", name: "Tool-output injection" },
   { code: "C-02", name: "Permission / egress overreach" },
@@ -270,6 +305,8 @@ function Graded({
         </p>
       ) : null}
 
+      <AdoptionSignals adoption={adoption} />
+
       {/* reproduce — trust rests on re-runnability, not on a claim */}
       <div className="mt-12 border-t hairline pt-6">
         <h2 className="font-serif text-lg text-ink mb-2">Reproduce this grade</h2>
@@ -349,6 +386,8 @@ function Ungraded({
           Request a grade now
         </Link>
       </div>
+
+      <AdoptionSignals adoption={adoption} />
 
       <div className="mt-12 border-t hairline pt-6">
         <h2 className="font-serif text-lg text-ink mb-1">Embed the badge anyway</h2>
