@@ -12,14 +12,14 @@ import {
 
 function joined(
   versionId: string,
-  score: number,
+  adoption: number,
   computedAt: string,
   server: { registry: "npm" | "pypi" | "github"; owner: string | null; name: string } | null,
 ): JoinedScoreRow {
   return {
     version_id: versionId,
-    score,
-    components: { npm_downloads_last_month: 1000 },
+    score: adoption, // composite kept = adoption for these fixtures; adoption is the rank key
+    components: { npm_downloads_last_month: 1000, dimensions: { adoption } },
     computed_at: computedAt,
     versions: server ? { servers: server } : null,
   };
@@ -40,7 +40,7 @@ describe("formatAdoptionSignal", () => {
 });
 
 describe("dedupeAndRank", () => {
-  it("sorts by score desc, assigns ranks, and limits", () => {
+  it("sorts by adoption desc, assigns ranks, and limits", () => {
     const rows = [
       joined("v2", 90, "2026-06-24", { registry: "npm", owner: null, name: "y" }),
       joined("v3", 70, "2026-06-24", { registry: "pypi", owner: null, name: "z" }),
@@ -58,7 +58,28 @@ describe("dedupeAndRank", () => {
     ];
     const out = dedupeAndRank(rows, 10);
     expect(out.filter((r) => r.name === "x")).toHaveLength(1);
-    expect(out.map((r) => [r.name, r.score])).toEqual([["x", 60], ["y", 50]]);
+    // kept the newest version's row (adoption 60), not the stale higher-adoption one (80)
+    expect(out.map((r) => [r.name, r.adoptionScore])).toEqual([["x", 60], ["y", 50]]);
+  });
+
+  it("ranks by the adoption dimension, not the composite score", () => {
+    // "popular" has a LOWER composite score but HIGHER adoption; it must still rank first.
+    const popular: JoinedScoreRow = {
+      version_id: "vp",
+      score: 50,
+      components: { dimensions: { adoption: 100 } },
+      computed_at: "2026-06-24",
+      versions: { servers: { registry: "npm", owner: null, name: "popular" } },
+    };
+    const polished: JoinedScoreRow = {
+      version_id: "vq",
+      score: 90,
+      components: { dimensions: { adoption: 40 } },
+      computed_at: "2026-06-24",
+      versions: { servers: { registry: "npm", owner: null, name: "polished" } },
+    };
+    const out = dedupeAndRank([polished, popular], 10);
+    expect(out.map((r) => r.name)).toEqual(["popular", "polished"]);
   });
 
   it("skips rows missing the server FK join rather than throwing", () => {
@@ -82,14 +103,14 @@ describe("gradeMapFromRows", () => {
 describe("mergeRankings", () => {
   it("joins ranked servers to grades by serverKey; ungraded → null grade", () => {
     const ranked: RankedServer[] = [
-      { rank: 1, registry: "npm", owner: "@a", name: "x", score: 90, components: { gh_stars: 10 } },
-      { rank: 2, registry: "pypi", owner: null, name: "z", score: 80, components: {} },
+      { rank: 1, registry: "npm", owner: "@a", name: "x", score: 90, adoptionScore: 95, computedAt: "2026-06-24", components: { gh_stars: 10 } },
+      { rank: 2, registry: "pypi", owner: null, name: "z", score: 80, adoptionScore: 60, computedAt: "2026-06-24", components: {} },
     ];
     const grades = new Map<string, RankingGrade>([
       ["npm/@a/x", { grade: "A", c01: "pass", c02: "skip", c03: "pass" }],
     ]);
     const rows = mergeRankings(ranked, grades);
-    expect(rows[0]).toMatchObject({ serverKey: "npm/@a/x", grade: "A", c02: "skip", adoptionSignal: "10 ★" });
-    expect(rows[1]).toMatchObject({ serverKey: "pypi/z", grade: null, adoptionSignal: "—" });
+    expect(rows[0]).toMatchObject({ serverKey: "npm/@a/x", grade: "A", c02: "skip", adoptionSignal: "10 ★", adoptionScore: 95 });
+    expect(rows[1]).toMatchObject({ serverKey: "pypi/z", grade: null, adoptionSignal: "—", adoptionScore: 60 });
   });
 });

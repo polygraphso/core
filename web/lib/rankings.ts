@@ -10,6 +10,13 @@ export interface RankingComponents {
   npm_downloads_last_month?: number | null;
   pypi_downloads_last_month?: number | null;
   gh_stars?: number | null;
+  /** Per-dimension breakdown (0–100). `adoption` is the public ranking key. */
+  dimensions?: {
+    adoption?: number;
+    quality?: number;
+    consistency?: number;
+    risk?: number;
+  } | null;
   [key: string]: unknown;
 }
 
@@ -18,7 +25,12 @@ export interface RankedServer {
   registry: Registry;
   owner: string | null;
   name: string;
+  /** Full composite score (adoption+quality+consistency−risk); kept for reference, not the rank key. */
   score: number;
+  /** 0–100 adoption dimension (downloads + stars + dependents + velocity); THIS is the rank key. */
+  adoptionScore: number;
+  /** When this server's kept (newest) score row was computed — ISO timestamp. */
+  computedAt: string;
   components: RankingComponents;
 }
 
@@ -44,6 +56,9 @@ export interface RankingRow {
   rank: number;
   serverKey: string;
   registry: Registry;
+  /** 0–100 adoption score that determines the rank. */
+  adoptionScore: number;
+  /** Human-readable reach proxy (monthly downloads / stars). */
   adoptionSignal: string;
   grade: LitmusGrade | null;
   c01: string | null;
@@ -68,10 +83,19 @@ export function formatAdoptionSignal(c: RankingComponents): string {
   return "—";
 }
 
+/** The 0–100 adoption dimension from a score row, or 0 when absent. */
+function adoptionDimension(c: RankingComponents | null | undefined): number {
+  const a = c?.dimensions?.adoption;
+  return typeof a === "number" ? a : 0;
+}
+
 export function dedupeAndRank(rows: JoinedScoreRow[], limit: number): RankedServer[] {
   // Input is ordered by computed_at desc, so the first row seen for a server is
   // its most-recently-scored version. Dedupe by SERVER (not version_id) so a
-  // server that shipped a new version doesn't show up twice.
+  // server that shipped a new version doesn't show up twice. Then rank by the
+  // ADOPTION dimension — this is "most-adopted", so popularity (downloads +
+  // stars + dependents + velocity) orders the list, NOT the full composite
+  // (which also folds in quality/consistency/risk and is for grading priority).
   const seen = new Set<string>();
   const out: RankedServer[] = [];
   const picked: Array<{ s: NonNullable<NonNullable<JoinedScoreRow["versions"]>["servers"]>; row: JoinedScoreRow }> = [];
@@ -83,7 +107,7 @@ export function dedupeAndRank(rows: JoinedScoreRow[], limit: number): RankedServ
     seen.add(key);
     picked.push({ s, row });
   }
-  picked.sort((a, b) => Number(b.row.score) - Number(a.row.score));
+  picked.sort((a, b) => adoptionDimension(b.row.components) - adoptionDimension(a.row.components));
   for (const { s, row } of picked) {
     out.push({
       rank: out.length + 1,
@@ -91,6 +115,8 @@ export function dedupeAndRank(rows: JoinedScoreRow[], limit: number): RankedServ
       owner: s.owner,
       name: s.name,
       score: Number(row.score),
+      adoptionScore: adoptionDimension(row.components),
+      computedAt: row.computed_at,
       components: row.components ?? {},
     });
     if (out.length >= limit) break;
@@ -130,6 +156,7 @@ export function mergeRankings(
       rank: r.rank,
       serverKey: key,
       registry: r.registry,
+      adoptionScore: r.adoptionScore,
       adoptionSignal: formatAdoptionSignal(r.components),
       grade: g?.grade ?? null,
       c01: g?.c01 ?? null,
