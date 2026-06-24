@@ -1,6 +1,6 @@
 // web/lib/rankings.ts
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { serverKey } from "@/lib/identity";
+import { serverKey, parseServerRef } from "@/lib/identity";
 import type { LitmusGrade } from "@/lib/hostedGrades";
 
 export type Registry = "npm" | "pypi" | "github";
@@ -208,4 +208,71 @@ export async function fetchPublishedGradeDetailMap(
       c03: string | null;
     }>,
   );
+}
+
+export interface ServerAdoption {
+  /** 0–100 adoption dimension. */
+  adoptionScore: number;
+  /** Human-readable reach proxy (monthly downloads / stars), or "—". */
+  adoptionSignal: string;
+  /** ISO timestamp of the newest score row used. */
+  computedAt: string;
+}
+
+type EmbeddedScoreRow = {
+  score: string | number;
+  components: RankingComponents;
+  computed_at: string;
+};
+
+/**
+ * Latest adoption score for a single server (newest computed_at across its
+ * versions), or null if the server isn't tracked / has no score. Used by the
+ * per-server report page.
+ */
+export async function fetchAdoptionForServer(
+  db: SupabaseClient,
+  key: string,
+): Promise<ServerAdoption | null> {
+  let registry: Registry;
+  let owner: string | null;
+  let name: string;
+  try {
+    const parsed = parseServerRef(key);
+    registry = parsed.registry;
+    owner = parsed.owner;
+    name = parsed.name;
+  } catch {
+    return null;
+  }
+
+  let query = db
+    .from("servers")
+    // `!server_id` disambiguates: servers has two FK paths to versions
+    // (versions.server_id and servers.latest_version_id); we want the former.
+    .select("versions!server_id(adoption_scores(score, components, computed_at))")
+    .eq("registry", registry)
+    .eq("name", name);
+  query = owner === null ? query.is("owner", null) : query.eq("owner", owner);
+
+  const { data, error } = await query.maybeSingle();
+  if (error) {
+    console.warn("[rankings] server adoption read soft-failed:", error.message);
+    return null;
+  }
+  if (!data) return null;
+
+  const versions =
+    (data as { versions?: Array<{ adoption_scores?: EmbeddedScoreRow[] }> }).versions ?? [];
+  const scores = versions.flatMap((v) => v.adoption_scores ?? []);
+  if (scores.length === 0) return null;
+  // Newest score row wins (ISO timestamps compare lexically).
+  scores.sort((a, b) => (a.computed_at < b.computed_at ? 1 : -1));
+  const latest = scores[0]!;
+
+  return {
+    adoptionScore: adoptionDimension(latest.components),
+    adoptionSignal: formatAdoptionSignal(latest.components),
+    computedAt: latest.computed_at,
+  };
 }

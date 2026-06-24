@@ -15,6 +15,8 @@ import Link from "next/link";
 import { decodeRef, loadGrade } from "@/lib/badgeData";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import type { LitmusGrade, PolygraphDetail } from "@/lib/hostedGrades";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import { fetchAdoptionForServer, type ServerAdoption } from "@/lib/rankings";
 import { EmbedSnippets } from "./_components/EmbedSnippets";
 
 const ORIGIN = "https://polygraph.so";
@@ -22,6 +24,13 @@ const ORIGIN = "https://polygraph.so";
 // generateMetadata and the page both need the grade; cache() collapses them to
 // one query per request.
 const getGrade = cache(loadGrade);
+
+// The server's adoption score (reach), shown alongside the grade. Cached per
+// request; degrades to null when Supabase is unconfigured or the server is untracked.
+const getAdoption = cache(async (key: string): Promise<ServerAdoption | null> => {
+  const db = getSupabaseAdmin();
+  return db ? fetchAdoptionForServer(db, key) : null;
+});
 
 // Cache the rendered report for 10 min per ref; a regrade surfaces within the
 // window. The badge/card images carry the heavier, shorter cache.
@@ -110,7 +119,7 @@ export default async function McpServerPage({ params }: { params: Params }) {
 }
 
 async function Report({ serverKey }: { serverKey: string }) {
-  const result = await getGrade(serverKey);
+  const [result, adoption] = await Promise.all([getGrade(serverKey), getAdoption(serverKey)]);
   const badgeUrl = `${ORIGIN}/api/badge?server=${serverKey}`;
   const cardUrl = `${ORIGIN}/api/badge/card?server=${serverKey}`;
   const pageUrl = `${ORIGIN}/mcp/${serverKey}`;
@@ -120,12 +129,43 @@ async function Report({ serverKey }: { serverKey: string }) {
       serverKey={serverKey}
       grade={result.grade}
       detail={result.detail}
+      adoption={adoption}
       badgeUrl={badgeUrl}
       cardUrl={cardUrl}
       pageUrl={pageUrl}
     />
   ) : (
-    <Ungraded serverKey={serverKey} badgeUrl={badgeUrl} cardUrl={cardUrl} pageUrl={pageUrl} />
+    <Ungraded
+      serverKey={serverKey}
+      adoption={adoption}
+      badgeUrl={badgeUrl}
+      cardUrl={cardUrl}
+      pageUrl={pageUrl}
+    />
+  );
+}
+
+/** Small reach line — adoption score (0–100) + the download/stars proxy. Reach, not safety. */
+function AdoptionLine({ adoption }: { adoption: ServerAdoption | null }) {
+  if (!adoption) return null;
+  const dated = adoption.computedAt ? adoption.computedAt.slice(0, 10) : null;
+  const signal = adoption.adoptionSignal && adoption.adoptionSignal !== "—" ? adoption.adoptionSignal : null;
+  return (
+    <p
+      className="mt-6 font-mono text-[11.5px] text-ink-faint leading-relaxed"
+      title="Adoption (0–100): downloads + stars + dependents + release velocity — reach, not safety"
+    >
+      <span className="uppercase tracking-[0.14em]">Adoption</span>{" "}
+      <span className="text-ink">{Math.round(adoption.adoptionScore)}</span>
+      <span>/100</span>
+      {signal ? (
+        <>
+          {" · "}
+          <span className="text-ink-muted">{signal}</span>
+        </>
+      ) : null}
+      {dated ? <> · as of {dated}</> : null}
+    </p>
   );
 }
 
@@ -145,6 +185,7 @@ function Graded({
   serverKey,
   grade,
   detail,
+  adoption,
   badgeUrl,
   cardUrl,
   pageUrl,
@@ -152,6 +193,7 @@ function Graded({
   serverKey: string;
   grade: LitmusGrade;
   detail: PolygraphDetail;
+  adoption: ServerAdoption | null;
   badgeUrl: string;
   cardUrl: string;
   pageUrl: string;
@@ -190,6 +232,8 @@ function Graded({
           </p>
         </div>
       </div>
+
+      <AdoptionLine adoption={adoption} />
 
       {/* category breakdown */}
       <dl className="mt-10 border-t hairline">
@@ -264,11 +308,13 @@ function Graded({
 
 function Ungraded({
   serverKey,
+  adoption,
   badgeUrl,
   cardUrl,
   pageUrl,
 }: {
   serverKey: string;
+  adoption: ServerAdoption | null;
   badgeUrl: string;
   cardUrl: string;
   pageUrl: string;
@@ -286,6 +332,8 @@ function Ungraded({
         No published polygraph for this server. Unevaluated is neither safe nor unsafe —
         it just means the litmus battery hasn&rsquo;t been run against it.
       </p>
+
+      <AdoptionLine adoption={adoption} />
 
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
