@@ -1,4 +1,5 @@
 // web/app/rankings/page.tsx
+import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -32,6 +33,40 @@ function statusGlyph(status: string | null): string {
   if (status === "pass") return "✓";
   if (!status || status.startsWith("skip")) return "–";
   return "✕";
+}
+
+/**
+ * CSS-only tooltip (no JS): a dotted-underlined trigger that reveals a dark
+ * caption on hover, focus, or tap (the trigger is focusable). `align` picks
+ * which edge the caption anchors to so it doesn't overflow the table.
+ */
+function InfoTip({
+  label,
+  children,
+  align = "left",
+}: {
+  label: string;
+  children: ReactNode;
+  align?: "left" | "right";
+}) {
+  return (
+    <span className="group/tip relative inline-block">
+      <span
+        tabIndex={0}
+        className="cursor-help border-b border-dotted border-ink-faint/60 outline-none"
+      >
+        {label}
+      </span>
+      <span
+        role="tooltip"
+        className={`pointer-events-none absolute top-full z-20 mt-2 hidden w-60 rounded-sm border border-ink/30 bg-ink px-3 py-2 text-left font-sans text-[11px] font-normal normal-case tracking-normal leading-snug text-parchment shadow-lg group-hover/tip:block group-focus-within/tip:block ${
+          align === "right" ? "right-0" : "left-0"
+        }`}
+      >
+        {children}
+      </span>
+    </span>
+  );
 }
 
 export default async function RankingsPage() {
@@ -86,20 +121,20 @@ export default async function RankingsPage() {
                   <th className="py-2.5 pr-5 font-normal text-left">Server</th>
                   <th className="py-2.5 pr-5 font-normal text-left w-16">Grade</th>
                   <th className="py-2.5 pr-5 font-normal text-left w-24">
-                    <span
-                      className="cursor-help border-b border-dotted border-ink-faint/50"
-                      title="Per-category checks (✓ pass · ✕ fail · – not run): 01 tool-output injection · 02 egress overreach · 03 sensitive-data handling. C-04 (adversarial input) is graded too but folds into the overall grade — it is not a separate published slot."
-                    >
-                      Checks
-                    </span>
+                    <InfoTip label="Checks" align="left">
+                      <span className="font-semibold">Per-category checks</span> (✓ pass · ✕ fail ·
+                      – not run): 01 tool-output injection · 02 egress overreach · 03
+                      sensitive-data handling. C-04 (adversarial input) folds into the overall
+                      grade — not a separate slot.
+                    </InfoTip>
                   </th>
                   <th className="py-2.5 pr-1 font-normal text-right w-28">
-                    <span
-                      className="cursor-help border-b border-dotted border-ink-faint/50"
-                      title="Adoption score (0–100): downloads + stars + dependents + release velocity, normalized across tracked servers — reach, not safety. The figure below is monthly downloads."
-                    >
-                      Adoption
-                    </span>
+                    <InfoTip label="Adoption" align="right">
+                      <span className="font-semibold">Adoption score (0–100)</span> — downloads,
+                      stars, dependents and release velocity, normalized across tracked servers.
+                      Reach, not safety; the grade is the verdict. The figure below is monthly
+                      downloads.
+                    </InfoTip>
                   </th>
                 </tr>
               </thead>
