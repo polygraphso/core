@@ -21,7 +21,9 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22+: @supabase/supabase-js needs a global WebSocket (realtime client
+          # throws on Node 20 — "install ws for Node < 22").
+          node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: Seed (idempotent — picks up servers.yaml changes)
