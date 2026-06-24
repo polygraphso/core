@@ -15,17 +15,48 @@ import { ServerRefParseError, parseServerRef, serverKey } from "@/lib/identity";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import {
   fetchPublishedGrade,
+  fetchPublishedGradeRemote,
   type LitmusGrade,
   type PolygraphDetail,
 } from "@/lib/hostedGrades";
 
+/** A remote-endpoint key is the graded https:// URL itself (registry keys never are). */
+export function isRemoteKey(key: string): boolean {
+  return key.startsWith("https://") || key.startsWith("http://");
+}
+
 /**
- * Parse a registry-prefixed ref to its canonical versionless key
- * (`{registry}/{owner}/{name}`), or null if it's missing/too long/unparseable.
- * Mirrors `resolveServerRef()` in app/notify/page.tsx.
+ * Canonical key → URL-path-safe form for `/mcp/<…>` and `?server=<…>`. Registry
+ * keys pass through; a remote URL's `://` collapses to `/` so it survives the
+ * catch-all path (`https://mcp.x.io` → `https/mcp.x.io`). decodeRef reverses it.
+ */
+export function refToPath(key: string): string {
+  return isRemoteKey(key) ? key.replace("://", "/") : key;
+}
+
+/**
+ * Parse a server ref to its canonical key, or null if missing/too long/unparseable.
+ * A registry ref → `{registry}/{owner}/{name}`. A remote https MCP endpoint → the
+ * URL itself (trailing slash stripped), accepted either as a full URL (the badge
+ * `?server=` value) or its path-safe form `https/host/path` (the `/mcp` catch-all).
  */
 export function decodeRef(raw: string | null | undefined): string | null {
   if (!raw || raw.length === 0 || raw.length > 512) return null;
+  const urlish = /^https?:\/\//.test(raw)
+    ? raw
+    : /^https?\//.test(raw)
+      ? raw.replace(/^(https?)\//, "$1://")
+      : null;
+  if (urlish) {
+    try {
+      const u = new URL(urlish);
+      if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+      const path = u.pathname === "/" ? "" : u.pathname.replace(/\/+$/, "");
+      return `${u.protocol}//${u.host}${path}`;
+    } catch {
+      return null;
+    }
+  }
   try {
     return serverKey(parseServerRef(raw));
   } catch (err) {
@@ -35,16 +66,16 @@ export function decodeRef(raw: string | null | undefined): string | null {
 }
 
 /**
- * Latest published grade for a canonical key, or null. Also null when Supabase
- * is unconfigured (local dev with no env) — so every artifact degrades to its
- * "unrated" state instead of throwing.
+ * Latest published grade for a canonical key, or null. Branches registry vs
+ * remote-endpoint. Also null when Supabase is unconfigured (local dev with no
+ * env) — so every artifact degrades to its "unrated" state instead of throwing.
  */
 export async function loadGrade(
   key: string,
 ): Promise<{ grade: LitmusGrade; detail: PolygraphDetail } | null> {
   const db = getSupabaseAdmin();
   if (!db) return null;
-  return fetchPublishedGrade(db, key);
+  return isRemoteKey(key) ? fetchPublishedGradeRemote(db, key) : fetchPublishedGrade(db, key);
 }
 
 /** A category counts as a passing tick only on an exact "pass" (skip/fail → not). */
