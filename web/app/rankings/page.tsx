@@ -37,14 +37,18 @@ function statusGlyph(status: string | null): string {
 export default async function RankingsPage() {
   const db = getSupabaseAdmin();
   let rows: RankingRow[] = [];
+  let lastRefreshed = "";
   if (db) {
     const [ranked, grades] = await Promise.all([
       fetchTopRanked(db, TOP_N),
       fetchPublishedGradeDetailMap(db),
     ]);
     rows = mergeRankings(ranked, grades);
+    // Newest score timestamp across the ranked set — ISO strings compare lexically.
+    lastRefreshed = ranked.reduce((max, r) => (r.computedAt > max ? r.computedAt : max), "");
   }
   const gradedCount = rows.filter((r) => r.grade !== null).length;
+  const refreshedDate = lastRefreshed ? lastRefreshed.slice(0, 10) : null;
 
   return (
     <main className="flex-1">
@@ -62,8 +66,9 @@ export default async function RankingsPage() {
           <p className="mt-4 max-w-2xl text-ink-muted leading-relaxed text-sm">
             {rows.length > 0 ? (
               <>
-                {gradedCount} of the top {rows.length} graded. A grade is a
-                measurement, not a guarantee; every grade links to a report you
+                {gradedCount} of the top {rows.length} graded
+                {refreshedDate ? <> · adoption data as of {refreshedDate}</> : null}. A grade is
+                a measurement, not a guarantee; every grade links to a report you
                 can re-run yourself.
               </>
             ) : (
@@ -74,85 +79,133 @@ export default async function RankingsPage() {
 
         {rows.length > 0 ? (
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse font-mono text-[12.5px]">
+            <table className="w-full border-collapse border-b border-ink/15 font-mono text-[13px]">
               <thead>
-                <tr className="border-b hairline text-ink-faint text-left">
-                  <th className="py-2 pr-3 font-normal w-10">#</th>
-                  <th className="py-2 pr-4 font-normal">Server</th>
-                  <th className="py-2 pr-4 font-normal">Adoption</th>
-                  <th className="py-2 pr-4 font-normal">Grade</th>
-                  <th className="py-2 font-normal">C-01 · C-02 · C-03</th>
+                <tr className="border-y border-ink/15 text-ink-faint uppercase tracking-[0.13em] text-[10.5px]">
+                  <th className="py-2.5 pl-1 pr-4 font-normal text-right w-12">#</th>
+                  <th className="py-2.5 pr-5 font-normal text-left">Server</th>
+                  <th className="py-2.5 pr-5 font-normal text-left w-16">Grade</th>
+                  <th className="py-2.5 pr-5 font-normal text-left w-24">Checks</th>
+                  <th className="py-2.5 pr-1 font-normal text-right w-28">Adoption</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
-                  <tr key={row.serverKey} className="border-b hairline align-baseline">
-                    <td className="py-3 pr-3 tabular text-ink-faint">{row.rank}</td>
-                    <td className="py-3 pr-4">
-                      <Link
-                        href={`/mcp/${row.serverKey}`}
-                        className="text-ink hover:text-oxblood transition-colors break-all"
-                      >
-                        {row.serverKey}
-                      </Link>
-                    </td>
-                    <td className="py-3 pr-4 tabular text-ink-muted whitespace-nowrap">
-                      {row.adoptionSignal}
-                    </td>
-                    <td className="py-3 pr-4">
-                      {row.grade ? (
+                {rows.map((row) => {
+                  const graded = row.grade !== null;
+                  return (
+                    <tr
+                      key={row.serverKey}
+                      className="group align-middle border-b border-rule-soft/60 transition-colors hover:bg-parchment-200/40"
+                    >
+                      <td className="py-3.5 pl-1 pr-4 text-right tabular text-ink-faint">
+                        {row.rank}
+                      </td>
+                      <td className="py-3.5 pr-5">
+                        <Link
+                          href={`/mcp/${row.serverKey}`}
+                          className={`break-all transition-colors group-hover:text-oxblood ${
+                            graded ? "text-ink" : "text-ink-muted"
+                          }`}
+                        >
+                          {row.serverKey}
+                        </Link>
+                      </td>
+                      <td className="py-3.5 pr-5">
+                        {graded ? (
+                          <span
+                            className="font-serif text-xl leading-none"
+                            style={{ color: GRADE_HEX[row.grade!] }}
+                            aria-label={`Grade ${row.grade}`}
+                          >
+                            {row.grade}
+                          </span>
+                        ) : (
+                          <Link
+                            href="/request"
+                            className="text-[11px] tracking-wide transition-colors hover:text-oxblood"
+                            style={{ color: UNRATED_HEX }}
+                          >
+                            request
+                          </Link>
+                        )}
+                      </td>
+                      <td className="py-3.5 pr-5">
+                        {graded ? (
+                          <span className="flex gap-3.5" aria-label="category checks">
+                            {[row.c01, row.c02, row.c03].map((s, i) => (
+                              <span
+                                key={i}
+                                aria-label={`${["C-01", "C-02", "C-03"][i]} ${s ?? "not run"}`}
+                                title={`${
+                                  [
+                                    "C-01 tool-output injection",
+                                    "C-02 egress overreach",
+                                    "C-03 sensitive-data handling",
+                                  ][i]
+                                }: ${s ?? "not run"}`}
+                                className="flex items-baseline gap-1"
+                              >
+                                <span className="text-[9px] tabular text-ink-faint">
+                                  {`0${i + 1}`}
+                                </span>
+                                <span
+                                  className="text-[15px] font-medium leading-none"
+                                  style={{ color: statusColor(s) }}
+                                >
+                                  {statusGlyph(s)}
+                                </span>
+                              </span>
+                            ))}
+                          </span>
+                        ) : (
+                          <span className="text-ink-faint/40" aria-hidden>
+                            —
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3.5 pr-1 text-right whitespace-nowrap leading-tight">
                         <span
-                          className="font-serif text-base"
-                          style={{ color: GRADE_HEX[row.grade] }}
-                          aria-label={`Grade ${row.grade}`}
+                          className="tabular text-ink"
+                          title="Adoption score (0–100): downloads + stars + dependents + release velocity"
                         >
-                          {row.grade}
+                          {Math.round(row.adoptionScore)}
                         </span>
-                      ) : (
-                        <Link
-                          href="/request"
-                          className="hover:text-oxblood transition-colors"
-                          style={{ color: UNRATED_HEX }}
-                        >
-                          request
-                        </Link>
-                      )}
-                    </td>
-                    <td className="py-3">
-                      {row.grade ? (
-                        <span className="flex gap-3">
-                          {[row.c01, row.c02, row.c03].map((s, i) => (
-                            <span
-                              key={i}
-                              aria-label={s ?? "n/a"}
-                              title={s ?? "n/a"}
-                              className="font-mono text-[13px] leading-none"
-                              style={{ color: statusColor(s) }}
-                            >
-                              {statusGlyph(s)}
-                            </span>
-                          ))}
+                        <span className="block tabular text-[10.5px] text-ink-faint">
+                          {row.adoptionSignal}
                         </span>
-                      ) : (
-                        <Link
-                          href={`/notify?for=${row.serverKey}`}
-                          className="text-ink-faint hover:text-oxblood transition-colors"
-                        >
-                          notify me
-                        </Link>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         ) : null}
 
+        {rows.length > 0 ? (
+          <p className="mt-5 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] text-ink-faint leading-relaxed">
+            <span>
+              <span style={{ color: GRADE_HEX.A }}>✓</span> pass
+            </span>
+            <span>
+              <span style={{ color: "var(--color-oxblood)" }}>✕</span> fail
+            </span>
+            <span>
+              <span className="text-ink-faint">–</span> not run
+            </span>
+            <span className="text-ink-faint/80">
+              C-01 tool-output injection · C-02 egress overreach · C-03 sensitive-data handling
+            </span>
+          </p>
+        ) : null}
+
         <p className="mt-10 text-ink-faint text-xs leading-relaxed max-w-2xl">
-          Ordering is by adoption (npm / PyPI / GitHub signals), not by grade.
-          Grades come from the open litmus harness; ungraded popular servers can
-          be requested. See the{" "}
+          Ranked by the <span className="text-ink-muted">adoption score</span> (0–100, shown at
+          right above monthly downloads) — a composite of downloads (npm / PyPI), GitHub stars,
+          dependents and release velocity. It measures{" "}
+          <span className="text-ink-muted">reach, not safety</span>: the litmus grade is the only
+          safety verdict. Grades come from the open litmus harness; ungraded servers can be
+          requested. See the{" "}
           <Link href="/methodology" className="border-b hairline border-dotted hover:text-oxblood">
             methodology
           </Link>
