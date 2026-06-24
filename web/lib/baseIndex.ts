@@ -83,7 +83,7 @@ export const BASE_ENTRIES: BaseEntry[] = [
 
   // ---------------- DeFi & trading (Base-supporting) ----------------
   { project: "LI.FI", handle: "lifiprotocol", category: "bridge + DEX aggregator", group: "defi", party: "first", ownMcp: true, mcpRef: "https://mcp.li.quest/mcp", target: "https://mcp.li.quest/mcp", pending: null },
-  { project: "deBridge", handle: "deBridgeFinance", category: "cross-chain bridge", group: "defi", party: "first", ownMcp: true, mcpRef: "npm/@debridge-finance/debridge-mcp", target: "npm/@debridge-finance/debridge-mcp", pending: null },
+  { project: "deBridge", handle: "deBridgeFinance", category: "cross-chain bridge", group: "defi", party: "first", ownMcp: true, mcpRef: "https://agents.debridge.com/mcp", target: "https://agents.debridge.com/mcp", pending: null },
   { project: "OpenOcean", handle: "OpenOceanGlobal", category: "DEX aggregator", group: "defi", party: "first", ownMcp: true, mcpRef: "npm/openocean-mcp", target: "npm/openocean-mcp", pending: null },
   { project: "Arcadia", handle: "arcadiafi", category: "LP + leverage", group: "defi", party: "first", ownMcp: true, mcpRef: "npm/@arcadia-finance/mcp-server", target: "npm/@arcadia-finance/mcp-server", pending: null },
   { project: "CoW Swap", handle: "CoWSwap", category: "intent-based DEX", group: "defi", party: "third", ownMcp: true, mcpRef: "npm/cow-mcp", target: "npm/cow-mcp", pending: null },
@@ -91,12 +91,11 @@ export const BASE_ENTRIES: BaseEntry[] = [
   { project: "Philidor", handle: "PhilidorLabs", category: "vault risk analytics", group: "defi", party: "third", ownMcp: true, mcpRef: "https://mcp.philidor.io/api/mcp", target: "https://mcp.philidor.io/api/mcp", pending: null },
 
   // ---------------- Data & infrastructure (Base-supporting) ----------------
-  { project: "CoinGecko", handle: "coingecko", category: "market + onchain data", group: "data-infra", party: "first", ownMcp: true, mcpRef: "npm/@coingecko/coingecko-mcp", target: "npm/@coingecko/coingecko-mcp", pending: null },
-  { project: "DefiLlama", handle: "DefiLlama", category: "TVL / yields", group: "data-infra", party: "first", ownMcp: true, mcpRef: "https://mcp.defillama.com/mcp", target: "https://mcp.defillama.com/mcp", pending: null },
+  { project: "CoinGecko", handle: "coingecko", category: "market + onchain data", group: "data-infra", party: "first", ownMcp: true, mcpRef: "https://mcp.api.coingecko.com/mcp", target: "https://mcp.api.coingecko.com/mcp", pending: null },
+  { project: "DefiLlama", handle: "DefiLlama", category: "TVL / yields", group: "data-infra", party: "third", ownMcp: true, mcpRef: "npm/defillama-mcp", target: "npm/defillama-mcp", pending: null },
   { project: "Blockscout", handle: "blockscoutcom", category: "block explorer", group: "data-infra", party: "first", ownMcp: true, mcpRef: "https://mcp.blockscout.com/mcp", target: "https://mcp.blockscout.com/mcp", pending: null },
   { project: "Pyth", handle: "PythNetwork", category: "price oracle", group: "data-infra", party: "first", ownMcp: true, mcpRef: "https://mcp.pyth.network/mcp", target: "https://mcp.pyth.network/mcp", pending: null },
   { project: "evm-mcp-server", handle: "", category: "generic EVM (reads)", group: "data-infra", party: "third", ownMcp: true, mcpRef: "npm/@mcpdotdirect/evm-mcp-server", target: "npm/@mcpdotdirect/evm-mcp-server", pending: null },
-  { project: "mcp-blockchain-server", handle: "", category: "generic EVM (reads)", group: "data-infra", party: "third", ownMcp: true, mcpRef: "npm/mcp-blockchain-server", target: "npm/mcp-blockchain-server", pending: null },
 
   // ---------------- Coinbase / Base first-party ----------------
   { project: "CDP Docs", handle: "CoinbaseDev", category: "developer-docs search", group: "coinbase", party: "first", ownMcp: true, mcpRef: "https://docs.cdp.coinbase.com/mcp", target: "https://docs.cdp.coinbase.com/mcp", pending: null },
