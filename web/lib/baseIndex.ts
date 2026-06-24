@@ -1,19 +1,17 @@
 import "server-only";
 
 /**
- * Data layer for the (unlisted) Base MCP ecosystem index at /base.
+ * Data layer for the (unlisted) Base-network MCP index at /base.
  *
- * Base MCP is a single hosted gateway (mcp.base.org); its "plugins" are markdown
- * specs that orchestrate a protocol via an HTTP tx-builder, a CLI, or that
- * protocol's OWN ("sibling") MCP server. Only that last case is independently
- * gradeable — so this index grades the *projects' own* MCP servers, not the Base
- * gateway plugin (which isn't a separately-connectable surface).
+ * Scope: MCP servers an onchain AI agent operating on the Base network (Coinbase's
+ * L2) can connect to — the projects that integrate Base MCP (whose own "sibling"
+ * MCP servers are independently gradeable, vs the Base gateway plugin which isn't),
+ * plus the broader set of Base-supporting DeFi / data / infrastructure MCPs.
  *
- * Grades are read straight from `hosted_runs` by the service-role client and are
- * shown REGARDLESS of `published_at` — i.e. this page surfaces grade-only rows
- * the public badge/CLI path (which is published-only) does not. That is what
- * keeps it private: a row appears here the moment it is graded, and nowhere
- * public until someone explicitly publishes it.
+ * Grades are read straight from `hosted_runs` by the service-role client and shown
+ * REGARDLESS of `published_at` — i.e. this page surfaces grade-only rows the public
+ * badge/CLI path (published-only) does not. That keeps it private: a row appears
+ * here the moment it is graded, and nowhere public until someone publishes it.
  */
 
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -26,52 +24,82 @@ import {
   type PolygraphDetail,
 } from "@/lib/hostedGrades";
 
-export type Cohort = "new-13" | "original-7";
+/** Display cohort. */
+export type Group = "base-plugins" | "defi" | "data-infra" | "coinbase";
 
-/** Why a project with its own MCP isn't graded yet (null once a grade exists). */
+export const GROUP_LABEL: Record<Group, string> = {
+  "base-plugins": "Base MCP plugins",
+  defi: "DeFi & trading",
+  "data-infra": "Data & infrastructure",
+  coinbase: "Coinbase / Base",
+};
+
+export const GROUP_ORDER: Group[] = ["base-plugins", "defi", "data-infra", "coinbase"];
+
+/** Built by the protocol itself vs a third-party / community wrapper. */
+export type Party = "first" | "third";
+
+/** Why a server with its own MCP isn't graded yet (null once a grade exists). */
 export type Pending = "free-key" | "api-key" | "clone-build" | null;
 
 export interface BaseEntry {
   project: string;
   handle: string; // X handle, without the @
   category: string;
-  cohort: Cohort;
+  group: Group;
+  party: Party;
   /** Does the project ship its OWN standalone MCP server (vs HTTP/CLI/SDK only)? */
   ownMcp: boolean;
   /** The MCP ref/endpoint, for display — even when not yet graded. */
   mcpRef: string | null;
-  /** The exact ref that was graded on the hosted runner (null = not graded yet). */
+  /** The exact ref submitted to the hosted runner (null = not graded). */
   target: string | null;
   /** If it has an MCP but isn't graded yet, why. */
   pending: Pending;
   note?: string;
 }
 
-// The 13 projects Base named (jun 23 thread) + the two original-7 plugins that
-// also ship their own hosted MCP (Morpho, Virtuals). ownMcp / mcpRef / target
-// come from the jun-24 sourcing pass; target is set only for refs graded on the
-// hosted runner.
+// ownMcp / mcpRef / party from the jun-24 sourcing sweeps. `target` is set for any
+// ref submitted to the hosted runner; npm refs grade sandboxed (can reach A), https
+// endpoints grade in-process (cap at B). Third-party = a community wrapper, not the
+// protocol's own server.
 export const BASE_ENTRIES: BaseEntry[] = [
-  // --- graded (own MCP, ref submitted to the hosted runner) ---
-  { project: "Printr", handle: "printr", category: "token launchpad", cohort: "new-13", ownMcp: true, mcpRef: "npm/@printr/mcp", target: "npm/@printr/mcp", pending: null },
-  { project: "Clawnch", handle: "Clawnch_Bot", category: "launches", cohort: "new-13", ownMcp: true, mcpRef: "npm/clawnch-mcp-server", target: "npm/clawnch-mcp-server", pending: null },
-  { project: "Flaunch", handle: "flaunchgg", category: "token launches", cohort: "new-13", ownMcp: true, mcpRef: "https://mcp.flaunch.gg/", target: "https://mcp.flaunch.gg/", pending: null },
-  { project: "Brickken", handle: "Brickken", category: "RWA tokenization", cohort: "new-13", ownMcp: true, mcpRef: "https://mcp.brickken.com/mcp", target: "https://mcp.brickken.com/mcp", pending: null },
-  { project: "Morpho", handle: "MorphoLabs", category: "lending", cohort: "original-7", ownMcp: true, mcpRef: "https://mcp.morpho.org/", target: "https://mcp.morpho.org/", pending: null },
-  { project: "Virtuals", handle: "virtuals_io", category: "agent platform", cohort: "original-7", ownMcp: true, mcpRef: "https://mcp.acp.virtuals.io/", target: "https://mcp.acp.virtuals.io/", pending: null },
+  // ---------------- Base MCP plugins (the projects integrating Base MCP) ----------------
+  { project: "Printr", handle: "printr", category: "token launchpad", group: "base-plugins", party: "first", ownMcp: true, mcpRef: "npm/@printr/mcp", target: "npm/@printr/mcp", pending: null },
+  { project: "Clawnch", handle: "Clawnch_Bot", category: "launches", group: "base-plugins", party: "first", ownMcp: true, mcpRef: "npm/clawnch-mcp-server", target: "npm/clawnch-mcp-server", pending: null },
+  { project: "Flaunch", handle: "flaunchgg", category: "token launches", group: "base-plugins", party: "first", ownMcp: true, mcpRef: "https://mcp.flaunch.gg/", target: "https://mcp.flaunch.gg/", pending: null },
+  { project: "Brickken", handle: "Brickken", category: "RWA tokenization", group: "base-plugins", party: "first", ownMcp: true, mcpRef: "https://mcp.brickken.com/mcp", target: "https://mcp.brickken.com/mcp", pending: null },
+  { project: "Morpho", handle: "MorphoLabs", category: "lending", group: "base-plugins", party: "first", ownMcp: true, mcpRef: "https://mcp.morpho.org/", target: "https://mcp.morpho.org/", pending: null },
+  { project: "Virtuals", handle: "virtuals_io", category: "agent platform", group: "base-plugins", party: "first", ownMcp: true, mcpRef: "https://mcp.acp.virtuals.io/", target: "https://mcp.acp.virtuals.io/", pending: null },
+  { project: "OpenSea", handle: "opensea", category: "NFT marketplace", group: "base-plugins", party: "first", ownMcp: true, mcpRef: "https://mcp.opensea.io/mcp", target: null, pending: "free-key", note: "hosted MCP, free instant agent key" },
+  { project: "Venice", handle: "AskVenice", category: "private AI inference", group: "base-plugins", party: "first", ownMcp: true, mcpRef: "npm/@veniceai/mcp-server", target: null, pending: "api-key", note: "needs a Venice API key" },
+  { project: "Bitrefill", handle: "bitrefill", category: "gift cards", group: "base-plugins", party: "first", ownMcp: true, mcpRef: "npm/bitrefill-mcp-server", target: null, pending: "api-key", note: "needs a Bitrefill API key" },
+  { project: "KyberSwap", handle: "KyberNetwork", category: "DEX aggregation", group: "base-plugins", party: "first", ownMcp: true, mcpRef: "github/KyberNetwork/kyberswap-mcp", target: null, pending: "clone-build", note: "first-party MCP, github-only (clone + build)" },
+  { project: "GMGN", handle: "gmgnai", category: "token discovery", group: "base-plugins", party: "first", ownMcp: false, mcpRef: null, target: null, pending: null, note: "Skills + CLI + REST API" },
+  { project: "Hydrex", handle: "HydrexFi", category: "DeFi", group: "base-plugins", party: "first", ownMcp: false, mcpRef: null, target: null, pending: null, note: "Base-MCP skill + SDK" },
+  { project: "o1.exchange", handle: "o1_exchange", category: "exchange", group: "base-plugins", party: "first", ownMcp: false, mcpRef: null, target: null, pending: null, note: "REST trading API" },
+  { project: "Balancer", handle: "Balancer", category: "AMM / liquidity", group: "base-plugins", party: "first", ownMcp: false, mcpRef: null, target: null, pending: null, note: "SDK only (CLI-only plugin)" },
+  { project: "YO", handle: "yield", category: "yield vaults", group: "base-plugins", party: "first", ownMcp: false, mcpRef: null, target: null, pending: null, note: "SDK + REST API" },
 
-  // --- own MCP, grade pending (needs a key, or a clone+build) ---
-  { project: "OpenSea", handle: "opensea", category: "NFT marketplace", cohort: "new-13", ownMcp: true, mcpRef: "https://mcp.opensea.io/mcp", target: null, pending: "free-key", note: "hosted MCP, free instant agent key" },
-  { project: "Venice", handle: "AskVenice", category: "private AI inference", cohort: "new-13", ownMcp: true, mcpRef: "npm/@veniceai/mcp-server", target: null, pending: "api-key", note: "needs a Venice API key" },
-  { project: "Bitrefill", handle: "bitrefill", category: "gift cards", cohort: "new-13", ownMcp: true, mcpRef: "npm/bitrefill-mcp-server", target: null, pending: "api-key", note: "needs a Bitrefill API key" },
-  { project: "KyberSwap", handle: "KyberNetwork", category: "DEX aggregation", cohort: "new-13", ownMcp: true, mcpRef: "github/KyberNetwork/kyberswap-mcp", target: null, pending: "clone-build", note: "first-party MCP, github-only (clone + build)" },
+  // ---------------- DeFi & trading (Base-supporting) ----------------
+  { project: "LI.FI", handle: "lifiprotocol", category: "bridge + DEX aggregator", group: "defi", party: "first", ownMcp: true, mcpRef: "https://mcp.li.quest/mcp", target: "https://mcp.li.quest/mcp", pending: null },
+  { project: "deBridge", handle: "deBridgeFinance", category: "cross-chain bridge", group: "defi", party: "first", ownMcp: true, mcpRef: "npm/@debridge-finance/debridge-mcp", target: "npm/@debridge-finance/debridge-mcp", pending: null },
+  { project: "OpenOcean", handle: "OpenOceanGlobal", category: "DEX aggregator", group: "defi", party: "first", ownMcp: true, mcpRef: "npm/openocean-mcp", target: "npm/openocean-mcp", pending: null },
+  { project: "Arcadia", handle: "arcadiafi", category: "LP + leverage", group: "defi", party: "first", ownMcp: true, mcpRef: "npm/@arcadia-finance/mcp-server", target: "npm/@arcadia-finance/mcp-server", pending: null },
+  { project: "CoW Swap", handle: "CoWSwap", category: "intent-based DEX", group: "defi", party: "third", ownMcp: true, mcpRef: "npm/cow-mcp", target: "npm/cow-mcp", pending: null },
+  { project: "DeFi Rates", handle: "", category: "lending-rate aggregator", group: "defi", party: "third", ownMcp: true, mcpRef: "npm/@asahi001/defi-rates-mcp", target: "npm/@asahi001/defi-rates-mcp", pending: null },
+  { project: "Philidor", handle: "PhilidorLabs", category: "vault risk analytics", group: "defi", party: "third", ownMcp: true, mcpRef: "https://mcp.philidor.io/api/mcp", target: "https://mcp.philidor.io/api/mcp", pending: null },
 
-  // --- no standalone MCP (HTTP API / CLI / SDK only — not independently gradeable) ---
-  { project: "GMGN", handle: "gmgnai", category: "token discovery", cohort: "new-13", ownMcp: false, mcpRef: null, target: null, pending: null, note: "Skills + CLI + REST API" },
-  { project: "Hydrex", handle: "HydrexFi", category: "DeFi", cohort: "new-13", ownMcp: false, mcpRef: null, target: null, pending: null, note: "Base-MCP skill + SDK" },
-  { project: "o1.exchange", handle: "o1_exchange", category: "exchange", cohort: "new-13", ownMcp: false, mcpRef: null, target: null, pending: null, note: "REST trading API" },
-  { project: "Balancer", handle: "Balancer", category: "AMM / liquidity", cohort: "new-13", ownMcp: false, mcpRef: null, target: null, pending: null, note: "SDK only (CLI-only plugin)" },
-  { project: "YO", handle: "yield", category: "yield vaults", cohort: "new-13", ownMcp: false, mcpRef: null, target: null, pending: null, note: "SDK + REST API" },
+  // ---------------- Data & infrastructure (Base-supporting) ----------------
+  { project: "CoinGecko", handle: "coingecko", category: "market + onchain data", group: "data-infra", party: "first", ownMcp: true, mcpRef: "npm/@coingecko/coingecko-mcp", target: "npm/@coingecko/coingecko-mcp", pending: null },
+  { project: "DefiLlama", handle: "DefiLlama", category: "TVL / yields", group: "data-infra", party: "first", ownMcp: true, mcpRef: "https://mcp.defillama.com/mcp", target: "https://mcp.defillama.com/mcp", pending: null },
+  { project: "Blockscout", handle: "blockscoutcom", category: "block explorer", group: "data-infra", party: "first", ownMcp: true, mcpRef: "https://mcp.blockscout.com/mcp", target: "https://mcp.blockscout.com/mcp", pending: null },
+  { project: "Pyth", handle: "PythNetwork", category: "price oracle", group: "data-infra", party: "first", ownMcp: true, mcpRef: "https://mcp.pyth.network/mcp", target: "https://mcp.pyth.network/mcp", pending: null },
+  { project: "evm-mcp-server", handle: "", category: "generic EVM (reads)", group: "data-infra", party: "third", ownMcp: true, mcpRef: "npm/@mcpdotdirect/evm-mcp-server", target: "npm/@mcpdotdirect/evm-mcp-server", pending: null },
+  { project: "mcp-blockchain-server", handle: "", category: "generic EVM (reads)", group: "data-infra", party: "third", ownMcp: true, mcpRef: "npm/mcp-blockchain-server", target: "npm/mcp-blockchain-server", pending: null },
+
+  // ---------------- Coinbase / Base first-party ----------------
+  { project: "CDP Docs", handle: "CoinbaseDev", category: "developer-docs search", group: "coinbase", party: "first", ownMcp: true, mcpRef: "https://docs.cdp.coinbase.com/mcp", target: "https://docs.cdp.coinbase.com/mcp", pending: null },
 ];
 
 export interface GradedEntry extends BaseEntry {
@@ -106,7 +134,7 @@ async function latestForTarget(
   return { ...res, completedAt: (data as { completed_at?: string | null }).completed_at ?? null };
 }
 
-/** Load every Base entry with its live grade (null when unconfigured/ungraded). */
+/** Load every entry with its live grade (null when unconfigured/ungraded). */
 export async function loadBaseIndex(): Promise<GradedEntry[]> {
   const db = getSupabaseAdmin();
   const out: GradedEntry[] = [];

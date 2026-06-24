@@ -1,18 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { loadBaseIndex, type GradedEntry } from "@/lib/baseIndex";
+import {
+  loadBaseIndex,
+  GROUP_LABEL,
+  GROUP_ORDER,
+  type GradedEntry,
+} from "@/lib/baseIndex";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import type { LitmusGrade } from "@/lib/hostedGrades";
 
 /**
- * UNLISTED Base MCP ecosystem index. Not linked from nav/footer, not in any
+ * UNLISTED Base-network MCP index. Not linked from nav/footer, not in any
  * sitemap, robots noindex — reachable only by direct link. Reads grades live
  * from hosted_runs INCLUDING unpublished rows (see lib/baseIndex), so it shows
  * grades that are not yet public anywhere else. Keep it private until a publish
  * decision is made per server.
  */
 export const metadata: Metadata = {
-  title: "Base MCP ecosystem — polygraph (private)",
+  title: "Base-network MCP index — polygraph (private)",
   robots: { index: false, follow: false },
 };
 
@@ -29,11 +34,10 @@ function statusColor(status: string | null): string {
 }
 
 /** The left-anchored grade stamp — the row's visual authority. */
-function Stamp({ grade, size = "md" }: { grade: LitmusGrade; size?: "md" | "sm" }) {
-  const dim = size === "md" ? "h-8 w-8 text-[15px]" : "h-6 w-6 text-[12px]";
+function Stamp({ grade }: { grade: LitmusGrade }) {
   return (
     <span
-      className={`inline-flex ${dim} items-center justify-center rounded-[3px] font-mono font-semibold text-parchment-50 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]`}
+      className="inline-flex h-8 w-8 items-center justify-center rounded-[3px] font-mono text-[15px] font-semibold text-parchment-50 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
       style={{ backgroundColor: GRADE_HEX[grade] }}
       aria-label={`grade ${grade}`}
     >
@@ -46,10 +50,7 @@ function Check({ status }: { status: string | null }) {
   const label = !status ? "—" : status.startsWith("skip") ? "skip" : status;
   const fail = status && !status.startsWith("skip") && status !== "pass";
   return (
-    <span
-      className={`font-mono text-[11px] ${fail ? "font-semibold" : ""}`}
-      style={{ color: statusColor(status) }}
-    >
+    <span className={`font-mono text-[11px] ${fail ? "font-semibold" : ""}`} style={{ color: statusColor(status) }}>
       {label}
     </span>
   );
@@ -57,15 +58,34 @@ function Check({ status }: { status: string | null }) {
 
 const CHECKS = "grid grid-cols-3 gap-x-3 text-center w-[8.5rem]";
 
+/** Project name — links to X when a handle is known, otherwise plain. */
+function ProjectLink({ e }: { e: GradedEntry }) {
+  return e.handle ? (
+    <a href={`https://x.com/${e.handle}`} target="_blank" rel="noreferrer noopener" className="text-ink hover:text-oxblood transition-colors">
+      {e.project}
+    </a>
+  ) : (
+    <span className="text-ink">{e.project}</span>
+  );
+}
+
+/** Category + a third-party flag (the trust caveat — a community wrapper, not the protocol's own). */
+function CategoryLine({ e }: { e: GradedEntry }) {
+  if (!e.category && e.party !== "third") return null;
+  return (
+    <div className="font-mono text-[10px] text-ink-faint uppercase tracking-[0.12em]">
+      {e.category}
+      {e.party === "third" ? <span className="text-oxblood/70">{e.category ? " · 3rd-party" : "3rd-party"}</span> : null}
+    </div>
+  );
+}
+
 /** The MCP-server cell: a link to the canonical /mcp report when one exists. */
 function RefCell({ e, size }: { e: GradedEntry; size: string }) {
   if (!e.mcpRef) return <span className={`font-mono ${size} text-ink-faint`}>{e.note}</span>;
   const ref = <code className={`font-mono ${size} break-all`}>{e.mcpRef}</code>;
   return e.reportPath ? (
-    <Link
-      href={`/mcp/${e.reportPath}`}
-      className="text-ink-muted underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
-    >
+    <Link href={`/mcp/${e.reportPath}`} className="text-ink-muted underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">
       {ref}
     </Link>
   ) : (
@@ -73,13 +93,20 @@ function RefCell({ e, size }: { e: GradedEntry; size: string }) {
   );
 }
 
+function PendingCell({ e }: { e: GradedEntry }) {
+  if (e.ownMcp) {
+    return <>pending{e.pending ? ` · ${e.pending}` : ""}</>;
+  }
+  return <>no MCP</>;
+}
+
 function DesktopRow({ e }: { e: GradedEntry }) {
   return (
     <div className="hidden md:grid grid-cols-[2.75rem_minmax(120px,1.25fr)_minmax(150px,1.9fr)_8.5rem_5.5rem_4.5rem] items-center gap-x-5 px-3 py-3 border-t hairline transition-colors hover:bg-[#efe8d6]">
       <div>{e.grade ? <Stamp grade={e.grade} /> : <span className="font-mono text-[12px] text-ink-faint">{e.ownMcp ? "·" : "—"}</span>}</div>
       <div className="min-w-0">
-        <a href={`https://x.com/${e.handle}`} target="_blank" rel="noreferrer noopener" className="text-ink hover:text-oxblood transition-colors">{e.project}</a>
-        {e.category ? <div className="font-mono text-[10px] text-ink-faint uppercase tracking-[0.12em]">{e.category}</div> : null}
+        <ProjectLink e={e} />
+        <CategoryLine e={e} />
       </div>
       <div className="min-w-0">
         <RefCell e={e} size="text-[11.5px]" />
@@ -92,7 +119,7 @@ function DesktopRow({ e }: { e: GradedEntry }) {
         </div>
       ) : (
         <div className="w-[8.5rem] text-center font-mono text-[11px] text-ink-faint">
-          {e.ownMcp ? `pending · ${e.pending ?? ""}` : "no MCP"}
+          <PendingCell e={e} />
         </div>
       )}
       <div className="font-mono text-[10.5px] text-ink-faint tabular">{e.detail?.tool_defs_fingerprint ? `${e.detail.tool_defs_fingerprint.slice(0, 10)}…` : "—"}</div>
@@ -108,10 +135,10 @@ function MobileCard({ e }: { e: GradedEntry }) {
         <div className="pt-0.5">{e.grade ? <Stamp grade={e.grade} /> : <span className="inline-flex h-8 w-8 items-center justify-center font-mono text-ink-faint">{e.ownMcp ? "·" : "—"}</span>}</div>
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline justify-between gap-2">
-            <a href={`https://x.com/${e.handle}`} target="_blank" rel="noreferrer noopener" className="text-ink hover:text-oxblood">{e.project}</a>
+            <ProjectLink e={e} />
             <span className="font-mono text-[10px] text-ink-faint tabular whitespace-nowrap">{e.completedAt ? e.completedAt.slice(0, 10) : ""}</span>
           </div>
-          {e.category ? <div className="font-mono text-[10px] text-ink-faint uppercase tracking-[0.12em]">{e.category}</div> : null}
+          <CategoryLine e={e} />
           <div className="mt-1.5">
             <RefCell e={e} size="text-[11px]" />
           </div>
@@ -123,7 +150,7 @@ function MobileCard({ e }: { e: GradedEntry }) {
                 <span>C-03 <Check status={e.detail?.c03 ?? null} /></span>
               </span>
             ) : (
-              <span className="text-ink-faint">{e.ownMcp ? `grade pending · ${e.pending ?? ""}` : "no standalone MCP"}</span>
+              <span className="text-ink-faint">{e.ownMcp ? `grade pending${e.pending ? ` · ${e.pending}` : ""}` : "no standalone MCP"}</span>
             )}
           </div>
         </div>
@@ -132,12 +159,20 @@ function MobileCard({ e }: { e: GradedEntry }) {
   );
 }
 
-function Group({ label, rows }: { label: string; rows: GradedEntry[] }) {
+/** Within a cohort: graded first (A→F), then own-MCP-pending, then no-MCP. */
+function sortRows(rows: GradedEntry[]): GradedEntry[] {
+  const rank = (e: GradedEntry) => (e.grade ? GRADE_ORDER.indexOf(e.grade) : e.ownMcp ? 100 : 200);
+  return [...rows].sort((a, b) => rank(a) - rank(b) || a.project.localeCompare(b.project));
+}
+
+function CohortSection({ label, rows }: { label: string; rows: GradedEntry[] }) {
   if (rows.length === 0) return null;
   return (
     <>
-      <div className="section-label pt-7 pb-1 px-3">{label} <span className="text-ink-faint">· {rows.length}</span></div>
-      {rows.map((e) => (
+      <div className="section-label pt-7 pb-1 px-3">
+        {label} <span className="text-ink-faint">· {rows.length}</span>
+      </div>
+      {sortRows(rows).map((e) => (
         <div key={`${e.project}-${e.mcpRef ?? e.handle}`}>
           <DesktopRow e={e} />
           <MobileCard e={e} />
@@ -161,10 +196,11 @@ export default async function BaseIndexPage() {
       <article className="mx-auto max-w-5xl px-6 pt-14 pb-24 md:pt-20 md:pb-28">
         <header className="mb-9">
           <p className="section-label mb-4">Private · unpublished · {methodology}</p>
-          <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">Base MCP ecosystem</h1>
+          <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">Base-network MCP index</h1>
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
-            Independent, reproducible behavioral grades for the projects integrating Base MCP —
-            graded on the projects&rsquo; own MCP servers, not the Base gateway.
+            Independent, reproducible behavioral grades for the MCP servers an onchain agent on Base
+            can use — the projects integrating Base MCP, and the wider DeFi, data, and infrastructure
+            servers that support the network.
           </p>
         </header>
 
@@ -189,16 +225,18 @@ export default async function BaseIndexPage() {
         {/* Thesis: pull-quote the audit hook + the methodology caveats. */}
         <figure className="mb-9 border-l-2 pl-5" style={{ borderColor: "var(--color-oxblood)" }}>
           <blockquote className="font-serif text-ink text-lg md:text-xl leading-snug">
-            Base&rsquo;s own skill states the plugins are &ldquo;built by third parties&hellip; Base
-            doesn&rsquo;t operate, endorse, or audit them.&rdquo; <span className="text-oxblood">This is that audit.</span>
+            Base&rsquo;s own skill states its plugins are &ldquo;built by third parties&hellip; Base
+            doesn&rsquo;t operate, endorse, or audit them.&rdquo; <span className="text-oxblood">This is that audit</span>
+            {" "}— extended to the wider set of Base-supporting MCP servers.
           </blockquote>
           <figcaption className="mt-3 text-[13px] leading-relaxed text-ink-muted max-w-2xl">
-            Base MCP is one gateway; its 13 named integrations are plugin specs, not separate servers —
-            <strong className="text-ink"> 8 ship their own MCP server</strong> and are independently gradeable.
-            Grades reflect the testable surface (state-changing tools aren&rsquo;t exercised by default);
-            remote-only servers cap at <strong className="text-ink-muted">B</strong> (egress unverifiable),
-            npm servers run sandboxed and can reach A, and a C-04 (adversarial-input) failure caps a grade at D.
-            These rows are <strong className="text-ink-muted">not published</strong> — no public badge or report shows them.
+            Each server is graded on its own MCP surface. Grades reflect the testable surface
+            (state-changing tools aren&rsquo;t exercised by default); remote-only servers cap at{" "}
+            <strong className="text-ink-muted">B</strong> (egress unverifiable), npm servers run
+            sandboxed and can reach A, and a C-04 (adversarial-input) failure caps a grade at D.{" "}
+            <span className="text-oxblood/70">3rd-party</span> marks a community wrapper rather than the
+            protocol&rsquo;s own server. These rows are <strong className="text-ink-muted">not published</strong>{" "}
+            — no public badge or report shows them.
           </figcaption>
         </figure>
 
@@ -212,9 +250,9 @@ export default async function BaseIndexPage() {
           <div>Graded</div>
         </div>
 
-        <Group label="Graded" rows={graded} />
-        <Group label="Own MCP · grade pending" rows={pending} />
-        <Group label="No standalone MCP" rows={noMcp} />
+        {GROUP_ORDER.map((g) => (
+          <CohortSection key={g} label={GROUP_LABEL[g]} rows={entries.filter((e) => e.group === g)} />
+        ))}
 
         <p className="mt-9 font-mono text-[11px] text-ink-faint leading-relaxed border-t hairline pt-5">
           C-01 tool-output injection · C-02 permission/egress overreach · C-03 sensitive-data handling ·
