@@ -43,6 +43,7 @@ servers:
   # Subject to the same probes as everything else once the litmus harness
   # ships — no special treatment.
   - { registry: npm, owner: "@polygraphso", name: mcp }
+  - { registry: npm, owner: "@polygraphso", name: litmus }
 
   # ── @modelcontextprotocol/* reference servers (npm) (12) ─────────────
   - { registry: npm, owner: "@modelcontextprotocol", name: server-filesystem }
@@ -65,11 +66,12 @@ servers:
   - { registry: pypi,                              name: mcp-server-time }
   - { registry: pypi,                              name: mcp-server-sentry }
 
-  # ── Well-known third-party MCP packages (4) ─────────────────────────
+  # ── Well-known third-party MCP packages (5) ─────────────────────────
   - { registry: npm, owner: "@upstash", name: context7-mcp, smithery_qualified_name: upstash/context7-mcp, glama_namespace_slug: upstash/context7-mcp }
   - { registry: npm, owner: "@notionhq", name: notion-mcp-server, smithery_qualified_name: notion }
   - { registry: npm, owner: "@cloudflare", name: mcp-server-cloudflare, smithery_qualified_name: cloudflare }
   - { registry: npm, owner: "@supabase", name: mcp-server-supabase, smithery_qualified_name: Supabase }
+  - { registry: npm, owner: "@playwright", name: mcp }
 
   # ── From the Official MCP Registry (registry.modelcontextprotocol.io) (57) 
   - { registry: npm, owner: "@adeu", name: mcp-server }

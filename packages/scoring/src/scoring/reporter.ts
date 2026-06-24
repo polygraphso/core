@@ -44,15 +44,16 @@ interface JoinedRow {
 }
 
 /**
- * Read the latest adoption_scores row per version, sorted by score
- * descending. With per-run history we need a "latest per version_id"
- * pass on the client side — done here in JS to keep the query simple.
+ * Read the latest adoption_scores row per SERVER, sorted by score descending.
+ * Input rows are ordered by computed_at desc, so the first row seen for a
+ * server is its most-recently-scored version. Deduping by server (not
+ * version_id) ensures a server that shipped a new version doesn't appear twice.
  */
 export async function readTopRanked(
   supabase: SupabaseClient,
   limit = 50,
 ): Promise<TopRankEntry[]> {
-  // Pull more than `limit` rows so we have headroom after deduping by version_id.
+  // Pull more than `limit` rows so we have headroom after deduping by server.
   // 4x is a heuristic — enough to cover a few prior runs without paginating.
   const fetchLimit = limit * 4;
   const { data, error } = await supabase
@@ -67,13 +68,16 @@ export async function readTopRanked(
     throw new Error(`readTopRanked failed: ${error.message}`);
   }
 
-  const seen = new Set<string>();
-  const latest: JoinedRow[] = [];
+  // Dedupe by server_id (first row seen = newest-scored version per server).
   // Supabase's TS inference treats FK joins as arrays even when the FK
   // guarantees a singleton at runtime — cast through unknown to bridge.
+  const seen = new Set<string>();
+  const latest: JoinedRow[] = [];
   for (const row of (data ?? []) as unknown as JoinedRow[]) {
-    if (seen.has(row.version_id)) continue;
-    seen.add(row.version_id);
+    const serverId = row.versions?.servers?.id;
+    if (!serverId) continue; // missing FK join — skip rather than throw
+    if (seen.has(serverId)) continue;
+    seen.add(serverId);
     latest.push(row);
   }
 

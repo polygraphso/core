@@ -15,6 +15,8 @@ import Link from "next/link";
 import { decodeRef, loadGrade } from "@/lib/badgeData";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import type { LitmusGrade, PolygraphDetail } from "@/lib/hostedGrades";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import { fetchAdoptionForServer, type ServerAdoption } from "@/lib/rankings";
 import { EmbedSnippets } from "./_components/EmbedSnippets";
 
 const ORIGIN = "https://polygraph.so";
@@ -22,6 +24,13 @@ const ORIGIN = "https://polygraph.so";
 // generateMetadata and the page both need the grade; cache() collapses them to
 // one query per request.
 const getGrade = cache(loadGrade);
+
+// The server's adoption score (reach), shown alongside the grade. Cached per
+// request; degrades to null when Supabase is unconfigured or the server is untracked.
+const getAdoption = cache(async (key: string): Promise<ServerAdoption | null> => {
+  const db = getSupabaseAdmin();
+  return db ? fetchAdoptionForServer(db, key) : null;
+});
 
 // Cache the rendered report for 10 min per ref; a regrade surfaces within the
 // window. The badge/card images carry the heavier, shorter cache.
@@ -110,7 +119,7 @@ export default async function McpServerPage({ params }: { params: Params }) {
 }
 
 async function Report({ serverKey }: { serverKey: string }) {
-  const result = await getGrade(serverKey);
+  const [result, adoption] = await Promise.all([getGrade(serverKey), getAdoption(serverKey)]);
   const badgeUrl = `${ORIGIN}/api/badge?server=${serverKey}`;
   const cardUrl = `${ORIGIN}/api/badge/card?server=${serverKey}`;
   const pageUrl = `${ORIGIN}/mcp/${serverKey}`;
@@ -120,31 +129,100 @@ async function Report({ serverKey }: { serverKey: string }) {
       serverKey={serverKey}
       grade={result.grade}
       detail={result.detail}
+      adoption={adoption}
       badgeUrl={badgeUrl}
       cardUrl={cardUrl}
       pageUrl={pageUrl}
     />
   ) : (
-    <Ungraded serverKey={serverKey} badgeUrl={badgeUrl} cardUrl={cardUrl} pageUrl={pageUrl} />
+    <Ungraded
+      serverKey={serverKey}
+      adoption={adoption}
+      badgeUrl={badgeUrl}
+      cardUrl={cardUrl}
+      pageUrl={pageUrl}
+    />
   );
 }
 
-const CATEGORY_LABELS: Array<{ code: "C-01" | "C-02" | "C-03"; name: string }> = [
+/** Small reach line — adoption score (0–100) + the download/stars proxy. Reach, not safety. */
+function AdoptionLine({ adoption }: { adoption: ServerAdoption | null }) {
+  if (!adoption) return null;
+  const dated = adoption.computedAt ? adoption.computedAt.slice(0, 10) : null;
+  const signal = adoption.adoptionSignal && adoption.adoptionSignal !== "—" ? adoption.adoptionSignal : null;
+  return (
+    <p
+      className="mt-6 font-mono text-[11.5px] text-ink-faint leading-relaxed"
+      title="Adoption (0–100): downloads + stars + dependents + release velocity — reach, not safety"
+    >
+      <span className="uppercase tracking-[0.14em]">Adoption</span>{" "}
+      <span className="text-ink">{Math.round(adoption.adoptionScore)}</span>
+      <span>/100</span>
+      {signal ? (
+        <>
+          {" · "}
+          <span className="text-ink-muted">{signal}</span>
+        </>
+      ) : null}
+      {dated ? <> · as of {dated}</> : null}
+    </p>
+  );
+}
+
+/** Explains the adoption score and lists the raw signals that fed it. */
+function AdoptionSignals({ adoption }: { adoption: ServerAdoption | null }) {
+  if (!adoption || adoption.metrics.length === 0) return null;
+  return (
+    <div className="mt-12 border-t hairline pt-6">
+      <h2 className="font-serif text-lg text-ink mb-2">Adoption signals</h2>
+      <p className="font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl mb-4">
+        The <span className="text-ink">{Math.round(adoption.adoptionScore)} / 100</span> adoption
+        score blends the raw signals below — downloads, stars, dependents and release velocity —
+        normalized across every tracked server. It measures{" "}
+        <span className="text-ink">reach, not safety</span>; the litmus grade is the safety
+        verdict. See the{" "}
+        <Link
+          href="/methodology"
+          className="text-ink border-b hairline border-dotted hover:text-oxblood transition-colors"
+        >
+          methodology
+        </Link>
+        .
+      </p>
+      <dl className="border-t hairline">
+        {adoption.metrics.map((m) => (
+          <div
+            key={m.label}
+            className="flex items-baseline justify-between gap-4 border-b hairline py-2"
+          >
+            <dt className="font-mono text-[12px] text-ink-muted">{m.label}</dt>
+            <dd className="font-mono text-[12px] text-ink tabular text-right">{m.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+const CATEGORY_LABELS: Array<{ code: "C-01" | "C-02" | "C-03" | "C-04"; name: string }> = [
   { code: "C-01", name: "Tool-output injection" },
   { code: "C-02", name: "Permission / egress overreach" },
   { code: "C-03", name: "Sensitive-data handling" },
+  { code: "C-04", name: "Adversarial-input handling" },
 ];
 
-function statusFor(detail: PolygraphDetail, code: "C-01" | "C-02" | "C-03"): string | null {
+function statusFor(detail: PolygraphDetail, code: "C-01" | "C-02" | "C-03" | "C-04"): string | null {
   if (code === "C-01") return detail.c01;
   if (code === "C-02") return detail.c02;
-  return detail.c03;
+  if (code === "C-03") return detail.c03;
+  return detail.c04;
 }
 
 function Graded({
   serverKey,
   grade,
   detail,
+  adoption,
   badgeUrl,
   cardUrl,
   pageUrl,
@@ -152,6 +230,7 @@ function Graded({
   serverKey: string;
   grade: LitmusGrade;
   detail: PolygraphDetail;
+  adoption: ServerAdoption | null;
   badgeUrl: string;
   cardUrl: string;
   pageUrl: string;
@@ -191,6 +270,8 @@ function Graded({
         </div>
       </div>
 
+      <AdoptionLine adoption={adoption} />
+
       {/* category breakdown */}
       <dl className="mt-10 border-t hairline">
         {CATEGORY_LABELS.map(({ code, name }) => {
@@ -225,6 +306,8 @@ function Graded({
           {detail.rationale}
         </p>
       ) : null}
+
+      <AdoptionSignals adoption={adoption} />
 
       {/* reproduce — trust rests on re-runnability, not on a claim */}
       <div className="mt-12 border-t hairline pt-6">
@@ -264,11 +347,13 @@ function Graded({
 
 function Ungraded({
   serverKey,
+  adoption,
   badgeUrl,
   cardUrl,
   pageUrl,
 }: {
   serverKey: string;
+  adoption: ServerAdoption | null;
   badgeUrl: string;
   cardUrl: string;
   pageUrl: string;
@@ -287,6 +372,8 @@ function Ungraded({
         it just means the litmus battery hasn&rsquo;t been run against it.
       </p>
 
+      <AdoptionLine adoption={adoption} />
+
       <div className="mt-8 flex flex-wrap gap-3">
         <Link
           href={`/notify?for=${serverKey}`}
@@ -301,6 +388,8 @@ function Ungraded({
           Request a grade now
         </Link>
       </div>
+
+      <AdoptionSignals adoption={adoption} />
 
       <div className="mt-12 border-t hairline pt-6">
         <h2 className="font-serif text-lg text-ink mb-1">Embed the badge anyway</h2>
