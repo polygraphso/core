@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import {
-  BANKR_SKILLS,
+  loadBankrSkills,
   loadBankrAgents,
   SKILL_COHORT_LABEL,
   SKILL_COHORT_ORDER,
@@ -14,8 +14,8 @@ import { GRADE_HEX } from "@/lib/gradeColors";
 /**
  * UNLISTED Bankr ecosystem trust index. Not linked from nav/footer, not in any
  * sitemap, robots noindex — reachable only by direct link. Skills are graded by
- * the static skill litmus (litmus-skill-v2, a snapshot embedded in lib/bankrIndex);
- * agent MCP servers are graded behaviorally (litmus-v8).
+ * the static skill litmus (litmus-skill-v2) and agent MCP servers behaviorally
+ * (litmus-v8) — both read LIVE from hosted_runs per request, never hardcoded.
  */
 export const metadata: Metadata = {
   title: "Bankr ecosystem — polygraph (private)",
@@ -30,7 +30,12 @@ const GRADE_ORDER: SkillGrade[] = ["A", "B", "D", "F"];
 const FAIL = GRADE_HEX.F;
 const PASS = GRADE_HEX.A;
 
-function Stamp({ grade }: { grade: keyof typeof GRADE_HEX }) {
+function Stamp({ grade }: { grade: keyof typeof GRADE_HEX | null }) {
+  if (!grade) {
+    return (
+      <span className="inline-flex h-8 w-8 items-center justify-center rounded-[3px] border hairline font-mono text-[13px] text-ink-faint" aria-label="ungraded">—</span>
+    );
+  }
   return (
     <span
       className="inline-flex h-8 w-8 items-center justify-center rounded-[3px] font-mono text-[15px] font-semibold text-parchment-50 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
@@ -42,7 +47,8 @@ function Stamp({ grade }: { grade: keyof typeof GRADE_HEX }) {
   );
 }
 
-function SCell({ status }: { status: "pass" | "fail" }) {
+function SCell({ status }: { status: string | null }) {
+  if (!status) return <span className="font-mono text-[11px] text-ink-faint">·</span>;
   const fail = status === "fail";
   return (
     <span className={`font-mono text-[11px] ${fail ? "font-semibold" : ""}`} style={{ color: fail ? FAIL : PASS }}>
@@ -115,9 +121,9 @@ function AgentRow({ a }: { a: BankrAgent }) {
 }
 
 export default async function BankrIndexPage() {
-  const agents = await loadBankrAgents();
-  const counts = GRADE_ORDER.map((g) => ({ g, n: BANKR_SKILLS.filter((s) => s.grade === g).length })).filter((c) => c.n > 0);
-  const featuredCount = BANKR_SKILLS.filter((s) => s.featured).length;
+  const [skills, agents] = await Promise.all([loadBankrSkills(), loadBankrAgents()]);
+  const counts = GRADE_ORDER.map((g) => ({ g, n: skills.filter((s) => s.grade === g).length })).filter((c) => c.n > 0);
+  const featuredCount = skills.filter((s) => s.featured).length;
 
   return (
     <main className="flex-1">
@@ -145,7 +151,7 @@ export default async function BankrIndexPage() {
                 {n}<span className="text-ink-faint">{g}</span>
               </span>
             ))}
-            <span className="text-ink-faint">· {BANKR_SKILLS.length} skills · {featuredCount} featured · {agents.length} agent MCP servers</span>
+            <span className="text-ink-faint">· {skills.length} skills · {featuredCount} featured · {agents.length} agent MCP servers</span>
           </div>
         </div>
 
@@ -164,7 +170,9 @@ export default async function BankrIndexPage() {
             skills — a security-scanner that documents &ldquo;ignore previous instructions&rdquo;, or onboarding
             text mentioning an API key, no longer reads as injection/exfil. The only flagged skill is{" "}
             <strong className="text-ink-muted">gitlawb (D)</strong>, a real finding (a bundled{" "}
-            <code className="font-mono">curl | sh</code> installer). These grades are a local snapshot, not
+            <code className="font-mono">curl | sh</code> installer). Every grade here is read live from its
+            hosted_runs row — reproduce any of them with{" "}
+            <code className="font-mono">npx -p @polygraphso/litmus polygraphso-litmus-skill</code> — and none are
             published onchain.
           </p>
         </div>
@@ -178,7 +186,7 @@ export default async function BankrIndexPage() {
         </div>
 
         {SKILL_COHORT_ORDER.map((cohort) => {
-          const rows = BANKR_SKILLS.filter((s) => s.cohort === cohort);
+          const rows = skills.filter((s) => s.cohort === cohort);
           if (rows.length === 0) return null;
           return (
             <div key={cohort}>
