@@ -14,7 +14,7 @@ import { GRADE_HEX } from "@/lib/gradeColors";
 /**
  * UNLISTED Bankr ecosystem trust index. Not linked from nav/footer, not in any
  * sitemap, robots noindex — reachable only by direct link. Skills are graded by
- * the static skill litmus (litmus-skill-v1, a snapshot embedded in lib/bankrIndex);
+ * the static skill litmus (litmus-skill-v2, a snapshot embedded in lib/bankrIndex);
  * agent MCP servers are graded behaviorally (litmus-v8).
  */
 export const metadata: Metadata = {
@@ -118,7 +118,7 @@ export default function BankrIndexPage() {
     <main className="flex-1">
       <article className="mx-auto max-w-4xl px-6 pt-14 pb-24 md:pt-20 md:pb-28">
         <header className="mb-9">
-          <p className="section-label mb-4">Private · litmus-skill-v1</p>
+          <p className="section-label mb-4">Private · litmus-skill-v2</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">Bankr ecosystem</h1>
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
             Static safety grades for the Bankr skill library, and behavioral grades for the agents that
@@ -147,7 +147,7 @@ export default function BankrIndexPage() {
         {/* Methodology note */}
         <div className="mb-9 border-l-2 pl-5 text-[13px] leading-relaxed text-ink-muted max-w-2xl" style={{ borderColor: "var(--color-rule)" }}>
           <p>
-            Each skill is graded by <strong className="text-ink">litmus-skill-v1</strong>, a deterministic
+            Each skill is graded by <strong className="text-ink">litmus-skill-v2</strong>, a deterministic
             STATIC scan of its <code className="font-mono text-[12px]">SKILL.md</code> + bundle:
             <strong className="text-ink"> S-01</strong> prompt-injection / context-poisoning,
             <strong className="text-ink"> S-03</strong> data-exfiltration instructions, and
@@ -155,11 +155,12 @@ export default function BankrIndexPage() {
             not behavioral proof — a skill&rsquo;s instructions are interpreted by an agent at runtime.
           </p>
           <p className="mt-2 text-ink-faint">
-            Caveat: the static scan can over-flag <em>defensive</em> skills — a security-scanner that
-            documents &ldquo;ignore previous instructions&rdquo;, or onboarding text mentioning an API key,
-            reads as injection/exfil. Of the flagged skills here, only <strong className="text-ink-muted">gitlawb (D)</strong>{" "}
-            is a real finding (a bundled <code className="font-mono">curl | sh</code> installer). These rows
-            are <strong className="text-ink-muted">not published</strong>.
+            litmus-skill-v2 corrects the static scan&rsquo;s earlier over-flagging of <em>defensive</em>{" "}
+            skills — a security-scanner that documents &ldquo;ignore previous instructions&rdquo;, or onboarding
+            text mentioning an API key, no longer reads as injection/exfil. The only flagged skill is{" "}
+            <strong className="text-ink-muted">gitlawb (D)</strong>, a real finding (a bundled{" "}
+            <code className="font-mono">curl | sh</code> installer). These grades are a local snapshot, not
+            published onchain.
           </p>
         </div>
 

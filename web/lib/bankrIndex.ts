@@ -1,6 +1,6 @@
 import "server-only";
 
-/** Static skill-safety grade (litmus-skill-v1): A = clean static scan; D/F flagged. */
+/** Static skill-safety grade (litmus-skill-v2): A = clean static scan; D/F flagged. */
 export type SkillGrade = "A" | "B" | "D" | "F";
 export type SkillCohort = "bankr" | "base" | "uniswap" | "eth-tools" | "aeon" | "other";
 
@@ -26,7 +26,7 @@ export interface BankrSkill {
 }
 
 /**
- * Static safety grades for the BankrBot/skills library (litmus-skill-v1: a
+ * Static safety grades for the BankrBot/skills library (litmus-skill-v2: a
  * deterministic STATIC scan — S-01 prompt-injection, S-03 exfil instructions,
  * S-04 dangerous bundled commands). A snapshot; reproduce any grade with
  * `npx -p @polygraphso/litmus polygraphso-litmus-skill <skill-dir>`. NOT
@@ -87,7 +87,7 @@ export const BANKR_SKILLS: BankrSkill[] = [
   { slug: "aeon-token-pick", grade: "A", cohort: "aeon", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0xb45fc8e64c" },
   { slug: "aeon-unlock-monitor", grade: "A", cohort: "aeon", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0xdc9506200e" },
   { slug: "aeon-vuln-scanner", grade: "A", cohort: "aeon", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0xb9e131bf37" },
-  { slug: "aeon-skill-security-scan", grade: "F", cohort: "aeon", featured: false, s01: "fail", s03: "pass", s04: "pass", hash: "0x815a9814e4" },
+  { slug: "aeon-skill-security-scan", grade: "A", cohort: "aeon", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x815a9814e4" },
   { slug: "0xwork", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0xd58b4dc038" },
   { slug: "agent-wormhole", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x074194908e" },
   { slug: "agenticbets", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x4781e2b51b" },
@@ -120,7 +120,6 @@ export const BANKR_SKILLS: BankrSkill[] = [
   { slug: "productclank", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x7907524300" },
   { slug: "qrcoin", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x66dba7fdf7" },
   { slug: "quicknode", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x676d31fa5f" },
-  { slug: "quotient", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x4d7ff3eb1c" },
   { slug: "signa", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x8c108e882a" },
   { slug: "signals", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0xbcd835d1c2" },
   { slug: "siwa", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x9771be6084" },
@@ -135,11 +134,12 @@ export const BANKR_SKILLS: BankrSkill[] = [
   { slug: "zapper", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x0921734184" },
   { slug: "zerion", grade: "A", cohort: "other", featured: true, s01: "pass", s03: "pass", s04: "pass", hash: "0x11b71ce559" },
   { slug: "zyfai", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x49a12c1455" },
-  { slug: "gitlawb", grade: "D", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "fail", hash: "0xab381a8dbd" },
-  { slug: "1claw", grade: "F", cohort: "other", featured: false, s01: "fail", s03: "fail", s04: "pass", hash: "0xcedc1a7885" },
-  { slug: "BOTCOIN", grade: "F", cohort: "other", featured: false, s01: "pass", s03: "fail", s04: "pass", hash: "0x2c02b24594" },
-  { slug: "hunch", grade: "F", cohort: "other", featured: false, s01: "fail", s03: "pass", s04: "pass", hash: "0x13dc081a7c" },
-  { slug: "nexus-trading-labs", grade: "F", cohort: "other", featured: false, s01: "fail", s03: "pass", s04: "pass", hash: "0x8d80757707" },];
+  { slug: "1claw", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0xcedc1a7885" },
+  { slug: "azzle", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0xbd99583e1c" },
+  { slug: "hunch", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x13dc081a7c" },
+  { slug: "nexus-trading-labs", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x8d80757707" },
+  { slug: "starchild-dao", grade: "A", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "pass", hash: "0x2ba15576f0" },
+  { slug: "gitlawb", grade: "D", cohort: "other", featured: false, s01: "pass", s03: "pass", s04: "fail", hash: "0xab381a8dbd" },];
 
 export type AgentGrade = "A" | "B" | "C" | "D" | "F";
 
