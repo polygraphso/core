@@ -28,6 +28,7 @@ import {
 } from "@/lib/skillGrades";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { FixCta } from "@/app/_components/FixCta";
 
 // generateMetadata and the page both need the grade; cache() collapses them to
 // one query per request.
@@ -191,6 +192,9 @@ function Graded({
           content hash · <span className="text-ink-muted">{hash}</span>
         </p>
       ) : null}
+
+      {/* how to fix — only when there's something to fix (non-A) */}
+      {grade !== "A" ? <FixCta target={target} /> : null}
 
       {/* source */}
       {source ? (
