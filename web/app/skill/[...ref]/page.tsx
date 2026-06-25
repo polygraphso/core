@@ -24,6 +24,7 @@ import {
   type SkillDetail,
   type SkillLitmusGrade,
   type SkillCategory,
+  type SkillFinding,
 } from "@/lib/skillGrades";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -56,6 +57,17 @@ function statusColor(status: string | null): string {
   if (status === "pass") return GRADE_HEX.A;
   if (!status) return "var(--color-ink-faint)";
   return "var(--color-oxblood)";
+}
+
+/**
+ * Finding severity → accent. Keyed to severity, NOT the category verdict: a
+ * sub-threshold finding noted on a passing check must never inherit the green
+ * "pass" color and read as approval.
+ */
+function severityColor(severity: string | null): string {
+  if (severity === "high") return "var(--color-oxblood)";
+  if (severity === "medium") return "var(--color-terracotta)";
+  return "var(--color-ink-faint)";
 }
 
 function shortHash(hash: string | null): string | null {
@@ -168,11 +180,11 @@ function Graded({
       </p>
 
       {/* category breakdown */}
-      <dl className="mt-10 border-t hairline">
+      <div className="mt-10 border-t hairline">
         {detail.categories.map((cat) => (
           <CategoryRow key={cat.code} cat={cat} />
         ))}
-      </dl>
+      </div>
 
       {hash ? (
         <p className="mt-3 font-mono text-[11px] text-ink-faint break-all">
@@ -217,41 +229,64 @@ function Graded({
   );
 }
 
-/** One S-0x row: status on the right, with the findings that drove it underneath. */
+/** One S-0x row: status on the right, with the evidence that drove it underneath. */
 function CategoryRow({ cat }: { cat: SkillCategory }) {
   const label = SKILL_CATEGORIES.find((c) => c.code === cat.code)?.name ?? "";
   return (
     <div className="border-b hairline py-3">
       <div className="flex items-baseline justify-between gap-4">
-        <dt className="font-mono text-[12px] text-ink-muted">
+        <span className="font-mono text-[12px] text-ink-muted">
           <span className="text-ink-faint">{cat.code}</span> {label}
-        </dt>
-        <dd className="font-mono text-[12px] text-right" style={{ color: statusColor(cat.status) }}>
+        </span>
+        <span className="font-mono text-[12px] text-right" style={{ color: statusColor(cat.status) }}>
           {cat.status ?? "—"}
-        </dd>
+        </span>
       </div>
       {cat.reason ? (
         <p className="mt-1.5 font-mono text-[11px] text-ink-faint leading-relaxed">{cat.reason}</p>
       ) : null}
       {cat.findings.length > 0 ? (
-        <ul className="mt-2 space-y-1.5">
+        <ul className="mt-2.5 space-y-2 border-l-2 pl-4" style={{ borderColor: "var(--color-rule-soft)" }}>
           {cat.findings.map((f, i) => (
-            <li key={i} className="font-mono text-[11px] text-ink-muted leading-relaxed">
-              <span style={{ color: statusColor(cat.status) }}>
-                {f.kind ?? "finding"}
-                {f.severity ? ` · ${f.severity}` : ""}
-              </span>
-              {f.file ? <span className="text-ink-faint"> · {f.file}</span> : null}
-              {f.match ? (
-                <span className="block mt-0.5 break-all text-ink-faint">
-                  <span className="text-ink-muted">{f.match}</span>
-                </span>
-              ) : null}
-            </li>
+            <FindingChip key={i} finding={f} />
           ))}
         </ul>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * One flagged location as a quoted evidence chip — the report's load-bearing
+ * detail. The matched literal (or its bounded context window, for text findings)
+ * reads as an artifact, not prose; severity, not the verdict, drives the accent.
+ */
+function FindingChip({ finding }: { finding: SkillFinding }) {
+  // Command findings carry the literal in `match` + a file; text findings are
+  // clearer shown with the surrounding context window the scan captured.
+  const snippet = (finding.file ? finding.match : finding.context ?? finding.match)?.trim();
+  return (
+    <li className="rounded-sm border hairline bg-parchment-50 px-3 py-2">
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span
+          className="font-mono text-[10px] uppercase tracking-[0.12em]"
+          style={{ color: severityColor(finding.severity) }}
+        >
+          {finding.kind ?? "finding"}
+        </span>
+        {finding.severity ? (
+          <span className="font-mono text-[10px] text-ink-faint">· {finding.severity}</span>
+        ) : null}
+        {finding.file ? (
+          <span className="font-mono text-[10px] text-ink-faint break-all">· {finding.file}</span>
+        ) : null}
+      </div>
+      {snippet ? (
+        <code className="mt-1.5 block font-mono text-[11.5px] text-ink-muted break-all leading-relaxed">
+          {snippet}
+        </code>
+      ) : null}
+    </li>
   );
 }
 
