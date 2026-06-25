@@ -156,12 +156,16 @@ export interface BankrAgent {
 }
 
 /**
- * Agents from bankr.bot/agents that ship their OWN standalone MCP server. The
- * ecosystem standardizes on skills + x402 + ERC-8004, so connectable MCP servers
- * are rare — a full sweep of the directory surfaced only these three.
+ * Agents from bankr.bot/agents that ship their OWN MCP server. The ecosystem
+ * standardizes on skills + x402 + ERC-8004, so connectable MCP servers are rare —
+ * a deep sweep of all 68 curated agents surfaced these. Only nookplot and Blue Agent
+ * publish a server litmus can launch from a bare npm ref (graded below); gitlawb,
+ * Azzle, and VIGIL ship real servers that aren't gradeable as-published.
  */
 export const BANKR_AGENTS: BankrAgent[] = [
   { project: "nookplot", handle: "nookplot", mcpRef: "npm/@nookplot/mcp", grade: "F", c01: "fail", c02: "pass", c03: "pass", note: "C-01 tool-output injection (markdown-trick)" },
+  { project: "Blue Agent", handle: "blockyagent", mcpRef: "npm/@blueagent/skill", grade: "A", c01: "pass", c02: "pass", c03: "pass", note: "50-tool stdio MCP server; all categories pass (litmus-v8)" },
   { project: "gitlawb", handle: "Gitlawb", mcpRef: "stdio · gl mcp serve", grade: null, c01: null, c02: null, c03: null, note: "ships a standard stdio MCP server (24 git/identity tools), but the gl CLI installs only via the project's curl|sh installer — the same one its skill grades D — so not gradeable as-published" },
+  { project: "Azzle", handle: "dabusthebuilder", mcpRef: "npm/@azzle/agents", grade: null, c01: null, c02: null, c03: null, note: "ships a stdio MCP server (~10 azzle_* tools at agents/mcp/server.mjs), but the package's default entry isn't the server — not gradeable from a bare npm ref" },
   { project: "VIGIL", handle: "vigilcodes", mcpRef: "https://mcp.vigil.codes", grade: null, c01: null, c02: null, c03: null, note: "ships an MCP server, but a non-standard transport (no MCP initialize handshake) — not gradeable as-is" },
 ];
