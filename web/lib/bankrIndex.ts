@@ -1,5 +1,13 @@
 import "server-only";
 
+import { getSupabaseAdmin } from "@/lib/supabase";
+import {
+  detailFromRow,
+  HOSTED_GRADE_COLUMNS,
+  type HostedGradeRow,
+  type PolygraphDetail,
+} from "@/lib/hostedGrades";
+
 /** Static skill-safety grade (litmus-skill-v2): A = clean static scan; D/F flagged. */
 export type SkillGrade = "A" | "B" | "D" | "F";
 export type SkillCohort = "bankr" | "base" | "uniswap" | "eth-tools" | "aeon" | "other";
@@ -143,29 +151,74 @@ export const BANKR_SKILLS: BankrSkill[] = [
 
 export type AgentGrade = "A" | "B" | "C" | "D" | "F";
 
-export interface BankrAgent {
+/** Static metadata for an agent's MCP server. The letter grade is NOT stored here —
+ *  it is read live from `hosted_runs` per request (see {@link loadBankrAgents}), the
+ *  same way /base works, so the page can never drift from the grader. `target` is the
+ *  hosted_runs target to look up; null = not gradeable as-published (no row exists). */
+export interface BankrAgentMeta {
   project: string;
   handle: string;
   mcpRef: string;
-  /** Behavioral grade (litmus-v8); null when the server isn't gradeable as-is. */
+  /** hosted_runs `target` for the live grade lookup; null when ungradeable as-published. */
+  target: string | null;
+  note: string;
+}
+
+/** A metadata row joined to its LIVE grade (null when ungradeable / not yet graded). */
+export interface BankrAgent extends BankrAgentMeta {
   grade: AgentGrade | null;
   c01: string | null;
   c02: string | null;
   c03: string | null;
-  note: string;
 }
 
 /**
  * Agents from bankr.bot/agents that ship their OWN MCP server. The ecosystem
  * standardizes on skills + x402 + ERC-8004, so connectable MCP servers are rare —
- * a deep sweep of all 68 curated agents surfaced these. Only nookplot and Blue Agent
- * publish a server litmus can launch from a bare npm ref (graded below); gitlawb,
- * Azzle, and VIGIL ship real servers that aren't gradeable as-published.
+ * a deep sweep of all 68 curated agents surfaced these. nookplot and Blue Agent
+ * publish a server litmus can launch from a bare npm ref (graded LIVE below); gitlawb,
+ * Azzle, and VIGIL ship real servers that aren't gradeable as-published (target=null).
  */
-export const BANKR_AGENTS: BankrAgent[] = [
-  { project: "nookplot", handle: "nookplot", mcpRef: "npm/@nookplot/mcp", grade: "F", c01: "fail", c02: "pass", c03: "pass", note: "C-01 tool-output injection (markdown-trick)" },
-  { project: "Blue Agent", handle: "blockyagent", mcpRef: "npm/@blueagent/skill", grade: "A", c01: "pass", c02: "pass", c03: "pass", note: "50-tool stdio MCP server; all categories pass (litmus-v8)" },
-  { project: "gitlawb", handle: "Gitlawb", mcpRef: "stdio · gl mcp serve", grade: null, c01: null, c02: null, c03: null, note: "ships a standard stdio MCP server (24 git/identity tools), but the gl CLI installs only via the project's curl|sh installer — the same one its skill grades D — so not gradeable as-published" },
-  { project: "Azzle", handle: "dabusthebuilder", mcpRef: "npm/@azzle/agents", grade: null, c01: null, c02: null, c03: null, note: "ships a stdio MCP server (~10 azzle_* tools at agents/mcp/server.mjs), but the package's default entry isn't the server — not gradeable from a bare npm ref" },
-  { project: "VIGIL", handle: "vigilcodes", mcpRef: "https://mcp.vigil.codes", grade: null, c01: null, c02: null, c03: null, note: "ships an MCP server, but a non-standard transport (no MCP initialize handshake) — not gradeable as-is" },
+export const BANKR_AGENTS_META: BankrAgentMeta[] = [
+  { project: "nookplot", handle: "nookplot", mcpRef: "npm/@nookplot/mcp", target: "npm/@nookplot/mcp", note: "decentralized agent-coordination network" },
+  { project: "Blue Agent", handle: "blockyagent", mcpRef: "npm/@blueagent/skill", target: "npm/@blueagent/skill", note: "50-tool stdio MCP server (security OS for agents)" },
+  { project: "gitlawb", handle: "Gitlawb", mcpRef: "stdio · gl mcp serve", target: null, note: "ships a standard stdio MCP server (24 git/identity tools), but the gl CLI installs only via the project's curl|sh installer — the same one its skill grades D — so not gradeable as-published" },
+  { project: "Azzle", handle: "dabusthebuilder", mcpRef: "npm/@azzle/agents", target: null, note: "ships a stdio MCP server (~10 azzle_* tools at agents/mcp/server.mjs), but the package's default entry isn't the server — not gradeable from a bare npm ref" },
+  { project: "VIGIL", handle: "vigilcodes", mcpRef: "https://mcp.vigil.codes", target: null, note: "ships an MCP server, but a non-standard transport (no MCP initialize handshake) — not gradeable as-is" },
 ];
+
+/** Latest grade for one `target`, ANY publish state, newest completion first.
+ *  Mirrors /base's latestForTarget: an unlisted page reads grade-only rows directly,
+ *  so we never hardcode a letter and never need to publish a third-party grade. */
+async function latestForTarget(
+  db: ReturnType<typeof getSupabaseAdmin>,
+  target: string,
+): Promise<PolygraphDetail | null> {
+  if (!db) return null;
+  // Tolerate a trailing-slash normalization difference in the stored target.
+  const variants = Array.from(
+    new Set([target, target.replace(/\/+$/, ""), target.endsWith("/") ? target : `${target}/`]),
+  );
+  const { data, error } = await db
+    .from("hosted_runs")
+    .select(HOSTED_GRADE_COLUMNS)
+    .in("target", variants)
+    .eq("status", "complete")
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  return detailFromRow(data as HostedGradeRow)?.detail ?? null;
+}
+
+/** The agent rows joined to their LIVE grades from hosted_runs (any publish state),
+ *  so the page stays in lockstep with the grader instead of hardcoding a letter. */
+export async function loadBankrAgents(): Promise<BankrAgent[]> {
+  const db = getSupabaseAdmin();
+  const out: BankrAgent[] = [];
+  for (const m of BANKR_AGENTS_META) {
+    const d = m.target ? await latestForTarget(db, m.target) : null;
+    out.push({ ...m, grade: d?.grade ?? null, c01: d?.c01 ?? null, c02: d?.c02 ?? null, c03: d?.c03 ?? null });
+  }
+  return out;
+}

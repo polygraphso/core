@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   BANKR_SKILLS,
-  BANKR_AGENTS,
+  loadBankrAgents,
   SKILL_COHORT_LABEL,
   SKILL_COHORT_ORDER,
   type BankrSkill,
@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   title: "Bankr ecosystem — polygraph (private)",
   robots: { index: false, follow: false },
 };
+
+// Agent grades are read live from hosted_runs per request (like /base) — render
+// per-request so the page never serves a stale snapshot.
+export const dynamic = "force-dynamic";
 
 const GRADE_ORDER: SkillGrade[] = ["A", "B", "D", "F"];
 const FAIL = GRADE_HEX.F;
@@ -110,7 +114,8 @@ function AgentRow({ a }: { a: BankrAgent }) {
   );
 }
 
-export default function BankrIndexPage() {
+export default async function BankrIndexPage() {
+  const agents = await loadBankrAgents();
   const counts = GRADE_ORDER.map((g) => ({ g, n: BANKR_SKILLS.filter((s) => s.grade === g).length })).filter((c) => c.n > 0);
   const featuredCount = BANKR_SKILLS.filter((s) => s.featured).length;
 
@@ -140,7 +145,7 @@ export default function BankrIndexPage() {
                 {n}<span className="text-ink-faint">{g}</span>
               </span>
             ))}
-            <span className="text-ink-faint">· {BANKR_SKILLS.length} skills · {featuredCount} featured · {BANKR_AGENTS.length} agent MCP servers</span>
+            <span className="text-ink-faint">· {BANKR_SKILLS.length} skills · {featuredCount} featured · {agents.length} agent MCP servers</span>
           </div>
         </div>
 
@@ -184,8 +189,8 @@ export default function BankrIndexPage() {
         })}
 
         {/* Agent MCP servers */}
-        <div className="section-label pt-9 pb-1 px-3">Agent MCP servers <span className="text-ink-faint">· {BANKR_AGENTS.length}</span></div>
-        {BANKR_AGENTS.map((a) => <AgentRow key={a.project} a={a} />)}
+        <div className="section-label pt-9 pb-1 px-3">Agent MCP servers <span className="text-ink-faint">· {agents.length}</span></div>
+        {agents.map((a) => <AgentRow key={a.project} a={a} />)}
 
         <p className="mt-9 font-mono text-[11px] text-ink-faint leading-relaxed border-t hairline pt-5">
           Skills: S-01 prompt-injection · S-03 exfil instructions · S-04 dangerous bundled commands (static,
