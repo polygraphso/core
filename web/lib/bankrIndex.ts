@@ -158,9 +158,10 @@ export interface BankrAgent {
 /**
  * Agents from bankr.bot/agents that ship their OWN standalone MCP server. The
  * ecosystem standardizes on skills + x402 + ERC-8004, so connectable MCP servers
- * are rare — a sweep of the directory surfaced only these.
+ * are rare — a full sweep of the directory surfaced only these three.
  */
 export const BANKR_AGENTS: BankrAgent[] = [
   { project: "nookplot", handle: "nookplot", mcpRef: "npm/@nookplot/mcp", grade: "F", c01: "fail", c02: "pass", c03: "pass", note: "C-01 tool-output injection (markdown-trick)" },
+  { project: "gitlawb", handle: "Gitlawb", mcpRef: "stdio · gl mcp serve", grade: null, c01: null, c02: null, c03: null, note: "ships a standard stdio MCP server (24 git/identity tools), but the gl CLI installs only via the project's curl|sh installer — the same one its skill grades D — so not gradeable as-published" },
   { project: "VIGIL", handle: "vigilcodes", mcpRef: "https://mcp.vigil.codes", grade: null, c01: null, c02: null, c03: null, note: "ships an MCP server, but a non-standard transport (no MCP initialize handshake) — not gradeable as-is" },
 ];
