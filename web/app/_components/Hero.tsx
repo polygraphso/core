@@ -79,7 +79,7 @@ export function Hero() {
               href="#checks"
               className="font-mono text-xs text-ink-faint border-b hairline border-dotted hover:text-ink transition-colors"
             >
-              See completed checks ↓
+              See recent grades ↓
             </a>
           </div>
 

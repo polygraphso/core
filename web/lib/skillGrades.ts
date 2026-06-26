@@ -178,6 +178,63 @@ export function detailFromSkillRow(row: SkillGradeRow): { grade: SkillLitmusGrad
   };
 }
 
+/** One published skill, flattened for the Skills tab of the grades index. */
+export interface SkillIndexRow {
+  /** Canonical `github/<owner>/<repo>#<subpath>` ref. */
+  ref: string;
+  /** Human display name (the subpath, else the repo). */
+  displayName: string;
+  /** URL-path-safe form for `/skill/<path>`. */
+  path: string;
+  grade: SkillLitmusGrade;
+  s01: string | null;
+  s03: string | null;
+  s04: string | null;
+}
+
+/**
+ * Every published skill grade as an index row, newest-published first, one row
+ * per skill (newest published run wins). Gated on `published_at` so the Skills
+ * tab shows the same intentionally-published set the homepage Checks section did
+ * — not every internal run. Empty when Supabase is unconfigured.
+ */
+export async function fetchPublishedSkillGrades(
+  db: SupabaseClient | null,
+): Promise<SkillIndexRow[]> {
+  if (!db) return [];
+  const { data, error } = await db
+    .from("hosted_runs")
+    .select(SKILL_GRADE_COLUMNS)
+    .eq("target_kind", "skill")
+    .eq("status", "complete")
+    .not("published_at", "is", null)
+    .order("published_at", { ascending: false });
+  if (error) {
+    console.warn("[skillGrades] published skills read soft-failed:", error.message);
+    return [];
+  }
+  const rows = (data ?? []) as SkillGradeRow[];
+  const seen = new Set<string>();
+  const out: SkillIndexRow[] = [];
+  for (const row of rows) {
+    if (seen.has(row.target)) continue; // newest published per skill wins
+    const detail = detailFromSkillRow(row);
+    if (!detail) continue;
+    seen.add(row.target);
+    const status = new Map(detail.detail.categories.map((c) => [c.code, c.status]));
+    out.push({
+      ref: row.target,
+      displayName: skillDisplayName(row.target),
+      path: skillRefToPath(row.target),
+      grade: detail.grade,
+      s01: status.get("S-01") ?? null,
+      s03: status.get("S-03") ?? null,
+      s04: status.get("S-04") ?? null,
+    });
+  }
+  return out;
+}
+
 /**
  * Latest complete skill grade for a canonical target, or null. Reads grade-only
  * rows (no `published_at` gate — skill grades aren't minted), newest run first.

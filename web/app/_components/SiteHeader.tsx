@@ -4,11 +4,15 @@
 
 import { MobileNav } from "./MobileNav";
 
+// "Grades" is the single explicit entry point to every published grade (the
+// /rankings index, now MCP servers + skills). The old "Index" + "Checks" pair
+// overlapped — both listed graded targets — so "Checks" is gone and the homepage
+// carousel links onward to /rankings. The remaining #anchors jump to homepage
+// sections; the rest navigate.
 const NAV: Array<{ href: string; label: string }> = [
+  { href: "/rankings", label: "Grades" },
   { href: "/#install", label: "Install" },
-  { href: "/#checks", label: "Checks" },
   { href: "/#badge", label: "Get a badge" },
-  { href: "/rankings", label: "Index" },
   { href: "/request", label: "Request" },
   { href: "/methodology", label: "Methodology" },
 ];

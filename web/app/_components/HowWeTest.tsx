@@ -46,43 +46,6 @@ const probes: Probe[] = [
   },
 ];
 
-// Grade rubric — mirrors litmus-test.md §5. The scale is A–F; only
-// A / B / D / F are reachable, so C renders as reserved. No E:
-// letter scales jump D → F by convention.
-const grades: Array<{
-  letter: string;
-  colorVar: string;
-  when: string;
-  reserved?: boolean;
-}> = [
-  {
-    letter: "A",
-    colorVar: "var(--color-grade-a)",
-    when: "Passed every check inside the sandbox.",
-  },
-  {
-    letter: "B",
-    colorVar: "var(--color-grade-b)",
-    when: "Passed the hijack, data-leak, and adversarial-input checks; its network traffic couldn't be verified (remote server, or no sandbox). Capped by design — unverified is not verified-good.",
-  },
-  {
-    letter: "C",
-    colorVar: "var(--color-grade-c)",
-    when: "Reserved — nothing maps to it yet. Results jump from a capped B to a contained-failure D. Future checks may claim it.",
-    reserved: true,
-  },
-  {
-    letter: "D",
-    colorVar: "var(--color-grade-d)",
-    when: "Reached beyond what it declared, lied about a tool being read-only, or broke under hostile input — a crash, internals leak, or amplified attack (C-02 / C-04 fail), with no hijack or leak. Serious, but not necessarily theft.",
-  },
-  {
-    letter: "F",
-    colorVar: "var(--color-grade-f)",
-    when: "Tried to hijack the agent, or leaked data (C-01 / C-03 fail). Disqualifying — these directly harm the agent that trusted the server.",
-  },
-];
-
 export function HowWeTest() {
   return (
     <section
@@ -90,7 +53,7 @@ export function HowWeTest() {
       className="mx-auto max-w-6xl px-6 py-20 md:py-28 scroll-mt-12"
     >
       <SectionHeader
-        number="§ 02"
+        number="§ 03"
         label="How we polygraph"
         title="How a tool earns its grade."
       >
@@ -140,59 +103,20 @@ export function HowWeTest() {
         })}
       </ol>
 
-      {/* Grade rubric — litmus-test.md §5 */}
-      <figure className="mt-12 border hairline bg-parchment-50 max-w-3xl">
-        <figcaption className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-          <span>Table 1 — Grade rubric · litmus-v10</span>
-          <span className="hidden sm:inline">scale a–f</span>
-        </figcaption>
-        <ul>
-          {grades.map((g) => (
-            <li
-              key={g.letter}
-              className={`flex gap-4 px-4 py-4 border-b hairline ${
-                g.reserved ? "opacity-60" : ""
-              }`}
-            >
-              <span
-                className="font-serif text-2xl leading-none w-7 shrink-0 tabular"
-                style={{ color: g.colorVar }}
-              >
-                {g.letter}
-              </span>
-              <span className="text-ink-muted text-sm leading-relaxed">
-                {g.when}
-              </span>
-            </li>
-          ))}
-        </ul>
-        <p className="px-4 py-3 font-mono text-[11px] text-ink-faint leading-relaxed">
-          There is no E &mdash; the scale runs A to F, skipping E as letter
-          grades conventionally do.
-        </p>
-      </figure>
-
-      <p className="mt-8 max-w-2xl text-ink-muted text-sm leading-relaxed">
-        Every grade is pinned to the exact version of the tool we tested: a
-        sha256{" "}
+      <p className="mt-10 max-w-2xl text-ink-muted text-sm leading-relaxed">
+        Grades run <span className="text-ink">A&ndash;F</span>{" "}
+        &mdash; capped at B when egress can&rsquo;t be verified, down to D for overreach or a crash,
+        F for a hijack or leak. Each grade is pinned to a sha256{" "}
         <span className="font-mono text-[0.92em] text-ink">fingerprint</span>{" "}
-        of its tool definitions. If the server later changes a tool &mdash; a
-        rug pull &mdash; the fingerprint stops matching and the grade goes
-        stale automatically.
-      </p>
-
-      <p className="mt-4 max-w-2xl text-ink-muted text-sm leading-relaxed">
-        Probes evolve as agents do &mdash; new failure modes get new probes.
-        The methodology is versioned;{" "}
-        <span className="font-mono text-[0.92em] text-ink">litmus-v10</span>{" "}
-        travels with every grade it produced. Read{" "}
+        of the tool surface, so a later change &mdash; a rug pull &mdash; makes it stale
+        automatically. Read the full{" "}
         <a
-          href="/methodology"
+          href="/methodology#rubric"
           className="text-ink border-b hairline border-dotted hover:text-oxblood transition-colors"
         >
-          the full spec
-        </a>
-        .
+          grade rubric
+        </a>{" "}
+        and methodology.
       </p>
     </section>
   );
