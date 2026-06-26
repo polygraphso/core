@@ -165,7 +165,7 @@ pypi/mcp-server-fetch`}
     "c02": "pass",
     "c03": "pass",
     "tool_defs_fingerprint": "0x256a…66db6",
-    "methodology_version": "litmus-v5",
+    "methodology_version": "litmus-v10",
     "resolved_version": "1.4.0",
     "rationale": "All three categories passed.",
     "computed_at": "2026-06-11T14:14:04Z"

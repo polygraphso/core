@@ -2,14 +2,14 @@
 
 MCP server for [polygraph.so](https://polygraph.so) — independent, lab-evaluated trust grades for MCP servers, exposed as native tools to any MCP client (Claude Desktop, Cursor, and others).
 
-A polygraph is the result polygraph.so issues for an MCP server: an adoption tier (Top 10 / 25 / 50 / 100), and — once behavioral evaluation has run — an A–F grade plus an evidence URL. This package lets an agent check the polygraph for a server before recommending or installing it.
+A polygraph is the behavioral trust grade polygraph.so issues for an MCP server: a letter grade (A/B/D/F) from an adversarial litmus test, backed by per-check results, a tool-surface fingerprint, and an evidence URL anyone can re-run. This package lets an agent check the polygraph for a server before recommending or installing it.
 
 ## Tools
 
-- **`check_server`** — look up the polygraph for a specific MCP server (`server_ref` like `npm/@modelcontextprotocol/server-filesystem`).
-- **`list_servers`** — enumerate every server polygraph tracks, tier-sorted.
+- **`check_server`** — look up the published polygraph for a specific MCP server (`server_ref` like `npm/@modelcontextprotocol/server-filesystem`). An optional `@<version>` suffix looks up that exact version.
+- **`list_servers`** — enumerate every server polygraph has graded, sorted by grade (A first).
 
-`notify_about` (request a polygraph for an untracked server) lands in **v0.2** — the underlying endpoint isn't published yet.
+A `notify_about` tool (request a polygraph for an untracked server) is **not implemented yet**; for an untracked server `check_server` returns a `notify_url` the user can subscribe to instead.
 
 ## Install in Claude Desktop
 
@@ -66,21 +66,33 @@ polygraphso-mcp   # talks JSON-RPC on stdin/stdout
 
 ## What it returns
 
-`check_server({ server_ref: "npm/lodash" })`:
+`check_server({ server_ref: "npm/@modelcontextprotocol/server-filesystem" })` — a graded server:
 
 ```json
 {
-  "status": "tracked",
-  "adoption_tier": "top10",
-  "polygraph": null,
-  "notify_url": "https://polygraph.so/notify?for=npm/lodash"
+  "status": "graded",
+  "polygraph": "A",
+  "polygraph_detail": {
+    "methodology_version": "litmus-v10",
+    "resolved_version": "2.1.0",
+    "evidence_url": "https://polygraph.so/mcp/npm/@modelcontextprotocol/server-filesystem"
+  }
 }
 ```
 
-- `status` is `"tracked"` if polygraph is evaluating the server, `"not_available"` otherwise.
-- `adoption_tier` is `top10` / `top25` / `top50` / `top100`, or `null` if the server is tracked but unranked.
-- `polygraph` is `null` until the behavioral evaluation lands (v0 has the adoption side; the litmus harness is shipping next).
-- `notify_url` is where a user can subscribe to be notified when the polygraph is published.
+An ungraded server:
+
+```json
+{
+  "status": "not_available",
+  "notify_url": "https://polygraph.so/notify?for=npm/obscure-mcp-server"
+}
+```
+
+- `status` is `"graded"` when a published grade exists, `"not_available"` otherwise.
+- `polygraph` is the published grade — `"A" | "B" | "D" | "F"` (no C).
+- `polygraph_detail` carries the per-check results (C-01/C-02/C-03), the tool-surface fingerprint, the methodology version, and `resolved_version` (the version the grade was run against).
+- `notify_url` (on `not_available`) is where a user can subscribe to be notified when the polygraph is published.
 
 `list_servers()`:
 
@@ -89,8 +101,7 @@ polygraphso-mcp   # talks JSON-RPC on stdin/stdout
   "servers": [
     {
       "server_ref": "npm/@modelcontextprotocol/server-filesystem",
-      "adoption_tier": "top10",
-      "polygraph": null
+      "polygraph": "A"
     }
   ],
   "total": 75
