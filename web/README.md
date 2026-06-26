@@ -1,6 +1,6 @@
-# web — polygraph.so landing page
+# web — polygraph.so site
 
-Launch landing page. Built against `landing-brief.md` in the strategy folder, with `pivot-2026-05-15.md` (three-layer architecture) and `brand-foundation.md` (voice / positioning / principles) as supporting source-of-truth.
+The polygraph.so site (Next.js 16, App Router): the landing page plus the MCP Security Index, per-server and per-skill grade reports, ecosystem indices, blog, and the embeddable grade badge. Voice, positioning, and standing conventions live in the repo's `CLAUDE.md` and `../README.md`; the behavioral methodology is the litmus spec, mirrored at [polygraph.so/methodology](https://polygraph.so/methodology).
 
 ## Stack
 
@@ -24,27 +24,27 @@ pnpm start        # serve the built output
 ```
 app/
 ├── layout.tsx              # fonts + metadata + html shell
-├── page.tsx                # composes the sections in order
+├── page.tsx                # the landing page (composes the sections below)
 ├── globals.css             # design tokens, paper grain, animations
-├── icon.svg                # polygraph waveform favicon
-├── _components/
-│   ├── Hero.tsx            # nav strip + tagline H1 + positioning subhead + CTAs + install card
-│   ├── InstallCard.tsx     # copy-paste $ npx polygraphso check + lookup-flow steps
-│   ├── PolygraphTrace.tsx  # oscillograph divider SVG
-│   ├── Problem.tsx         # § 01
-│   ├── HowWeTest.tsx       # § 02 — categories mirror litmus-test.md
-│   ├── WhereWeSit.tsx      # § 03 — three-axis table
-│   ├── ChecksSoFar.tsx     # § 03 "Browse the checks we've run" — fetches published hosted_runs (server)
-│   ├── ChecksSoFarView.tsx # the run browser: search + All/MCP servers/Skills type filter
-│   ├── checksMapper.ts     # hosted_runs row → Run; maps server (C-01..C-04) AND skill (S-01/S-03/S-04) rows
-│   ├── GradesUpdates.tsx   # quiet down-page "notify me when grades publish" tile
-│   ├── Footer.tsx          # tagline + vision + contact + disclosures
-│   ├── SectionHeader.tsx
-│   ├── MinimalSignup.tsx   # single-field signup, posts to /api/waitlist
-│   └── WaitlistForm.tsx    # legacy two-field form (currently unused)
-└── api/
-    └── waitlist/route.ts   # v0 placeholder — validates + logs. Swap before launch.
+├── rankings/               # the MCP Security Index — adoption-ranked, grade column
+├── mcp/[...ref]/           # per-server grade report
+├── skill/[...ref]/         # per-skill grade report
+├── bankr/ · base/          # unlisted ecosystem indices
+├── fix/                    # remediation guidance for a non-A report
+├── notify/ · request/      # demand funnels (notify-on-grade · request-a-grade)
+├── brand-kit/ · blog/ · docs/api/   # brand assets · blog · API reference
+├── _og/                    # OG image generation (next/og)
+├── _components/            # shared UI — key ones below
+└── api/                    # cli/check · cli/list · badge (+ /badge/card) · grade-requests · waitlist · notify
 ```
+
+Key `_components`: `Hero` / `HeroPolygraph` / `Install` (landing hero + CLI install),
+`HowWeTest` (§02, mirrors the litmus categories), `WhereWeSit` (§03 positioning),
+`ChecksSoFar` / `ChecksSoFarView` / `checksMapper` (the published-grade browser — reads
+`hosted_runs` and maps both server `C-01..C-04` and skill `S-01/S-03/S-04` rows),
+`EmbedYourGrade` (badge/card embed snippets), `FixCta` (the "How to fix" link on non-A
+reports), `SiteHeader` / `MobileNav` / `Footer` (chrome). `WaitlistForm` is a legacy
+two-field form (unused); `MinimalSignup` posts to `/api/waitlist`.
 
 ## Design system
 
@@ -52,28 +52,17 @@ Tokens live in `app/globals.css` under `@theme inline`. Palette is **warm parchm
 
 Aesthetic target: arXiv-preprint / lab-report **for the chrome**, product-page **for the posture**. Avoid SaaS marketing tropes — no padlock icons, no shield iconography, no green-checkmark trust badges, no purple gradients.
 
-## Launch posture
+## Current state
 
-Page is built for **launch-with-product**. Hero leads with the tagline ("We polygraph AI tools so you don't have to."), positioning sits as the sub-headline ("Independent, lab-evaluated trust grades for MCP servers and the agents that use them. Free public grades. CLI for runtime checks."). The single primary CTA is **Install the CLI**. The waitlist demotes to a single-field "notify me when grades publish" tile down-page. "PREPRINT V0.1 / DEPOSITED" framing is off the main landing.
+Shipped and live. The landing hero leads with the tagline ("We polygraph AI tools so you don't have to."), positioning as the sub-headline, and a single primary CTA — **Install the CLI** (`npx polygraphso check <mcp-server>`). Behavioral grades are live across the site, read from the shared `hosted_runs` table: the MCP Security Index (`/rankings`), per-server (`/mcp`) and per-skill (`/skill`) reports, and the homepage grade browser (`ChecksSoFar`). The `polygraphso` CLI and `@polygraphso/mcp` are published; the `/methodology` page is live. Per the three-layer model, **the CLI is a thin lookup over precomputed grades — it does not run probes locally**; an unevaluated server returns "not available yet" with a notify link.
 
-The `Hero` includes a copy of `npx polygraphso check <mcp-server>` plus a three-step explanation of what the CLI does. Per pivot's three-layer model: **the CLI is a thin lookup over precomputed grades (layer 3) — it does not run probes locally.** If a server isn't yet evaluated, the CLI returns `queued, position #N` and notifies on completion.
+Open follow-ups:
 
-## Launch dependencies (gate v1 ship)
-
-The brief is firm: *if real grades aren't ready, the page isn't ready.* Track both:
-
-- [ ] **`npx polygraphso` CLI binary is publishable.** The hero install card surfaces `npx polygraphso check <mcp-server>` as the primary CTA — that command needs to actually work. Replace the three-step explainer with embedded asciinema of a real run when available.
-- [ ] **Grading pipeline has produced ≥1 Top-10 real grade with a working evidence link.** The Public-grades matrix (formerly `Top50.tsx`) has been **pulled** until this lands — an empty grid actively undercuts credibility per the brief. Restore the section with real `cells` data when the pipeline ships output. Renumber subsequent sections accordingly.
-
-## Before launch (rest of the checklist)
-
-- [ ] Swap `app/api/waitlist/route.ts` for a real subscription endpoint (ConvertKit / Buttondown / Loops / Postgres). The `MinimalSignup` component posts `{ email, source }`.
-- [ ] Wire the methodology link in `HowWeTest.tsx` (and footer) to the published `/methodology` page.
-- [ ] Add a real OG image (currently inferred from metadata).
-- [ ] Lighthouse audit: a11y must pass.
+- `app/api/waitlist/route.ts` stays a lightweight validate+log endpoint — the `/notify` and `/request` funnels carry the real demand capture (`notify_requests` / `grade_requests`).
+- Onchain minting is built but not yet wired, so grades publish without an attestation for now (they become onchain-verifiable when minting goes live).
 
 ## Spec source-of-truth
 
-`§ 02 How we test` in `app/_components/HowWeTest.tsx` is anchored to `litmus-test.md` (litmus-v5). Four categories, nine probes, all live: **C-01** (1.1, 1.2, 1.3), **C-02** (2.1, 2.2), **C-03** (4.1, 4.2), **C-04** (3.1, 3.2). **Secrets handling is not in the spec** — do not re-add without updating the spec first.
+`§ 02 How we test` in `app/_components/HowWeTest.tsx` is anchored to the current litmus methodology (see the `/methodology` page; presently `litmus-v10`). Four categories, nine probes, all live: **C-01** (1.1, 1.2, 1.3), **C-02** (2.1, 2.2), **C-03** (4.1, 4.2), **C-04** (3.1, 3.2). **Secrets handling is not in the spec** — do not re-add without updating the spec first.
 
-`§ 03 Browse the checks we've run` (`ChecksSoFar` / `ChecksSoFarView`) renders **both** MCP-server grades and **Claude Code skill** grades from `hosted_runs`, with a search box and an `All / MCP servers / Skills` type filter. Skill grades come from a **separate** methodology, `litmus-skill-v1` — a deterministic static scan (**S-01** prompt injection, **S-03** data-exfiltration instructions, **S-04** dangerous commands in bundled scripts) anchored by a whole-directory **content hash**, plus an advisory, never-lettered quality signal. A skill **A means static-clean, not behavioral proof.** The server-vs-skill split keys off `target_kind` and the per-kind row mapping lives in `checksMapper.ts` (server `C-01..C-04` vs skill `S-01/S-03/S-04`).
+`§ 03 Browse the checks we've run` (`ChecksSoFar` / `ChecksSoFarView`) renders **both** MCP-server grades and **Claude Code skill** grades from `hosted_runs`, with a search box and an `All / MCP servers / Skills` type filter. Skill grades come from a **separate** methodology, `litmus-skill-v2` — a deterministic static scan (**S-01** prompt injection, **S-03** data-exfiltration instructions, **S-04** dangerous commands in bundled scripts) anchored by a whole-directory **content hash**, plus an advisory, never-lettered quality signal. A skill **A means static-clean, not behavioral proof.** The server-vs-skill split keys off `target_kind` and the per-kind row mapping lives in `checksMapper.ts` (server `C-01..C-04` vs skill `S-01/S-03/S-04`).

@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Methodology — litmus-v5",
+  title: "Methodology — litmus-v10",
   description:
-    "The litmus test, v5: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence. Plus litmus-skill-v1: a static safety scan of Agent Skills, graded A/B/D/F.",
+    "The litmus test, v10: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence. Plus litmus-skill-v2: a static safety scan of Agent Skills, graded A/B/D/F.",
   alternates: { canonical: "/methodology" },
 };
 
 // Faithful rendering of litmus-test.md (polygraphso/hosted-service repo) — the
-// authoritative methodologyVersion: "litmus-v5" spec. Content edits belong
+// authoritative methodologyVersion: "litmus-v10" spec. Content edits belong
 // in the spec first; this page mirrors it.
 
 function Section({
@@ -59,7 +59,7 @@ export default function MethodologyPage() {
       <article className="mx-auto max-w-3xl px-6 pt-14 pb-24 md:pt-20 md:pb-32">
         <header className="mb-14">
           <p className="section-label mb-4">
-            Methodology · litmus-v5 · specification
+            Methodology · litmus-v10 · specification
           </p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             The litmus test
@@ -68,10 +68,10 @@ export default function MethodologyPage() {
             A behavioral evaluation of an MCP server — what it{" "}
             <em>does</em> when exercised the way an agent would, not what its
             README says. The string{" "}
-            <Inline>methodologyVersion: &quot;litmus-v5&quot;</Inline> travels
+            <Inline>methodologyVersion: &quot;litmus-v10&quot;</Inline> travels
             with every grade this spec produces. The same lab also grades{" "}
             <strong className="text-ink not-italic">Agent Skills</strong> under a
-            separate static methodology, <Inline>litmus-skill-v1</Inline> —{" "}
+            separate static methodology, <Inline>litmus-skill-v2</Inline> —{" "}
             <a
               href="#skills"
               className="text-ink not-italic hover:text-oxblood transition-colors border-b hairline border-dotted"
@@ -102,7 +102,7 @@ export default function MethodologyPage() {
           <SubHead>What a passing grade does — and does not — claim</SubHead>
           <p>
             It <strong className="text-ink">does</strong> claim: against{" "}
-            <Inline>litmus-v5</Inline>, on the exact tool surface identified by
+            <Inline>litmus-v10</Inline>, on the exact tool surface identified by
             the fingerprint, the server did not exhibit the failure modes
             below, and the evidence is published and re-runnable.
           </p>
@@ -256,7 +256,7 @@ export default function MethodologyPage() {
           </p>
           <figure className="border hairline bg-parchment-50 mt-2">
             <figcaption className="px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-              Grade rubric · litmus-v5 §5
+              Grade rubric · litmus-v10 §5
             </figcaption>
             <table className="w-full text-left text-sm">
               <thead>
@@ -281,7 +281,7 @@ export default function MethodologyPage() {
                 <tr className="border-b hairline align-top opacity-60">
                   <td className="px-4 py-3 font-serif text-xl text-grade-c">C</td>
                   <td className="px-4 py-3">
-                    Reserved — no litmus-v5 condition maps to it. Future probe
+                    Reserved — no litmus-v10 condition maps to it. Future probe
                     categories may claim it.
                   </td>
                 </tr>
@@ -321,7 +321,7 @@ export default function MethodologyPage() {
           <ul className="list-none space-y-3">
             <li>
               <strong className="text-ink">Deterministic harness.</strong>{" "}
-              Same server version + same <Inline>litmus-v5</Inline> harness →
+              Same server version + same <Inline>litmus-v10</Inline> harness →
               same findings. The bait, jailbreak, and malformed batteries are
               varied but fixed — no randomness in probe verdicts; timestamps
               and environment are recorded, not baked in.
@@ -343,7 +343,7 @@ export default function MethodologyPage() {
             <li>
               <strong className="text-ink">Re-runnable.</strong> Anyone — a
               skeptic, a counterparty, a future independent verifier — can
-              re-run <Inline>litmus-v5</Inline> against the same server and
+              re-run <Inline>litmus-v10</Inline> against the same server and
               compare fingerprint and grade. A false grade is falsifiable, not
               merely disputable.
             </li>
@@ -410,24 +410,39 @@ export default function MethodologyPage() {
 
         <Section num="07" label="Versioning" id="versioning">
           <p>
-            This page documents <Inline>litmus-v5</Inline>. Probes evolve as
+            This page documents <Inline>litmus-v10</Inline>. Probes evolve as
             agents do; new failure modes get new probe IDs within their
             family. A change that alters pass/fail semantics bumps the
             methodology version. Every evidence bundle and every attestation
             embeds the methodology version that produced it, so a grade is
             always tied to the spec it was measured against — earlier{" "}
-            <Inline>litmus-v1</Inline>…<Inline>v4</Inline> grades stay valid as
+            <Inline>litmus-v1</Inline>…<Inline>v9</Inline> grades stay valid as
             their own version&rsquo;s results.
           </p>
           <p className="text-sm">
             <span className="text-ink-faint">Changelog · </span>
-            <Inline>litmus-v5</Inline> adds C-01 probe 1.3 (second-order
-            injection), makes C-02 egress port-aware, and widens probe 2.1 to
-            parameter- and description-evidenced read-only lies; it also widens
-            the probe payloads and sharpens the scanners.{" "}
-            <Inline>litmus-v4</Inline> makes C-04 (adversarial input) a graded
+            <Inline>litmus-v10</Inline> narrows C-02 probe 2.1 so an honestly
+            read-only data tool is no longer misread as lying about a mutation
+            (the noun &ldquo;transfers,&rdquo; a bare destination address).{" "}
+            <Inline>litmus-v9</Inline> stops C-04 probe 3.2 from flooring a
+            server that merely echoes a hostile input back — only injection the
+            server generates itself fails.{" "}
+            <Inline>litmus-v8</Inline> and <Inline>litmus-v7</Inline> narrow the
+            C-01 static scan so honest schemas and documentation (a parameter
+            named <Inline>function</Inline>, an indented{" "}
+            <Inline>system:</Inline> config key, ordinary role-tag prose) no
+            longer read as injection. These four are false-positive precision
+            fixes — each only turns a wrong fail into a correct pass, never the
+            reverse.{" "}
+            <Inline>litmus-v6</Inline> stops a tool that lies about being
+            read-only from being actively bait-called (probe 2.1 still caps the
+            lie at D).{" "}
+            <Inline>litmus-v5</Inline> added C-01 probe 1.3 (second-order
+            injection), made C-02 egress port-aware, and widened probe 2.1 to
+            parameter- and description-evidenced read-only lies.{" "}
+            <Inline>litmus-v4</Inline> made C-04 (adversarial input) a graded
             category — a crash, internals-leak, or jailbreak amplification caps
-            the grade at D — and closes the hard-coded-IP egress gap with a
+            the grade at D — and closed the hard-coded-IP egress gap with a
             host-DNAT gateway. <Inline>litmus-v3</Inline> reframed C-02 from
             default-deny to egress overreach: a server may reach hosts it
             declares, so a passing C-02 means no overreach, not no network.{" "}
@@ -438,12 +453,12 @@ export default function MethodologyPage() {
           </p>
         </Section>
 
-        <Section num="08" label="Agent Skills · litmus-skill-v1" id="skills">
+        <Section num="08" label="Agent Skills · litmus-skill-v2" id="skills">
           <p>
             Everything above grades MCP servers by exercising them. Agent
             Skills are graded differently: a skill is content — a{" "}
             <Inline>SKILL.md</Inline> of instructions plus an optional bundle of
-            files — and <Inline>litmus-skill-v1</Inline> is a{" "}
+            files — and <Inline>litmus-skill-v2</Inline> is a{" "}
             <strong className="text-ink">static safety scan</strong> of that
             content. <strong className="text-ink">Nothing is executed.</strong>{" "}
             &ldquo;Agent Skills&rdquo; here means the <Inline>SKILL.md</Inline>{" "}
