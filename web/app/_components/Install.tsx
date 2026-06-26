@@ -14,6 +14,23 @@ const GRADE_CMD =
 const ANY_CLIENT_CMD = "npx -y -p @polygraphso/litmus polygraphso-litmus-mcp";
 const CLAUDE_CODE_CMD = "/plugin install polygraph@polygraphso";
 
+// The GitHub Action (composite, marketplace handle polygraphso/litmus@v1) that
+// fails a build when an MCP server or a bundled skill grades D/F.
+const GATE_WORKFLOW_YAML = `# .github/workflows/mcp-gate.yml
+name: mcp-gate
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: polygraphso/litmus@v1`;
+
+const MARKETPLACE_URL =
+  "https://github.com/marketplace/actions/polygraph-mcp-gate";
+
 // The standard MCP config — the same JSON for Cursor (~/.cursor/mcp.json),
 // Claude Desktop (claude_desktop_config.json), and any other MCP client.
 const MCP_CONFIG_JSON = `{
@@ -50,7 +67,8 @@ export function Install() {
         title="Run polygraph in your agent &mdash; or grade a server from your terminal."
       >
         The open litmus harness grades a server A&ndash;F with reproducible,
-        content-addressed evidence. Add it to your agent, or run it yourself.
+        content-addressed evidence. Add it to your agent, run it yourself, or
+        gate your CI on it.
       </SectionHeader>
 
       <div className="grid md:grid-cols-3 gap-4">
@@ -104,6 +122,32 @@ export function Install() {
             <span className="text-ink-muted">claude_desktop_config.json</span>.
           </p>
         </div>
+      </div>
+
+      {/* GitHub Action — gate CI on MCP-server / skill grades */}
+      <div className="mt-4 border hairline bg-parchment-50 p-5">
+        <p className="section-label mb-2">
+          Gate your CI &mdash; GitHub Action
+        </p>
+        <p className="mb-3 font-mono text-[11px] text-ink-faint leading-relaxed">
+          Fail a build when an MCP server &mdash; or a skill it ships &mdash;
+          grades <span className="text-ink-muted">D/F</span>. On the{" "}
+          <a
+            href={MARKETPLACE_URL}
+            target="_blank"
+            rel="noreferrer"
+            className="text-ink-muted underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
+          >
+            GitHub Marketplace
+          </a>{" "}
+          as <span className="text-ink-muted">polygraphso/litmus@v1</span>:
+        </p>
+        <Command
+          cmd={GATE_WORKFLOW_YAML}
+          prefix=""
+          copied={copied === "gate"}
+          onCopy={() => copy("gate", GATE_WORKFLOW_YAML)}
+        />
       </div>
 
       {/* Manual setup — one config, identical for every MCP client */}

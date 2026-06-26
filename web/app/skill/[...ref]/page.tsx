@@ -174,9 +174,11 @@ function Graded({
       </div>
 
       <p className="mt-6 max-w-xl text-[13.5px] text-ink-muted leading-relaxed">
-        A <span className="text-ink">static</span> safety grade — a deterministic scan of the
-        skill&rsquo;s <code className="font-mono text-[12.5px]">SKILL.md</code> and bundled files. An
-        A means static-clean, <span className="text-ink">not behavioral proof</span>: a skill&rsquo;s
+        A <span className="text-ink">static</span>{" "}
+        safety grade — a deterministic scan of the skill&rsquo;s{" "}
+        <code className="font-mono text-[12.5px]">SKILL.md</code>{" "}
+        and bundled files. An A means static-clean,{" "}
+        <span className="text-ink">not behavioral proof</span>: a skill&rsquo;s
         instructions are interpreted by an agent at runtime.
       </p>
 
