@@ -110,6 +110,8 @@ export interface GradedEntry extends BaseEntry {
   reportPath: string | null;
   /** Daily adoption score (0–100, reach not safety); null for remote-only / untracked. */
   adoptionScore: number | null;
+  /** Human-readable reach proxy (e.g. "23.2M npm/mo"); null when untracked, "—" when no signal. */
+  adoptionSignal: string | null;
 }
 
 /** Latest grade for one `target`, any publish state, ordered by completion. */
@@ -153,6 +155,7 @@ export async function loadBaseIndex(): Promise<GradedEntry[]> {
       completedAt: g?.completedAt ?? null,
       reportPath: key ? refToPath(key) : null,
       adoptionScore: adoption ? Math.round(adoption.adoptionScore) : null,
+      adoptionSignal: adoption ? adoption.adoptionSignal : null,
     });
   }
   return out;

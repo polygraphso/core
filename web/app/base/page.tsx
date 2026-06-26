@@ -8,6 +8,7 @@ import {
 } from "@/lib/baseIndex";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import type { LitmusGrade } from "@/lib/hostedGrades";
+import { InfoTip } from "@/app/_components/InfoTip";
 
 /**
  * UNLISTED Base-network MCP index. Not linked from nav/footer, not in any
@@ -100,21 +101,31 @@ function PendingCell({ e }: { e: GradedEntry }) {
   return <>no MCP</>;
 }
 
-/** Daily adoption score (reach, 0–100) — registry-only; remote/untracked show "—". */
+/** Daily adoption score (0–100, reach not safety) — registry-only; remote/untracked show "—". */
 function AdoptCell({ e }: { e: GradedEntry }) {
   return (
     <div
-      className="font-mono text-[11px] tabular text-center"
-      title="Adoption (reach, 0–100): downloads + stars + dependents + release velocity — not safety"
+      className="font-mono text-[11px] tabular text-center leading-tight whitespace-nowrap"
+      title="Adoption score (0–100): downloads + stars + dependents + release velocity, normalized across tracked servers. Reach, not safety."
     >
-      {e.adoptionScore != null ? <span className="text-ink-muted">{e.adoptionScore}</span> : <span className="text-ink-faint">—</span>}
+      {e.adoptionScore != null ? (
+        <>
+          <span className="text-ink-muted">{e.adoptionScore}</span>
+          <span className="text-[10px] text-ink-faint">/100</span>
+          {e.adoptionSignal && e.adoptionSignal !== "—" ? (
+            <span className="block text-[10px] text-ink-faint">{e.adoptionSignal}</span>
+          ) : null}
+        </>
+      ) : (
+        <span className="text-ink-faint">—</span>
+      )}
     </div>
   );
 }
 
 function DesktopRow({ e }: { e: GradedEntry }) {
   return (
-    <div className="hidden md:grid grid-cols-[2.75rem_minmax(110px,1.2fr)_minmax(140px,1.75fr)_8.5rem_3rem_5rem_4.5rem] items-center gap-x-5 px-3 py-3 border-t hairline transition-colors hover:bg-[#efe8d6]">
+    <div className="hidden md:grid grid-cols-[2.75rem_minmax(110px,1.2fr)_minmax(140px,1.75fr)_8.5rem_6.5rem_4.5rem] items-center gap-x-5 px-3 py-3 border-t hairline transition-colors hover:bg-[#efe8d6]">
       <div>{e.grade ? <Stamp grade={e.grade} /> : <span className="font-mono text-[12px] text-ink-faint">{e.ownMcp ? "·" : "—"}</span>}</div>
       <div className="min-w-0">
         <ProjectLink e={e} />
@@ -135,7 +146,6 @@ function DesktopRow({ e }: { e: GradedEntry }) {
         </div>
       )}
       <AdoptCell e={e} />
-      <div className="font-mono text-[10.5px] text-ink-faint tabular">{e.detail?.tool_defs_fingerprint ? `${e.detail.tool_defs_fingerprint.slice(0, 10)}…` : "—"}</div>
       <div className="font-mono text-[10.5px] text-ink-faint tabular">{e.completedAt ? e.completedAt.slice(0, 10) : "—"}</div>
     </div>
   );
@@ -165,7 +175,13 @@ function MobileCard({ e }: { e: GradedEntry }) {
             ) : (
               <span className="text-ink-faint">{e.ownMcp ? `grade pending${e.pending ? ` · ${e.pending}` : ""}` : "no standalone MCP"}</span>
             )}
-            {e.adoptionScore != null ? <span className="text-ink-faint"> · reach {e.adoptionScore}/100</span> : null}
+            {e.adoptionScore != null ? (
+              <span className="text-ink-faint">
+                {" "}
+                · adoption {e.adoptionScore}/100
+                {e.adoptionSignal && e.adoptionSignal !== "—" ? ` · ${e.adoptionSignal}` : ""}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -256,13 +272,24 @@ export default async function BaseIndexPage() {
         </figure>
 
         {/* Header row (desktop) */}
-        <div className="hidden md:grid grid-cols-[2.75rem_minmax(110px,1.2fr)_minmax(140px,1.75fr)_8.5rem_3rem_5rem_4.5rem] items-center gap-x-5 px-3 pb-1 section-label">
+        <div className="hidden md:grid grid-cols-[2.75rem_minmax(110px,1.2fr)_minmax(140px,1.75fr)_8.5rem_6.5rem_4.5rem] items-center gap-x-5 px-3 pb-1 section-label">
           <div>Grade</div>
           <div>Project</div>
           <div>MCP server</div>
-          <div className="grid grid-cols-3 gap-x-3 text-center w-[8.5rem]"><span>C-01</span><span>C-02</span><span>C-03</span></div>
-          <div className="text-center">Reach</div>
-          <div>Surface</div>
+          <div className="w-[8.5rem]">
+            <InfoTip label="Checks" align="left">
+              <span className="font-semibold">Per-category checks</span> (pass · fail · skip = not
+              run): 01 tool-output injection · 02 egress overreach · 03 sensitive-data handling.
+              C-04 (adversarial input) is graded off-table and caps the letter at D.
+            </InfoTip>
+          </div>
+          <div className="text-center">
+            <InfoTip label="Adoption" align="right">
+              <span className="font-semibold">Adoption score (0–100)</span> — downloads, stars,
+              dependents and release velocity, normalized across tracked servers. Reach, not safety;
+              the grade is the verdict. Registry servers only; remote/untracked show —.
+            </InfoTip>
+          </div>
           <div>Graded</div>
         </div>
 
@@ -272,8 +299,8 @@ export default async function BaseIndexPage() {
 
         <p className="mt-9 font-mono text-[11px] text-ink-faint leading-relaxed border-t hairline pt-5">
           C-01 tool-output injection · C-02 permission/egress overreach · C-03 sensitive-data handling ·
-          C-04 adversarial input (off-table; caps the letter at D). Surface = tool-definitions fingerprint
-          (sha256, first bytes). Reproduce any grade by re-running the open harness against the same ref.
+          C-04 adversarial input (off-table; caps the letter at D). Adoption is reach (0–100), not safety —
+          the grade is the verdict. Reproduce any grade by re-running the open harness against the same ref.
           Each server links to its polygraph report; see the full{" "}
           <Link href="/rankings" className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">
             MCP Security Index
