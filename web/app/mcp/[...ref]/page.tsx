@@ -18,6 +18,7 @@ import type { LitmusGrade, PolygraphDetail } from "@/lib/hostedGrades";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { fetchAdoptionForServer, type ServerAdoption } from "@/lib/rankings";
 import { EmbedSnippets } from "./_components/EmbedSnippets";
+import { FixCta } from "@/app/_components/FixCta";
 
 const ORIGIN = "https://polygraph.so";
 
@@ -314,6 +315,9 @@ function Graded({
           {detail.rationale}
         </p>
       ) : null}
+
+      {/* how to fix — only when there's something to fix (non-A) */}
+      {grade !== "A" ? <FixCta target={serverKey} /> : null}
 
       <AdoptionSignals adoption={adoption} />
 

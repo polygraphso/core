@@ -33,6 +33,8 @@ export interface BankrSkillMeta {
 
 /** A skill's metadata joined to its LIVE litmus-skill-v2 grade (null until graded). */
 export interface BankrSkill extends BankrSkillMeta {
+  /** Canonical hosted_runs target / `/skill` report ref (`github/BankrBot/skills#<slug>`). */
+  target: string;
   grade: SkillGrade | null;
   s01: "pass" | "fail" | null;
   s03: "pass" | "fail" | null;
@@ -157,6 +159,15 @@ export const BANKR_SKILLS_META: BankrSkillMeta[] = [
   { slug: "gitlawb", cohort: "other", featured: false },
 ];
 
+/** The GitHub repo holding the Bankr skill library; the runner stores each skill's
+ *  grade under `${BANKR_SKILLS_REPO}#<slug>`, which is also its `/skill` report ref. */
+const BANKR_SKILLS_REPO = "github/BankrBot/skills";
+
+/** Canonical hosted_runs target (and `/skill` ref) for a Bankr skill. */
+export function bankrSkillTarget(slug: string): string {
+  return `${BANKR_SKILLS_REPO}#${slug}`;
+}
+
 type SkillLive = { grade: SkillGrade; s01: "pass" | "fail"; s03: "pass" | "fail"; s04: "pass" | "fail"; hash: string };
 
 /** One query → latest litmus-skill-v2 grade per BankrBot/skills target, keyed by the
@@ -169,7 +180,7 @@ async function fetchSkillGradeMap(db: ReturnType<typeof getSupabaseAdmin>): Prom
     .from("hosted_runs")
     .select("target, grade, content_hash, evidence, completed_at")
     .eq("target_kind", "skill")
-    .like("target", "github/BankrBot/skills#%")
+    .like("target", `${BANKR_SKILLS_REPO}#%`)
     .eq("status", "complete")
     .order("completed_at", { ascending: false });
   if (error || !data) return map;
@@ -200,8 +211,9 @@ async function fetchSkillGradeMap(db: ReturnType<typeof getSupabaseAdmin>): Prom
 export async function loadBankrSkills(): Promise<BankrSkill[]> {
   const map = await fetchSkillGradeMap(getSupabaseAdmin());
   return BANKR_SKILLS_META.map((m) => {
-    const g = map.get(`github/BankrBot/skills#${m.slug}`);
-    return { ...m, grade: g?.grade ?? null, s01: g?.s01 ?? null, s03: g?.s03 ?? null, s04: g?.s04 ?? null, hash: g?.hash ?? null };
+    const target = bankrSkillTarget(m.slug);
+    const g = map.get(target);
+    return { ...m, target, grade: g?.grade ?? null, s01: g?.s01 ?? null, s03: g?.s03 ?? null, s04: g?.s04 ?? null, hash: g?.hash ?? null };
   });
 }
 

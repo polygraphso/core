@@ -9,6 +9,8 @@ import {
   type BankrAgent,
   type SkillGrade,
 } from "@/lib/bankrIndex";
+import { refToPath } from "@/lib/badgeData";
+import { skillRefToPath } from "@/lib/skillGrades";
 import { GRADE_HEX } from "@/lib/gradeColors";
 
 /**
@@ -60,12 +62,13 @@ function SCell({ status }: { status: string | null }) {
 const SCHECKS = "grid grid-cols-3 gap-x-3 text-center w-[9rem]";
 
 function SkillRow({ s }: { s: BankrSkill }) {
-  const href = `https://github.com/BankrBot/skills/tree/main/${s.slug}`;
+  // Link to the polygraph skill report (grade breakdown + findings + source); the
+  // GitHub source link now lives on that page.
   const name = (
-    <a href={href} target="_blank" rel="noreferrer noopener" className="text-ink hover:text-oxblood transition-colors break-all">
+    <Link href={`/skill/${skillRefToPath(s.target)}`} className="text-ink hover:text-oxblood transition-colors break-all">
       {s.slug}
       {s.featured ? <span className="ml-1.5 align-middle text-[10px] text-oxblood/70" title="featured by Bankr">★</span> : null}
-    </a>
+    </Link>
   );
   return (
     <>
@@ -105,7 +108,16 @@ function AgentRow({ a }: { a: BankrAgent }) {
         </div>
         <div className="min-w-0">
           <a href={`https://x.com/${a.handle}`} target="_blank" rel="noreferrer noopener" className="text-ink hover:text-oxblood transition-colors">{a.project}</a>
-          <span className="ml-2 font-mono text-[11px] text-ink-muted break-all">{a.mcpRef}</span>
+          {a.target ? (
+            <Link
+              href={`/mcp/${refToPath(a.target)}`}
+              className="ml-2 font-mono text-[11px] text-ink-muted break-all underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
+            >
+              {a.mcpRef}
+            </Link>
+          ) : (
+            <span className="ml-2 font-mono text-[11px] text-ink-muted break-all">{a.mcpRef}</span>
+          )}
           {a.grade ? (
             <span className="ml-3 font-mono text-[11px]">
               <span style={{ color: a.c01 === "pass" ? PASS : FAIL }}>C-01 {a.c01}</span>{" · "}
