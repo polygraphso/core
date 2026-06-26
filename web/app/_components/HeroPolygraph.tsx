@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { refToPath } from "@/lib/badgeData";
 import { rowToRun, type HostedRunRow, type LitmusGrade } from "./checksMapper";
 
 // Hero proof artifact: the latest published polygraph, compact. The report
@@ -14,7 +15,7 @@ const GRADE_COLOR: Record<LitmusGrade, string> = {
 };
 
 // "C-01 tool-output injection" → "tool-output injection"; values like
-// "skipped — remote target" → "skipped". Full detail lives in §03.
+// "skipped — remote target" → "skipped". Full detail lives on the report page.
 function shortLabel(key: string): string {
   return key.replace(/^C-0\d\s+/, "");
 }
@@ -54,15 +55,18 @@ export async function HeroPolygraph() {
   if (!run) return null;
 
   const target = run.rows.find(([k]) => k === "target")?.[1] ?? run.label;
+  // Every graded target — registry ref or remote https endpoint — has a /mcp
+  // report page (refToPath collapses a URL's "://" so it survives the path).
+  const reportHref = `/mcp/${refToPath(target)}`;
   const checks = run.rows.filter(([k]) => /^C-0\d/.test(k));
 
   return (
     <div className="border hairline bg-parchment-50 mb-5">
       <div className="flex items-center justify-between px-3 py-1.5 border-b hairline font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
         <span className="whitespace-nowrap">latest polygraph</span>
-        {/* Data-driven from the run's evidence (matches ChecksSoFarView) so the
-            badge tracks the methodology the grade was actually produced under,
-            instead of drifting on a hardcoded version string. */}
+        {/* Data-driven from the run's evidence so the badge tracks the methodology
+            the grade was actually produced under, instead of drifting on a
+            hardcoded version string. */}
         <span className="text-ink whitespace-nowrap">{run.methodologyVersion}</span>
       </div>
       <div className="px-3 py-3 flex items-start gap-4">
@@ -87,10 +91,10 @@ export async function HeroPolygraph() {
       </div>
       <p className="px-3 pb-2.5 font-mono text-[10.5px] text-ink-faint">
         <a
-          href="#checks"
+          href={reportHref}
           className="border-b hairline border-dotted hover:text-oxblood transition-colors"
         >
-          See the full run ↓
+          See the full run
         </a>
       </p>
     </div>

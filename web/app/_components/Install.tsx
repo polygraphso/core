@@ -45,7 +45,7 @@ export function Install() {
       className="mx-auto max-w-6xl px-6 py-20 md:py-28 scroll-mt-24"
     >
       <SectionHeader
-        number="§ 03"
+        number="§ 04"
         label="Install"
         title="Run polygraph in your agent &mdash; or grade a server from your terminal."
       >

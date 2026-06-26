@@ -1,8 +1,8 @@
 import { Hero } from "./_components/Hero";
 import { Problem } from "./_components/Problem";
+import { RecentGrades } from "./_components/RecentGrades";
 import { HowWeTest } from "./_components/HowWeTest";
 import { Install } from "./_components/Install";
-import { ChecksSoFar } from "./_components/ChecksSoFar";
 import { EmbedYourGrade } from "./_components/EmbedYourGrade";
 import { Timeline } from "./_components/Timeline";
 import { TokenNote } from "./_components/TokenNote";
@@ -16,9 +16,9 @@ export default function Home() {
     <main className="flex-1">
       <Hero />
       <Problem />
+      <RecentGrades />
       <HowWeTest />
       <Install />
-      <ChecksSoFar />
       <EmbedYourGrade />
       <Timeline />
       <TokenNote />
