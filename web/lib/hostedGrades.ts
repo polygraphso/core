@@ -18,10 +18,25 @@ export type LitmusGrade = "A" | "B" | "C" | "D" | "F";
 export const HOSTED_GRADE_COLUMNS =
   "target, target_kind, grade, rationale, evidence, tool_defs_fingerprint, c01, c02, c03, resolved_version, published_at";
 
+interface EvidenceFinding {
+  kind?: string;
+  severity?: string;
+  match?: string;
+  context?: string;
+  tool?: string;
+  file?: string;
+  host?: string;
+}
+interface EvidenceProbe {
+  id?: string;
+  status?: string;
+  findings?: EvidenceFinding[];
+}
 interface EvidenceCategory {
   code?: string;
   status?: string;
   reason?: string | null;
+  probes?: EvidenceProbe[];
 }
 interface EvidenceBundle {
   toolDefsFingerprint?: string;
@@ -49,6 +64,31 @@ export interface HostedGradeRow {
   published_at: string | null;
 }
 
+/** One flagged behavior from a probe (public evidence-bundle content). The
+ *  twin of skillGrades' SkillFinding, but for the behavioral harness — so it
+ *  also carries the offending `tool` and, for C-02 egress, the reached `host`. */
+export interface McpFinding {
+  kind: string | null;
+  severity: string | null;
+  match: string | null;
+  /** Bounded context window around the match (C-01/C-04 text scans); the bundle
+   *  already omits it for canary / internals-leak findings. */
+  context: string | null;
+  tool: string | null;
+  file: string | null;
+  host: string | null;
+}
+
+/** A category's verdict plus the findings behind it, flattened from the bundle's
+ *  per-probe results. `status` is the RAW bundle status ("pass"|"fail"|"skipped"
+ *  |"partial"), undecorated — unlike the c01..c04 display strings. */
+export interface PolygraphCategory {
+  code: string;
+  status: string | null;
+  reason: string | null;
+  findings: McpFinding[];
+}
+
 export interface PolygraphDetail {
   grade: LitmusGrade;
   c01: string | null;
@@ -64,6 +104,11 @@ export interface PolygraphDetail {
   rationale: string | null;
   evidence_url: string | null;
   computed_at: string | null;
+  /** Per-category verdicts + findings from the evidence bundle, for the
+   *  remediation page. Empty when the row carries no (or a legacy, probe-less)
+   *  bundle — the report page reads the c01..c04 strings instead, so this is
+   *  purely additive. */
+  categories: PolygraphCategory[];
 }
 
 const GRADES = new Set(["A", "B", "C", "D", "F"]);
@@ -73,6 +118,31 @@ function categoryStatus(bundle: EvidenceBundle | null, code: string): string | n
   if (!c || !c.status) return null;
   if (c.status === "skipped" && c.reason) return `skipped — ${c.reason}`;
   return c.status;
+}
+
+function normalizeFinding(f: EvidenceFinding): McpFinding {
+  return {
+    kind: f.kind ?? null,
+    severity: f.severity ?? null,
+    match: f.match ?? null,
+    context: f.context ?? null,
+    tool: f.tool ?? null,
+    file: f.file ?? null,
+    host: f.host ?? null,
+  };
+}
+
+/** Flatten the bundle's category → probe → finding tree into per-category
+ *  verdicts + findings for the remediation page. Empty for a null/legacy bundle. */
+function categoriesFromBundle(bundle: EvidenceBundle | null): PolygraphCategory[] {
+  return (bundle?.categories ?? [])
+    .filter((c) => c.code)
+    .map((c) => ({
+      code: c.code as string,
+      status: c.status ?? null,
+      reason: c.reason ?? null,
+      findings: (c.probes ?? []).flatMap((p) => (p.findings ?? []).map(normalizeFinding)),
+    }));
 }
 
 /** Build the CLI grade + detail from a hosted_runs row. Prefers the
@@ -102,6 +172,7 @@ export function detailFromRow(
       rationale: row.rationale ?? bundle?.gradeRationale ?? null,
       evidence_url: null,
       computed_at: row.published_at ?? null,
+      categories: categoriesFromBundle(bundle),
     },
   };
 }

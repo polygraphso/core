@@ -317,7 +317,7 @@ function Graded({
       ) : null}
 
       {/* how to fix — only when there's something to fix (non-A) */}
-      {grade !== "A" ? <FixCta target={serverKey} /> : null}
+      {grade !== "A" ? <FixCta target={serverKey} kind="mcp" /> : null}
 
       <AdoptionSignals adoption={adoption} />
 

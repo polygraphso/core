@@ -194,7 +194,7 @@ function Graded({
       ) : null}
 
       {/* how to fix — only when there's something to fix (non-A) */}
-      {grade !== "A" ? <FixCta target={target} /> : null}
+      {grade !== "A" ? <FixCta target={target} kind="skill" /> : null}
 
       {/* source */}
       {source ? (
