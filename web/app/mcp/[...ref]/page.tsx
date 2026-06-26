@@ -406,8 +406,8 @@ function Ungraded({
       <div className="mt-12 border-t hairline pt-6">
         <h2 className="font-serif text-lg text-ink mb-1">Embed the badge anyway</h2>
         <p className="font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl mb-5">
-          It reads <span className="font-mono">unrated</span> today and updates itself to
-          the grade the moment one publishes — no edit needed.
+          It reads <span className="font-mono">unrated</span>{" "}
+          today and updates itself to the grade the moment one publishes — no edit needed.
         </p>
         <div className="mb-5">
           {/* eslint-disable-next-line @next/next/no-img-element */}

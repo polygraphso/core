@@ -107,7 +107,8 @@ export default function MethodologyPage() {
             below, and the evidence is published and re-runnable.
           </p>
           <p>
-            It <strong className="text-ink">does not</strong> claim the server
+            It <strong className="text-ink">does not</strong>{" "}
+            claim the server
             is &ldquo;safe,&rdquo; &ldquo;secure,&rdquo; or
             &ldquo;trustworthy&rdquo; in general. We underclaim. A grade is a
             dated, versioned, reproducible observation — nothing more.
@@ -161,7 +162,8 @@ export default function MethodologyPage() {
             <strong className="text-ink">parameter</strong> that names value
             movement or secrets (<Inline>recipient</Inline>,{" "}
             <Inline>amount</Inline>, <Inline>private_key</Inline>, …), or a{" "}
-            <strong className="text-ink">description</strong> that admits it
+            <strong className="text-ink">description</strong>{" "}
+            that admits it
             (&ldquo;transfers,&rdquo; &ldquo;deletes&rdquo;). An agent — and this
             harness — would otherwise auto-trust that read-only claim. Each layer
             is deliberately narrow: polysemous words like <Inline>create</Inline>,{" "}
@@ -204,7 +206,8 @@ export default function MethodologyPage() {
             arguments, the working directory, and the environment.{" "}
             <strong className="text-ink">Probe 4.1</strong> scans all tool
             outputs for any canary echo back to the agent.{" "}
-            <strong className="text-ink">Probe 4.2</strong> scans captured
+            <strong className="text-ink">Probe 4.2</strong>{" "}
+            scans captured
             egress for canary bytes in any outbound payload. A canary
             surfacing anywhere it shouldn&rsquo;t is a failure. Without the
             sandbox, 4.2 degrades to output-scan only and is annotated as
@@ -401,7 +404,8 @@ export default function MethodologyPage() {
               unexercised, never passed.
             </li>
             <li>
-              <strong className="text-ink">No absolute claims.</strong> Never
+              <strong className="text-ink">No absolute claims.</strong>{" "}
+              Never
               &ldquo;100% safe&rdquo; or &ldquo;guaranteed.&rdquo; Underclaim,
               over-deliver.
             </li>
@@ -416,12 +420,14 @@ export default function MethodologyPage() {
             methodology version. Every evidence bundle and every attestation
             embeds the methodology version that produced it, so a grade is
             always tied to the spec it was measured against — earlier{" "}
-            <Inline>litmus-v1</Inline>…<Inline>v9</Inline> grades stay valid as
+            <Inline>litmus-v1</Inline>…<Inline>v9</Inline>{" "}
+            grades stay valid as
             their own version&rsquo;s results.
           </p>
           <p className="text-sm">
             <span className="text-ink-faint">Changelog · </span>
-            <Inline>litmus-v10</Inline> narrows C-02 probe 2.1 so an honestly
+            <Inline>litmus-v10</Inline>{" "}
+            narrows C-02 probe 2.1 so an honestly
             read-only data tool is no longer misread as lying about a mutation
             (the noun &ldquo;transfers,&rdquo; a bare destination address).{" "}
             <Inline>litmus-v9</Inline> stops C-04 probe 3.2 from flooring a
@@ -446,7 +452,8 @@ export default function MethodologyPage() {
             host-DNAT gateway. <Inline>litmus-v3</Inline> reframed C-02 from
             default-deny to egress overreach: a server may reach hosts it
             declares, so a passing C-02 means no overreach, not no network.{" "}
-            <Inline>litmus-v2</Inline> added C-02 probe 2.1 (declared-permission
+            <Inline>litmus-v2</Inline>{" "}
+            added C-02 probe 2.1 (declared-permission
             honesty). Each pass/fail-semantics change bumps the methodology
             version; earlier grades stay valid as their own version&rsquo;s
             results.

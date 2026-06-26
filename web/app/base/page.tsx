@@ -248,7 +248,8 @@ export default async function BaseIndexPage() {
             (state-changing tools aren&rsquo;t exercised by default); remote-only servers cap at{" "}
             <strong className="text-ink-muted">B</strong> (egress unverifiable), npm servers run
             sandboxed and can reach A, and a C-04 (adversarial-input) failure caps a grade at D.{" "}
-            <span className="text-oxblood/70">3rd-party</span> marks a community wrapper rather than the
+            <span className="text-oxblood/70">3rd-party</span>{" "}
+            marks a community wrapper rather than the
             protocol&rsquo;s own server. These rows are <strong className="text-ink-muted">not published</strong>{" "}
             — no public badge or report shows them.
           </figcaption>
