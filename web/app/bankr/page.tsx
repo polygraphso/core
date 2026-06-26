@@ -170,12 +170,16 @@ export default async function BankrIndexPage() {
         {/* Methodology note */}
         <div className="mb-9 border-l-2 pl-5 text-[13px] leading-relaxed text-ink-muted max-w-2xl" style={{ borderColor: "var(--color-rule)" }}>
           <p>
-            Each skill is graded by <strong className="text-ink">litmus-skill-v2</strong>, a deterministic
-            STATIC scan of its <code className="font-mono text-[12px]">SKILL.md</code> + bundle:
-            <strong className="text-ink"> S-01</strong> prompt-injection / context-poisoning,
-            <strong className="text-ink"> S-03</strong> data-exfiltration instructions, and
-            <strong className="text-ink"> S-04</strong> dangerous bundled commands. An A means static-clean,
-            not behavioral proof — a skill&rsquo;s instructions are interpreted by an agent at runtime.
+            Each skill is graded by <strong className="text-ink">litmus-skill-v2</strong>, a
+            deterministic STATIC scan of its{" "}
+            <code className="font-mono text-[12px]">SKILL.md</code> + bundle:{" "}
+            <strong className="text-ink">S-01</strong>{" "}
+            prompt-injection / context-poisoning,{" "}
+            <strong className="text-ink">S-03</strong>{" "}
+            data-exfiltration instructions, and{" "}
+            <strong className="text-ink">S-04</strong>{" "}
+            dangerous bundled commands. An A means static-clean, not behavioral proof — a
+            skill&rsquo;s instructions are interpreted by an agent at runtime.
           </p>
           <p className="mt-2 text-ink-faint">
             litmus-skill-v2 corrects the static scan&rsquo;s earlier over-flagging of <em>defensive</em>{" "}
