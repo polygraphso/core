@@ -1,8 +1,6 @@
 // web/app/rankings/page.tsx
 import type { Metadata } from "next";
-import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { GRADE_HEX } from "@/lib/gradeColors";
 import {
   fetchTopRanked,
   fetchPublishedGradeDetailMap,
@@ -10,12 +8,15 @@ import {
   mergeRankings,
   type RankingRow,
 } from "@/lib/rankings";
-import { RankingsTable } from "./_components/RankingsTable";
+import { fetchPublishedSkillGrades, type SkillIndexRow } from "@/lib/skillGrades";
+import { GradesIndex } from "./_components/GradesIndex";
 
 export const metadata: Metadata = {
+  // Keep the established brand/SEO title even though the page now also indexes
+  // skills — "MCP Security Index" is the flagship surface; skills are a tab.
   title: "The MCP Security Index",
   description:
-    "MCP servers graded for behavior with the open litmus harness, ranked by adoption. A grade is a measurement, not a guarantee — re-run it yourself.",
+    "MCP servers and Agent Skills graded with the open litmus harness — servers for behavior (ranked by adoption), skills for static safety. A grade is a measurement, not a guarantee; re-run it yourself.",
   alternates: { canonical: "/rankings" },
 };
 
@@ -29,15 +30,18 @@ const ADOPTION_UNIVERSE = 200;
 export default async function RankingsPage() {
   const db = getSupabaseAdmin();
   let rows: RankingRow[] = [];
+  let skillRows: SkillIndexRow[] = [];
   let lastRefreshed = "";
   if (db) {
-    const [ranked, grades, remote] = await Promise.all([
+    const [ranked, grades, remote, skills] = await Promise.all([
       // Pull the full scored set so every graded server is covered, then keep
       // only graded servers (below) — the index shows graded MCPs, ranked by adoption.
       fetchTopRanked(db, ADOPTION_UNIVERSE),
       fetchPublishedGradeDetailMap(db),
       fetchPublishedRemoteGrades(db),
+      fetchPublishedSkillGrades(db),
     ]);
+    skillRows = skills;
     // Newest score timestamp across the ranked set — ISO strings compare lexically.
     lastRefreshed = ranked.reduce((max, r) => (r.computedAt > max ? r.computedAt : max), "");
     const registryRows = mergeRankings(ranked, grades)
@@ -51,70 +55,53 @@ export default async function RankingsPage() {
   const refreshedDate = lastRefreshed ? lastRefreshed.slice(0, 10) : null;
   const liveCount = rows.filter((r) => r.remote).length;
   const registryCount = rows.length - liveCount;
+  const skillCount = skillRows.length;
+  const empty = rows.length === 0 && skillCount === 0;
 
   return (
     <main className="flex-1">
       <article className="mx-auto max-w-4xl px-6 pt-14 pb-24 md:pt-20 md:pb-32">
         <header className="mb-12">
-          <p className="section-label mb-4">Index · litmus-v10 · adoption-ranked</p>
+          <p className="section-label mb-4">Index · litmus-v10</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
-            The MCP Security Index
+            The Polygraph Index
           </h1>
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
-            MCP servers graded for behavior, ordered by adoption — what each server{" "}
-            <em>does</em> when exercised the way an agent would.
+            Every grade we publish — MCP servers tested for behavior and ordered by adoption, Agent
+            Skills scanned for safety. What each one <em>does</em>, not what its README claims.
           </p>
           <p className="mt-4 max-w-2xl text-ink-muted leading-relaxed text-sm">
-            {rows.length > 0 ? (
-              <>
-                {registryCount} {registryCount === 1 ? "server" : "servers"} graded, ranked by adoption
-                {liveCount > 0 ? (
-                  <> · {liveCount} live {liveCount === 1 ? "endpoint" : "endpoints"} (hosted, egress unverified)</>
-                ) : null}
-                {refreshedDate ? <> · adoption data as of {refreshedDate}</> : null}. A grade is
-                a measurement, not a guarantee; you can re-run the open harness yourself.
-              </>
+            {empty ? (
+              <>No grades published yet. Check back shortly.</>
             ) : (
-              <>No graded servers yet. Check back shortly.</>
+              <>
+                {registryCount > 0 ? (
+                  <>
+                    {registryCount} MCP {registryCount === 1 ? "server" : "servers"} graded, ranked
+                    by adoption
+                  </>
+                ) : null}
+                {liveCount > 0 ? (
+                  <>
+                    {" "}
+                    · {liveCount} live {liveCount === 1 ? "endpoint" : "endpoints"} (hosted, egress
+                    unverified)
+                  </>
+                ) : null}
+                {skillCount > 0 ? (
+                  <>
+                    {" "}
+                    · {skillCount} {skillCount === 1 ? "skill" : "skills"} scanned
+                  </>
+                ) : null}
+                {refreshedDate ? <> · adoption data as of {refreshedDate}</> : null}. A grade is a
+                measurement, not a guarantee; you can re-run the open harness yourself.
+              </>
             )}
           </p>
         </header>
 
-        {rows.length > 0 ? <RankingsTable rows={rows} /> : null}
-
-        {rows.length > 0 ? (
-          <p className="mt-5 flex flex-wrap gap-x-5 gap-y-1 font-mono text-[11px] text-ink-faint leading-relaxed">
-            <span>
-              <span style={{ color: GRADE_HEX.A }}>✓</span> pass
-            </span>
-            <span>
-              <span style={{ color: "var(--color-oxblood)" }}>✕</span> fail
-            </span>
-            <span>
-              <span className="text-ink-faint">–</span> not run
-            </span>
-            <span className="text-ink-faint/80">
-              C-01 tool-output injection · C-02 egress overreach · C-03 sensitive-data handling ·
-              C-04 adversarial-input handling
-            </span>
-          </p>
-        ) : null}
-
-        <p className="mt-10 text-ink-faint text-xs leading-relaxed max-w-2xl">
-          Ranked by the <span className="text-ink-muted">adoption score</span> (0–100, shown at
-          right above monthly downloads) — a composite of downloads (npm / PyPI), GitHub stars,
-          dependents and release velocity. It measures{" "}
-          <span className="text-ink-muted">reach, not safety</span>: the litmus grade is the only
-          safety verdict. Grades come from the open litmus harness; you can{" "}
-          <Link href="/request" className="border-b hairline border-dotted hover:text-oxblood">
-            request a grade
-          </Link>{" "}
-          for a server, or read the{" "}
-          <Link href="/methodology" className="border-b hairline border-dotted hover:text-oxblood">
-            methodology
-          </Link>
-          .
-        </p>
+        <GradesIndex serverRows={rows} skillRows={skillRows} />
       </article>
     </main>
   );

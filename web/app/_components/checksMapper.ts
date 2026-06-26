@@ -1,9 +1,11 @@
 /**
- * Maps hosted_runs rows → the Run shape ChecksSoFarView renders.
+ * Maps hosted_runs rows → the Run shape the homepage RecentGrades carousel renders.
  *
  * Bundle field names mirror polygraph-litmus EvidenceBundle (camelCase JSON).
  * web/ is a standalone deploy target — types are local, not @polygraph/core.
  */
+
+import { skillRefToPath } from "@/lib/skillGrades";
 
 export type LitmusGrade = "A" | "B" | "C" | "D" | "F";
 
@@ -233,6 +235,9 @@ function skillRowToRun(row: HostedRunRow): Run {
     rows: skillBundleToRows(bundle, row.quality_signal),
     rationale: row.rationale,
     methodologyVersion: bundle.methodologyVersion,
+    // Skills have a /skill report (the canonical ref's `#` subpath becomes a path
+    // segment). Drives the carousel card's "view report" link.
+    href: `/skill/${skillRefToPath(row.target)}`,
   };
 }
 
