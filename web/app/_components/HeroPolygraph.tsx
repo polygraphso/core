@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { refToPath } from "@/lib/badgeData";
 import { rowToRun, type HostedRunRow, type LitmusGrade } from "./checksMapper";
 
 // Hero proof artifact: the latest published polygraph, compact. The report
@@ -54,6 +55,9 @@ export async function HeroPolygraph() {
   if (!run) return null;
 
   const target = run.rows.find(([k]) => k === "target")?.[1] ?? run.label;
+  // Every graded target — registry ref or remote https endpoint — has a /mcp
+  // report page (refToPath collapses a URL's "://" so it survives the path).
+  const reportHref = `/mcp/${refToPath(target)}`;
   const checks = run.rows.filter(([k]) => /^C-0\d/.test(k));
 
   return (
@@ -87,10 +91,10 @@ export async function HeroPolygraph() {
       </div>
       <p className="px-3 pb-2.5 font-mono text-[10.5px] text-ink-faint">
         <a
-          href={run.href ?? "#checks"}
+          href={reportHref}
           className="border-b hairline border-dotted hover:text-oxblood transition-colors"
         >
-          See the full {run.href ? "report →" : "run ↓"}
+          See the full run
         </a>
       </p>
     </div>
