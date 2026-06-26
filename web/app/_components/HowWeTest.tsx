@@ -9,7 +9,7 @@ type Probe = {
   state: "live" | "deferred"; // shipped in the current methodology, or deferred
 };
 
-// Source of truth: litmus-test.md (litmus-v5).
+// Source of truth: litmus-test.md (litmus-v10).
 // Live = probes 1.1, 1.2, 1.3, 2.1, 2.2, 3.1, 3.2, 4.1, 4.2 — nine probes across four categories.
 const probes: Probe[] = [
   {
@@ -119,7 +119,7 @@ export function HowWeTest() {
                     isDeferred ? "text-ink-faint" : "text-grade-a"
                   }`}
                 >
-                  {isDeferred ? "deferred" : "litmus-v5 · live"}
+                  {isDeferred ? "deferred" : "litmus-v10 · live"}
                 </span>
               </div>
               <div className="md:col-span-4">
@@ -143,7 +143,7 @@ export function HowWeTest() {
       {/* Grade rubric — litmus-test.md §5 */}
       <figure className="mt-12 border hairline bg-parchment-50 max-w-3xl">
         <figcaption className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-          <span>Table 1 — Grade rubric · litmus-v5</span>
+          <span>Table 1 — Grade rubric · litmus-v10</span>
           <span className="hidden sm:inline">scale a–f</span>
         </figcaption>
         <ul>
@@ -184,7 +184,7 @@ export function HowWeTest() {
       <p className="mt-4 max-w-2xl text-ink-muted text-sm leading-relaxed">
         Probes evolve as agents do &mdash; new failure modes get new probes.
         The methodology is versioned;{" "}
-        <span className="font-mono text-[0.92em] text-ink">litmus-v5</span>{" "}
+        <span className="font-mono text-[0.92em] text-ink">litmus-v10</span>{" "}
         travels with every grade it produced. Read{" "}
         <a
           href="/methodology"

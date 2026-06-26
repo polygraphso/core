@@ -41,22 +41,32 @@ polygraphso check github/anthropic/mcp-server-foo
 
 ## Output
 
-Tracked server:
+Graded server:
 
 ```
-→ tracked · top 10 adoption
-→ polygraph: not yet available
-→ notify me → polygraph.so/notify?for=npm/@modelcontextprotocol/server-filesystem
+→ polygraph: A · version 2.1.0 · litmus-v10 · 2026-06-24
+→ evidence → polygraph.so/mcp/npm/@modelcontextprotocol/server-filesystem
 ```
 
-Untracked server:
+The line carries the grade (A–F), the exact graded version, the methodology version, and the
+date. If the version you'd actually run differs from the graded one, the check reports the
+grade for the version in play and notes the gap:
+
+```
+→ polygraph: A · version 2.1.0 · litmus-v10 · 2026-06-24
+→ note: graded 2.1.0; your version is 2.2.0 (not yet graded)
+→ evidence → polygraph.so/mcp/npm/@modelcontextprotocol/server-filesystem
+```
+
+Untracked / not-yet-graded server:
 
 ```
 → not available yet
 → notify me → polygraph.so/notify?for=npm/obscure-mcp-server
 ```
 
-In v0, behavioral polygraphs aren't published yet — every tracked server shows `polygraph: not yet available`. The adoption tier and notify URL are real; the polygraph result lands when the litmus harness ships.
+Grades are read from the hosted runner's published results — this CLI never grades, it's a
+sub-second lookup. To grade a server yourself, run the open harness (`@polygraphso/litmus`).
 
 ## Browse the tracked set
 
@@ -64,10 +74,10 @@ In v0, behavioral polygraphs aren't published yet — every tracked server shows
 polygraphso list
 ```
 
-Prints every tracked MCP server with its adoption tier and polygraph status, tier-sorted. Pipe through `jq` with `--json`:
+Prints every graded MCP server as `server_ref | grade`, sorted by grade (A→F, then ref). Pipe through `jq` with `--json`:
 
 ```
-polygraphso list --json | jq '.servers[] | select(.adoption_tier == "top10")'
+polygraphso list --json | jq '.servers[] | select(.polygraph == "A")'
 ```
 
 ## Configuration

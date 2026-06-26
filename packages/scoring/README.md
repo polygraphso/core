@@ -2,9 +2,13 @@
 
 Daily adoption-signal pipeline for MCP servers. Lifts behaviors from the proven mcp-tool pipeline in `agentic-talent-app`, pruned to what `scoring-brief.md` defines as in-scope (npm/pypi/github + OpenSSF + Glama/Smithery as components + deps.dev vulns).
 
-## Current phase
+## Status
 
-Phase 1: package skeleton + curated seed list + seed script. Adapters, compute, and the daily loop land in later PRs.
+Live. All adapters (npm, pypi, github, OpenSSF, Glama, Smithery, deps.dev) ship, the
+compute/rank/tier pass and the `LISTEN/NOTIFY` emit are wired, and the daily ranking runs on a
+**GitHub Actions cron** (`.github/workflows/score.yml`, 06:17 UTC; `workflow_dispatch` for
+manual runs). The public **MCP Security Index** (`/rankings` on polygraph.so) reads the latest
+`adoption_scores` for its ordering; adoption is the ordering/coverage axis, not a published grade.
 
 ## Setup
 
@@ -75,20 +79,23 @@ Scoring emits two channels via the `polygraph_notify(channel, payload)` Postgres
 
 Consumers listen via `pg-listen` or direct `LISTEN` SQL on a long-lived Postgres connection. Supabase Realtime is intentionally **not** used — the contracts doc specifies direct LISTEN/NOTIFY. The RPC allowlists channel names; passing an unknown one raises at the DB layer.
 
-NOTIFY failures log and swallow — a dropped notification shouldn't fail the broader scoring run. Symptom of silent drops is litmus / alert workers not firing, which Phase 5b's metrics will catch.
+NOTIFY failures log and swallow — a dropped notification shouldn't fail the broader scoring run. Symptom of silent drops is litmus / alert workers not firing.
 
-## Deployment (Phase 5b)
+## Deployment
 
-The cron-runnable scripts above (`poll`, `score`) are ready to wrap in a scheduler. Two options the brief calls out:
-
-- **Hetzner Node worker** — a small Node process with `node-cron` or two systemd timers. Co-locates with the litmus harness (which needs Hetzner anyway for the sandboxed probe runs).
-- **Supabase Edge Functions on a cron** — `pnpm score` and `pnpm poll` wrapped as Edge Function entrypoints, scheduled via Supabase's pg_cron extension.
-
-Hetzner is the leading choice — easier to observe, no Edge Function cold-start, and no cap on long-running scoring passes. Phase 5b will land the deploy plumbing once the litmus team has settled their Hetzner setup.
+The daily ranking runs as a **GitHub Actions cron** (`.github/workflows/score.yml`), the chosen
+scheduler: a ~5–10 min daily pass fits inside the free Actions allowance, runs the existing
+`pnpm score` unchanged, and gets native repo-secret management (`SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY`, `SCORING_GITHUB_TOKEN`), built-in logs, and failure notification —
+no always-on infra. (The earlier Hetzner-worker / Supabase-Edge-Function options were dropped:
+Edge Functions are Deno with a short timeout a 5–10 min run would exceed, and a dedicated box
+adds ops burden for no gain at this size. Revisit only if the tracked universe outgrows the
+daily Actions window.) The hourly `poll` is optional and **not currently scheduled** — the daily
+`score` keeps the ranking fresh enough for the Index.
 
 ## Notify-funnel fulfillment
 
-When a server transitions from untracked → tracked, the scoring brief calls for an email to anyone who'd requested notification. This depends on the `notify_requests` table, which is **onboarding's territory** and hasn't landed yet. The hook will be wired into the `score` orchestrator (right after `writeAdoptionScores`) once `notify_requests` is available.
+When a server transitions from untracked → tracked, the scoring brief calls for an email to anyone who'd requested notification. The `notify_requests` table now exists (migration `20260521120000_notify_requests.sql`) and the `/notify` funnel (`web/app/api/notify/route.ts`) writes to it, but the **fulfillment hook is not yet wired** into the `score` orchestrator — it belongs right after `writeAdoptionScores`, reading pending `notify_requests` rows for the newly-tracked server.
 
 ## Seed sources
 
@@ -101,10 +108,13 @@ When a server transitions from untracked → tracked, the scoring brief calls fo
 
 The brief's floor is ≥30 servers; the current seed is ~78. Tier is rank-based, so low-signal entries simply rank low and don't pollute the matrix. **Adding entries** is append-only: new YAML rows; the script upserts. **Removing** should be done by commenting out (the DB row + its history stays); hard-deletes would orphan downstream `versions`/`adoption_scores` rows.
 
-## Next phases (sketch)
+## Shipped & what's next
 
-- **Phase 2** — npm + github adapters with tests (the two biggest signal contributors).
-- **Phase 3** — pypi, openssf, depsdev, glama, smithery adapters.
-- **Phase 4** — pruned `computeMcpToolAdoption` + rank-based tier writer.
-- **Phase 5** — hourly version poll + daily scoring loop + `LISTEN/NOTIFY` emit.
-- **Phase 6** — deploy plumbing (Hetzner worker or Edge Function — pending litmus' deploy choice).
+Phases 1–6 have all shipped: seed list → npm/github/pypi/openssf/depsdev/glama/smithery
+adapters (with tests) → the pruned compute + rank-based tier writer → hourly version `poll`,
+daily `score` loop, and `LISTEN/NOTIFY` emit → deploy, which landed as the GitHub Actions cron
+above. Remaining, out of v1 scope:
+
+- A live **registry-sync** adapter (official MCP registry / Glama / Smithery) to replace the
+  static seed snapshot and grow the tracked universe automatically.
+- Wiring the **notify-funnel fulfillment** hook (above) into the `score` orchestrator.

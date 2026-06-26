@@ -10,7 +10,7 @@ const rows = [
   {
     q: "Does it behave well under pressure?",
     src: "Our sandbox",
-    status: "litmus-v2 — live",
+    status: "litmus-v10 — live",
     statusKind: "primary" as const,
   },
   {

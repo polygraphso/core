@@ -5,9 +5,10 @@ This is the source-of-truth code repo for **polygraph.so** (formerly `poligrafo.
 ## Where to look first
 
 - `README.md` — repo layout and dev commands.
-- `web/` — the launch landing page (Next.js 16, App Router, Tailwind v4). Has its own `AGENTS.md` warning that this Next.js may differ from training-data conventions; consult `web/node_modules/next/dist/docs/` before guessing.
+- `web/` — the polygraph.so site (Next.js 16, App Router, Tailwind v4): landing, the MCP Security Index (`/rankings`), per-server (`/mcp`) and per-skill (`/skill`) grade reports, ecosystem indices (`/bankr`, `/base`), blog, and the embeddable grade badge. Has its own `AGENTS.md` warning that this Next.js may differ from training-data conventions; consult `web/node_modules/next/dist/docs/` before guessing.
+- `packages/` — `core` (the data model: Supabase migrations, row types, server identity; owns the `hosted_runs` schema), `scoring` (`@polygraph/scoring`, the daily adoption-signal pipeline), `cli` (`polygraphso`, the published lookup CLI), `mcp` (`@polygraphso/mcp`, the lookup MCP server).
 - `brand/` — logomark, wordmark, social-preview source SVGs + GitHub-ready PNGs.
-- Strategy & decision log lives outside this repo at `~/Documents/workspace/assistant/polygraph/`. Read `brand-foundation.md` (settled core), then `pivot-2026-05-15.md`, then `landing-brief.md`, then `litmus-test-v1.md`. Don't restate or relitigate decisions captured there — anchor against them.
+- Strategy & standing conventions live in the workspace-level `CLAUDE.md` (the cross-repo map across `litmus/`, `hosted-service/`, `core/`) and this repo's `README.md`. The behavioral methodology is the litmus spec — `hosted-service/docs/litmus-test.md`, mirrored at [polygraph.so/methodology](https://polygraph.so/methodology). Don't restate or relitigate decisions captured there — anchor against them.
 
 ## What this product is (one paragraph)
 
@@ -21,8 +22,8 @@ Behavioral evaluation for MCP servers and the agents that use them. Free public 
 
 ## How to help
 
-- Pre-traction default: focus only on what gates litmus-v1 + the landing page. Anything else is parking-lot.
-- Tone: serious, calm, expert. Plain English. Lexicon and avoid-list in `brand-foundation.md`. Avoid VC-bro / Web3-bro / "revolutionize" / "empower" / generic "AI safety" language.
+- Keep changes scoped to what a task needs — don't build ahead of demand.
+- Tone: serious, calm, expert. Plain English. Avoid VC-bro / Web3-bro / "revolutionize" / "empower" / generic "AI safety" language.
 - The visual identity is **scientific preprint chrome over product-page posture**. Source Serif 4 + IBM Plex Sans + IBM Plex Mono. Warm parchment background, ink text, oxblood accent. Don't drift into gradient-purple-startup territory.
 - When the user describes a new decision, ask what it *supersedes* and update the strategy folder accordingly — don't accept it as additive without checking.
 
