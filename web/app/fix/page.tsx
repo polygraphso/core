@@ -8,7 +8,7 @@
  */
 
 import type { Metadata } from "next";
-import Link from "next/link";
+import { BackButton } from "./_components/BackButton";
 
 export const metadata: Metadata = {
   title: "Remediation — coming soon",
@@ -54,12 +54,7 @@ export default async function FixPage({ searchParams }: { searchParams: SearchPa
         </p>
 
         <div className="mt-8">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 border hairline px-5 py-3 font-mono text-sm tracking-wide text-ink-muted hover:text-ink transition-colors"
-          >
-            ← Back to polygraph.so
-          </Link>
+          <BackButton />
         </div>
       </section>
     </main>
