@@ -61,7 +61,7 @@ function GradeCard({ run }: { run: Run }) {
   );
 
   const cardClass =
-    "flex h-full w-[280px] shrink-0 snap-start flex-col border hairline bg-parchment-50 p-4 transition-colors";
+    "flex w-[280px] shrink-0 snap-start flex-col border hairline bg-parchment-50 p-4 transition-colors";
 
   return run.href ? (
     <a href={run.href} className={`group ${cardClass} hover:border-ink/30`}>
@@ -134,7 +134,7 @@ export function RecentGradesCarousel({ runs }: { runs: Run[] }) {
       ) : (
         <div
           ref={trackRef}
-          className="flex snap-x snap-proximity gap-4 overflow-x-auto pb-3 [scrollbar-width:thin]"
+          className="flex items-stretch snap-x snap-proximity gap-4 overflow-x-auto pb-3 [scrollbar-width:thin]"
         >
           {runs.map((run) => (
             <GradeCard key={run.id} run={run} />
