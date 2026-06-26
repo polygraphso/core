@@ -103,7 +103,7 @@ export function RecentGradesCarousel({ runs }: { runs: Run[] }) {
           href="/rankings"
           className="font-mono text-[12px] text-ink border-b hairline border-dotted hover:text-oxblood transition-colors"
         >
-          See all {runs.length} grades →
+          See all grades →
         </a>
         {runs.length > 1 ? (
           <div className="hidden sm:flex items-center gap-2">
