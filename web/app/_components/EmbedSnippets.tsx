@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 
-// Copy-paste embed block for the per-server page: markdown + HTML for the inline
-// badge, plus markdown for the larger card. The badge/card URLs query the live
-// grade, so the snippet a maintainer copies once stays current on its own.
+// Copy-paste embed block, shared by the per-server (/mcp) and per-skill (/skill)
+// report pages: markdown + HTML for the inline badge, plus markdown for the
+// larger card. The badge/card URLs query the live grade, so the snippet a
+// maintainer copies once stays current on its own.
 
 function CopyBlock({ label, code }: { label: string; code: string }) {
   const [copied, setCopied] = useState(false);
