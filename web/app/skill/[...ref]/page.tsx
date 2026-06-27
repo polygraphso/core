@@ -29,6 +29,9 @@ import {
 import { GRADE_HEX } from "@/lib/gradeColors";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { FixCta } from "@/app/_components/FixCta";
+import { EmbedSnippets } from "@/app/_components/EmbedSnippets";
+
+const ORIGIN = "https://polygraph.so";
 
 // generateMetadata and the page both need the grade; cache() collapses them to
 // one query per request.
@@ -125,10 +128,22 @@ export default async function SkillReportPage({ params }: { params: Params }) {
 
 async function Report({ target }: { target: string }) {
   const result = await getGrade(target);
+  const path = skillRefToPath(target);
+  const badgeUrl = `${ORIGIN}/api/badge/skill?skill=${path}`;
+  const cardUrl = `${ORIGIN}/api/badge/skill/card?skill=${path}`;
+  const pageUrl = `${ORIGIN}/skill/${path}`;
+
   return result ? (
-    <Graded target={target} grade={result.grade} detail={result.detail} />
+    <Graded
+      target={target}
+      grade={result.grade}
+      detail={result.detail}
+      badgeUrl={badgeUrl}
+      cardUrl={cardUrl}
+      pageUrl={pageUrl}
+    />
   ) : (
-    <Ungraded target={target} />
+    <Ungraded target={target} badgeUrl={badgeUrl} cardUrl={cardUrl} pageUrl={pageUrl} />
   );
 }
 
@@ -136,10 +151,16 @@ function Graded({
   target,
   grade,
   detail,
+  badgeUrl,
+  cardUrl,
+  pageUrl,
 }: {
   target: string;
   grade: SkillLitmusGrade;
   detail: SkillDetail;
+  badgeUrl: string;
+  cardUrl: string;
+  pageUrl: string;
 }) {
   const name = skillDisplayName(target);
   const source = githubUrlForSkillRef(target);
@@ -231,6 +252,20 @@ function Graded({
           <code>npx -p @polygraphso/litmus polygraphso-litmus-skill &lt;skill-dir&gt;</code>
         </pre>
       </div>
+
+      {/* embed */}
+      <div className="mt-12 border-t hairline pt-6">
+        <h2 className="font-serif text-lg text-ink mb-1">Embed this badge</h2>
+        <p className="font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl mb-5">
+          Drop it in the skill&rsquo;s README, docs, or listing. It always shows the current
+          grade and links back here.
+        </p>
+        <div className="mb-5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={badgeUrl} alt={`polygraph skill grade ${grade}`} height={20} />
+        </div>
+        <EmbedSnippets badgeUrl={badgeUrl} cardUrl={cardUrl} pageUrl={pageUrl} />
+      </div>
     </>
   );
 }
@@ -296,7 +331,17 @@ function FindingChip({ finding }: { finding: SkillFinding }) {
   );
 }
 
-function Ungraded({ target }: { target: string }) {
+function Ungraded({
+  target,
+  badgeUrl,
+  cardUrl,
+  pageUrl,
+}: {
+  target: string;
+  badgeUrl: string;
+  cardUrl: string;
+  pageUrl: string;
+}) {
   const name = skillDisplayName(target);
   const source = githubUrlForSkillRef(target);
   return (
@@ -337,6 +382,20 @@ function Ungraded({ target }: { target: string }) {
         <pre className="mt-3 overflow-x-auto rounded-sm border hairline bg-parchment-50 px-4 py-3 font-mono text-[12.5px] text-ink">
           <code>npx -p @polygraphso/litmus polygraphso-litmus-skill &lt;skill-dir&gt;</code>
         </pre>
+      </div>
+
+      {/* embed */}
+      <div className="mt-12 border-t hairline pt-6">
+        <h2 className="font-serif text-lg text-ink mb-1">Embed the badge anyway</h2>
+        <p className="font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl mb-5">
+          It reads <span className="font-mono">unrated</span> today and updates itself to the
+          grade the moment one publishes — no edit needed.
+        </p>
+        <div className="mb-5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={badgeUrl} alt="polygraph skill grade unrated" height={20} />
+        </div>
+        <EmbedSnippets badgeUrl={badgeUrl} cardUrl={cardUrl} pageUrl={pageUrl} />
       </div>
     </>
   );
