@@ -17,7 +17,7 @@ import { GRADE_HEX } from "@/lib/gradeColors";
 import type { LitmusGrade, PolygraphDetail } from "@/lib/hostedGrades";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { fetchAdoptionForServer, type ServerAdoption } from "@/lib/rankings";
-import { EmbedSnippets } from "./_components/EmbedSnippets";
+import { EmbedSnippets } from "@/app/_components/EmbedSnippets";
 import { FixCta } from "@/app/_components/FixCta";
 
 const ORIGIN = "https://polygraph.so";
