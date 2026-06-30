@@ -11,6 +11,8 @@ export interface Topline {
   notify: number;
   notifyUnfulfilled: number;
   untrackedServers: number;
+  attestations: number; // confirmed on-chain
+  attestationsPending: number; // in-flight (tx sent, not yet confirmed)
 }
 
 export interface WaitlistMetrics {
@@ -58,16 +60,35 @@ async function countOf(
 }
 
 export async function getTopline(): Promise<Topline> {
-  const [waitlist, gradeRequests, gradeQueued, notify, notifyUnfulfilled, untrackedServers] =
-    await Promise.all([
-      countOf("waitlist_signups"),
-      countOf("grade_requests"),
-      countOf("grade_requests", (q) => q.eq("status", "queued")),
-      countOf("notify_requests"),
-      countOf("notify_requests", (q) => q.is("fulfilled_at", null)),
-      countOf("untracked_demand"),
-    ]);
-  return { waitlist, gradeRequests, gradeQueued, notify, notifyUnfulfilled, untrackedServers };
+  const [
+    waitlist,
+    gradeRequests,
+    gradeQueued,
+    notify,
+    notifyUnfulfilled,
+    untrackedServers,
+    attestations,
+    attestationsPending,
+  ] = await Promise.all([
+    countOf("waitlist_signups"),
+    countOf("grade_requests"),
+    countOf("grade_requests", (q) => q.eq("status", "queued")),
+    countOf("notify_requests"),
+    countOf("notify_requests", (q) => q.is("fulfilled_at", null)),
+    countOf("untracked_demand"),
+    countOf("grade_attestations", (q) => q.eq("status", "confirmed")),
+    countOf("grade_attestations", (q) => q.eq("status", "pending")),
+  ]);
+  return {
+    waitlist,
+    gradeRequests,
+    gradeQueued,
+    notify,
+    notifyUnfulfilled,
+    untrackedServers,
+    attestations,
+    attestationsPending,
+  };
 }
 
 const today = () => new Date();

@@ -57,6 +57,11 @@ export default async function AdminPage() {
           sub={`${top.notifyUnfulfilled} unfulfilled`}
         />
         <KpiCard label="Untracked servers" value={top.untrackedServers} />
+        <KpiCard
+          label="Attestations"
+          value={top.attestations}
+          sub={`${top.attestationsPending} pending · on-chain`}
+        />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
