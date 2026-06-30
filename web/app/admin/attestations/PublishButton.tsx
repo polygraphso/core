@@ -34,7 +34,7 @@ export function PublishButton({ hostedRunId }: { hostedRunId: string }) {
         type="button"
         disabled={busy}
         onClick={go}
-        className="font-mono text-[11px] border px-2 py-1 hover:bg-ink/5 disabled:opacity-50"
+        className="font-mono text-[11px] border px-2 py-1 hover:bg-ink/5 disabled:opacity-50 whitespace-nowrap"
       >
         {busy ? "publishing…" : "Publish"}
       </button>

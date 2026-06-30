@@ -67,7 +67,7 @@ export function RegradeButton({ target, targetKind }: { target: string; targetKi
         type="button"
         disabled={grading}
         onClick={go}
-        className="font-mono text-[11px] border px-2 py-1 hover:bg-ink/5 disabled:opacity-50"
+        className="font-mono text-[11px] border px-2 py-1 hover:bg-ink/5 disabled:opacity-50 whitespace-nowrap"
       >
         {grading ? "grading…" : "Re-grade"}
       </button>
