@@ -1,46 +1,60 @@
-"use client";
+import type { Metadata } from "next";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 
-export default function AdminLoginPage() {
-  const [token, setToken] = useState("");
-  const [err, setErr] = useState<string | null>(null);
-  const router = useRouter();
+const ERRORS: Record<string, string> = {
+  "1": "Incorrect password.",
+  rate: "Too many attempts. Wait a minute and try again.",
+  config: "Admin password is not configured on the server.",
+};
 
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setErr(null);
-    const res = await fetch("/api/admin/login", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ token }),
-    });
-    if (res.ok) {
-      router.push("/admin/attestations");
-      router.refresh();
-    } else {
-      const j = await res.json().catch(() => ({}));
-      setErr(j.error ?? "Login failed");
-    }
-  }
+export default async function AdminLoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+  const message = error ? ERRORS[error] ?? "Could not sign in." : null;
 
   return (
-    <main className="mx-auto max-w-sm px-6 py-24">
-      <h1 className="font-serif text-2xl mb-6">Admin</h1>
-      <form onSubmit={submit} className="flex flex-col gap-3">
-        <input
-          type="password"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          placeholder="Admin token"
-          className="border px-3 py-2 font-mono text-sm"
-        />
-        <button type="submit" className="border px-3 py-2 font-mono text-sm hover:bg-ink/5">
-          Sign in
-        </button>
-        {err && <p className="text-oxblood text-xs">{err}</p>}
-      </form>
+    <main className="flex-1 flex items-center justify-center px-6 py-24">
+      <div className="w-full max-w-sm">
+        <p className="section-label mb-3">Restricted</p>
+        <h1 className="font-serif text-2xl text-ink mb-1">Admin access</h1>
+        <p className="text-sm text-ink-muted mb-6">
+          Enter the shared password to view usage metrics.
+        </p>
+
+        <form method="post" action="/api/admin/login" className="space-y-4">
+          <div>
+            <label htmlFor="password" className="section-label block mb-2">
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              autoFocus
+              required
+              className="w-full rounded-sm border border-rule bg-parchment-50 px-3 py-2 font-mono text-sm text-ink outline-none focus:border-oxblood"
+            />
+          </div>
+
+          {message && (
+            <p className="text-sm text-oxblood" role="alert">
+              {message}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="w-full rounded-sm bg-ink px-4 py-2 font-mono text-sm text-parchment hover:bg-oxblood transition-colors"
+          >
+            Sign in
+          </button>
+        </form>
+      </div>
     </main>
   );
 }
