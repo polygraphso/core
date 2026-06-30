@@ -316,7 +316,11 @@ async function OnchainSection({ target }: { target: string }) {
   );
 }
 
-/** One S-0x row: status on the right, with the evidence that drove it underneath. */
+/** One S-0x row: status on the right; for a FAIL, the findings that drove it
+ *  underneath. Findings are not shown for a passing check — a pass may carry
+ *  sub-threshold matches (e.g. instruction-mimicry, which fires on benign skill
+ *  instructions) that didn't move the grade, and rendering them under a green
+ *  "pass" reads as a contradiction. */
 function CategoryRow({ cat }: { cat: SkillCategory }) {
   const label = SKILL_CATEGORIES.find((c) => c.code === cat.code)?.name ?? "";
   return (
@@ -332,7 +336,7 @@ function CategoryRow({ cat }: { cat: SkillCategory }) {
       {cat.reason ? (
         <p className="mt-1.5 font-mono text-[11px] text-ink-faint leading-relaxed">{cat.reason}</p>
       ) : null}
-      {cat.findings.length > 0 ? (
+      {cat.status !== "pass" && cat.findings.length > 0 ? (
         <ul className="mt-2.5 space-y-2 border-l-2 pl-4" style={{ borderColor: "var(--color-rule-soft)" }}>
           {cat.findings.map((f, i) => (
             <FindingChip key={i} finding={f} />
