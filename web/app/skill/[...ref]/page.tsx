@@ -28,6 +28,8 @@ import {
 } from "@/lib/skillGrades";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { findLatestConfirmedByServer } from "@/lib/attestations/store";
+import { getChainConfig, attestationUrl, attesterName } from "@/lib/attestations/chains";
 import { FixCta } from "@/app/_components/FixCta";
 import { EmbedSnippets } from "@/app/_components/EmbedSnippets";
 
@@ -234,6 +236,9 @@ function Graded({
         </p>
       ) : null}
 
+      {/* on-chain attestation — shown only when this skill's grade is attested */}
+      <OnchainSection target={target} />
+
       {/* reproduce — trust rests on re-runnability, not on a claim */}
       <div className="mt-12 border-t hairline pt-6">
         <h2 className="font-serif text-lg text-ink mb-2">Reproduce this grade</h2>
@@ -267,6 +272,47 @@ function Graded({
         <EmbedSnippets badgeUrl={badgeUrl} cardUrl={cardUrl} pageUrl={pageUrl} />
       </div>
     </>
+  );
+}
+
+/**
+ * On-chain attestation block — rendered only when this skill's grade is published
+ * as an EAS attestation. Mirrors the /grade evidence section; the evidenceHash is
+ * the re-hashable tamper-proof anchor.
+ */
+async function OnchainSection({ target }: { target: string }) {
+  const db = getSupabaseAdmin();
+  if (!db) return null;
+  const cfg = getChainConfig();
+  const att = await findLatestConfirmedByServer(db, target, cfg.chainId);
+  if (!att?.attestation_uid) return null;
+  return (
+    <div className="mt-12 border-t hairline pt-6">
+      <h2 className="font-serif text-lg text-ink mb-2">On-chain attestation</h2>
+      <p className="font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl">
+        This grade is published as an EAS attestation on {cfg.chain}, signed by polygraph&rsquo;s
+        attester. The <code className="font-mono text-[12.5px]">evidenceHash</code> is keccak256 of
+        the canonical evidence bundle — anyone can recompute it and confirm the grade was not altered.
+      </p>
+      <dl className="mt-3 font-mono text-[11px] text-ink-faint space-y-1">
+        <div>
+          attester · <span className="text-ink-muted">{attesterName(att.attester_address)}</span>
+        </div>
+        <div className="break-all">
+          evidenceHash · <span className="text-ink-muted">{att.evidence_hash}</span>
+        </div>
+      </dl>
+      <p className="mt-3 font-sans text-[13px]">
+        <a
+          href={attestationUrl(cfg, att.attestation_uid)}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="text-oxblood border-b hairline border-dotted hover:opacity-80 transition-opacity"
+        >
+          View on {cfg.chain} EAS explorer ↗
+        </a>
+      </p>
+    </div>
   );
 }
 
