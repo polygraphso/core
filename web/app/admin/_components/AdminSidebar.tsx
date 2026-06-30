@@ -13,6 +13,11 @@ type NavItem = {
   href: string;
   label: string;
   active: (pathname: string) => boolean;
+  // Links out of the admin shell to a standalone surface (its own chrome, no
+  // rail) — flagged with a ↗ so the jump is expected. The ecosystems hub is
+  // unlisted/noindex and has no other entry point, so the admin nav surfaces
+  // it for now.
+  external?: boolean;
 };
 
 const NAV: NavItem[] = [
@@ -21,6 +26,12 @@ const NAV: NavItem[] = [
     href: "/admin/attestations",
     label: "Attestations",
     active: (p) => p.startsWith("/admin/attestations"),
+  },
+  {
+    href: "/ecosystems",
+    label: "Ecosystems",
+    active: (p) => p.startsWith("/ecosystems"),
+    external: true,
   },
 ];
 
@@ -73,6 +84,11 @@ export function AdminSidebar({ pathname }: { pathname: string }) {
                 }`}
               >
                 {item.label}
+                {item.external && (
+                  <span aria-hidden className="ml-1 text-ink-faint">
+                    ↗
+                  </span>
+                )}
               </a>
             );
           })}
@@ -113,6 +129,11 @@ export function AdminSidebar({ pathname }: { pathname: string }) {
                 }`}
               >
                 {item.label}
+                {item.external && (
+                  <span aria-hidden className="ml-1 text-ink-faint">
+                    ↗
+                  </span>
+                )}
               </a>
             );
           })}
