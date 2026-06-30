@@ -82,11 +82,15 @@ export async function findConfirmed(
   return (data as AttestationRow | null) ?? null;
 }
 
-/** Most-recent confirmed attestation for a (server, version) pair. */
+/** Most-recent confirmed attestation for a (server, version) pair on a given
+ *  chain. Scoping by chainId keeps a page bound to the chain it's configured for,
+ *  so e.g. a mainnet deploy never surfaces a testnet attestation (with a dead
+ *  mainnet-explorer link). */
 export async function findLatestConfirmedByServerVersion(
   db: SupabaseClient,
   server: string,
   version: string,
+  chainId: number,
 ): Promise<AttestationRow | null> {
   const { data, error } = await db
     .from(TABLE)
@@ -94,6 +98,7 @@ export async function findLatestConfirmedByServerVersion(
     .eq("server", server)
     .eq("version", version)
     .eq("status", "confirmed")
+    .eq("chain_id", chainId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -103,17 +108,20 @@ export async function findLatestConfirmedByServerVersion(
   return (data as AttestationRow | null) ?? null;
 }
 
-/** Most-recent confirmed attestation for a server/skill ref (any version). Used
- *  by the per-skill report, where the resolved ref isn't surfaced in the detail. */
+/** Most-recent confirmed attestation for a server/skill ref (any version) on a
+ *  given chain. Used by the per-skill report, where the resolved ref isn't
+ *  surfaced in the detail; chain-scoped for the same reason as above. */
 export async function findLatestConfirmedByServer(
   db: SupabaseClient,
   server: string,
+  chainId: number,
 ): Promise<AttestationRow | null> {
   const { data, error } = await db
     .from(TABLE)
     .select("*")
     .eq("server", server)
     .eq("status", "confirmed")
+    .eq("chain_id", chainId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();

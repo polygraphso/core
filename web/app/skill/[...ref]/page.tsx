@@ -283,9 +283,9 @@ function Graded({
 async function OnchainSection({ target }: { target: string }) {
   const db = getSupabaseAdmin();
   if (!db) return null;
-  const att = await findLatestConfirmedByServer(db, target);
-  if (!att?.attestation_uid) return null;
   const cfg = getChainConfig();
+  const att = await findLatestConfirmedByServer(db, target, cfg.chainId);
+  if (!att?.attestation_uid) return null;
   return (
     <div className="mt-12 border-t hairline pt-6">
       <h2 className="font-serif text-lg text-ink mb-2">On-chain attestation</h2>

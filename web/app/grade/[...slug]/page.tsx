@@ -46,12 +46,13 @@ export default async function GradePage({
   if (!result) notFound();
   const { grade, detail } = result;
 
+  const cfg = getChainConfig();
   const att = await findLatestConfirmedByServerVersion(
     db,
     serverKey,
     detail.resolved_version ?? "",
+    cfg.chainId,
   );
-  const cfg = getChainConfig();
 
   const cats: Array<[string, string | null]> = [
     ["C-01", detail.c01],
