@@ -19,6 +19,15 @@ export default async function AdminLoginPage({
   return (
     <main className="flex-1 flex items-center justify-center px-6 py-24">
       <div className="w-full max-w-sm">
+        <a
+          href="/"
+          className="inline-flex items-center gap-2.5 mb-8 hover:opacity-80 transition-opacity"
+        >
+          <span className="inline-block w-1.5 h-1.5 bg-oxblood pulse-soft" aria-hidden />
+          <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink">
+            polygraph.so
+          </span>
+        </a>
         <p className="section-label mb-3">Restricted</p>
         <h1 className="font-serif text-2xl text-ink mb-1">Admin access</h1>
         <p className="text-sm text-ink-muted mb-6">

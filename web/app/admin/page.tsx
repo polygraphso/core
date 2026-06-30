@@ -22,25 +22,10 @@ export default async function AdminPage() {
   ]);
 
   return (
-    <main className="flex-1 mx-auto w-full max-w-5xl px-6 py-12">
-      <div className="flex items-baseline justify-between mb-8">
-        <div>
-          <p className="section-label mb-1">Internal</p>
-          <h1 className="font-serif text-2xl text-ink">Usage metrics</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <a
-            href="/admin/attestations"
-            className="font-mono text-xs text-ink-muted hover:text-oxblood"
-          >
-            Attestations →
-          </a>
-          <form method="post" action="/api/admin/logout">
-            <button className="font-mono text-xs text-ink-muted hover:text-oxblood">
-              Sign out
-            </button>
-          </form>
-        </div>
+    <main className="mx-auto w-full max-w-5xl px-6 py-12">
+      <div className="mb-8">
+        <p className="section-label mb-1">Internal</p>
+        <h1 className="font-serif text-2xl text-ink">Usage metrics</h1>
       </div>
 
       {/* KPIs */}
