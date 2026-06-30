@@ -4,7 +4,7 @@
  *
  * A server-side proxy to the runner's token-gated POST /grade on
  * hosted.polygraph.so: the HOSTED_RUNNER_TOKEN stays here and never reaches the
- * browser. Gated by proxy.ts (the /api/admin/* ADMIN_TOKEN matcher), so an
+ * browser. Gated by proxy.ts (the /api/admin/* signed-session matcher), so an
  * unauthenticated caller can't spend the runner's grade budget. The grade is
  * decoupled — POST returns the runner's 202 + job id, the client polls GET.
  */
