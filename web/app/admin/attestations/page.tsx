@@ -14,12 +14,7 @@ export default async function AdminAttestationsPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
-      <a
-        href="/admin"
-        className="font-mono text-xs text-ink-muted hover:text-oxblood mb-4 inline-block"
-      >
-        ← Usage metrics
-      </a>
+      <p className="section-label mb-1">Internal</p>
       <h1 className="font-serif text-3xl mb-1">Grade attestations</h1>
       <p className="font-mono text-[11px] text-ink/60 mb-1">
         Network: {cfg.chain} (chainId {cfg.chainId}) · latest run per target — re-grade, publish a draft, then attest.
