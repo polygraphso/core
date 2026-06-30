@@ -24,3 +24,9 @@ export function paginate<T>(items: T[], page: number, pageSize: number): T[] {
 export function pageCount(total: number, pageSize: number): number {
   return Math.max(1, Math.ceil(total / pageSize));
 }
+
+/** Render an elapsed-seconds count as `m:ss` for the re-grade timer. */
+export function formatElapsed(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}

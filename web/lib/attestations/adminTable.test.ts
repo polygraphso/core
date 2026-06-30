@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { filterRows, paginate, pageCount } from "./adminTable";
+import { filterRows, paginate, pageCount, formatElapsed } from "./adminTable";
 import type { AdminRow } from "./store";
 
 const row = (server: string, target_kind: string): AdminRow => ({
@@ -65,5 +65,18 @@ describe("pageCount", () => {
     expect(pageCount(0, 25)).toBe(1);
     expect(pageCount(25, 25)).toBe(1);
     expect(pageCount(26, 25)).toBe(2);
+  });
+});
+
+describe("formatElapsed", () => {
+  it("formats seconds as m:ss", () => {
+    expect(formatElapsed(0)).toBe("0:00");
+    expect(formatElapsed(5)).toBe("0:05");
+    expect(formatElapsed(65)).toBe("1:05");
+    expect(formatElapsed(600)).toBe("10:00");
+  });
+  it("floors fractional seconds and clamps negatives", () => {
+    expect(formatElapsed(9.8)).toBe("0:09");
+    expect(formatElapsed(-3)).toBe("0:00");
   });
 });
