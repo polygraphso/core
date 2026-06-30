@@ -21,6 +21,8 @@ export interface AttestationRow {
 export interface AdminRow {
   hosted_run_id: string;
   server: string;
+  /** 'registry_ref' | 'skill' — drives the public report link (/mcp vs /skill). */
+  target_kind: string;
   version: string;
   grade: string;
   status: "none" | "pending" | "confirmed" | "failed";
@@ -31,6 +33,7 @@ export interface AdminRow {
 interface RunLite {
   id: number | string;
   target: string;
+  target_kind?: string | null;
   grade: string | null;
   evidence: { resolvedVersion?: string | null } | null;
 }
@@ -55,6 +58,7 @@ export function joinRunsWithAttestations(
     return {
       hosted_run_id: String(r.id),
       server: r.target,
+      target_kind: r.target_kind ?? "",
       version: r.evidence?.resolvedVersion ?? "",
       grade: r.grade ?? "?",
       status: (a?.status ?? "none") as AdminRow["status"],
@@ -175,7 +179,7 @@ export async function markFailed(db: SupabaseClient, id: number, message: string
 export async function listPublishedWithStatus(db: SupabaseClient): Promise<AdminRow[]> {
   const { data: runs, error: runsErr } = await db
     .from("hosted_runs")
-    .select("id, target, grade, evidence, published_at")
+    .select("id, target, target_kind, grade, evidence, published_at")
     .in("target_kind", ["registry_ref", "skill"])
     .eq("status", "complete")
     .not("published_at", "is", null)
