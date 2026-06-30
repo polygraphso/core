@@ -28,11 +28,19 @@ export default async function AdminPage() {
           <p className="section-label mb-1">Internal</p>
           <h1 className="font-serif text-2xl text-ink">Usage metrics</h1>
         </div>
-        <form method="post" action="/api/admin/logout">
-          <button className="font-mono text-xs text-ink-muted hover:text-oxblood">
-            Sign out
-          </button>
-        </form>
+        <div className="flex items-center gap-4">
+          <a
+            href="/admin/attestations"
+            className="font-mono text-xs text-ink-muted hover:text-oxblood"
+          >
+            Attestations →
+          </a>
+          <form method="post" action="/api/admin/logout">
+            <button className="font-mono text-xs text-ink-muted hover:text-oxblood">
+              Sign out
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* KPIs */}
