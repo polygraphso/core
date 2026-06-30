@@ -103,6 +103,26 @@ export async function findLatestConfirmedByServerVersion(
   return (data as AttestationRow | null) ?? null;
 }
 
+/** Most-recent confirmed attestation for a server/skill ref (any version). Used
+ *  by the per-skill report, where the resolved ref isn't surfaced in the detail. */
+export async function findLatestConfirmedByServer(
+  db: SupabaseClient,
+  server: string,
+): Promise<AttestationRow | null> {
+  const { data, error } = await db
+    .from(TABLE)
+    .select("*")
+    .eq("server", server)
+    .eq("status", "confirmed")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) {
+    console.warn("[attestations] findLatestConfirmedByServer soft-failed:", error.message);
+  }
+  return (data as AttestationRow | null) ?? null;
+}
+
 export interface InsertPendingInput {
   hosted_run_id: string;
   server: string;

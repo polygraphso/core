@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { fetchPublishedGrade } from "@/lib/hostedGrades";
-import { getChainConfig, attestationUrl } from "@/lib/attestations/chains";
+import { getChainConfig, attestationUrl, attesterName } from "@/lib/attestations/chains";
 import { findLatestConfirmedByServerVersion } from "@/lib/attestations/store";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +57,7 @@ export default async function GradePage({
     ["C-01", detail.c01],
     ["C-02", detail.c02],
     ["C-03", detail.c03],
+    ["C-04", detail.c04],
   ];
 
   return (
@@ -103,7 +104,7 @@ export default async function GradePage({
               </a>
             </p>
             <p className="font-mono text-[11px] text-ink/60 break-all">
-              attester {att.attester_address}
+              attester {attesterName(att.attester_address)}
             </p>
             <p className="font-mono text-[11px] text-ink/60 break-all">
               evidenceHash {att.evidence_hash}

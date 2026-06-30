@@ -43,3 +43,16 @@ export function getChainConfig(name: string = process.env.EAS_CHAIN ?? "base"): 
 export function attestationUrl(cfg: ChainConfig, uid: string): string {
   return `${cfg.easscanBase}/attestation/view/${uid}`;
 }
+
+// Known attester addresses → their human-readable Base name, for display. The
+// attester is polygraph's provenance signal; show the name, fall back to the raw
+// address for anything unrecognized.
+const ATTESTER_NAMES: Record<string, string> = {
+  "0xa31f8bcbde4deb0dcd7f7252e5478505a9930b5d": "polygraph.base.eth",
+};
+
+/** Display name for an attester address (its Base name when known). */
+export function attesterName(address: string | null): string {
+  if (!address) return "";
+  return ATTESTER_NAMES[address.toLowerCase()] ?? address;
+}
