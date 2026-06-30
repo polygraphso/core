@@ -58,9 +58,11 @@ describe("evidenceURI", () => {
 });
 
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
-import { buildFields, encodeFields } from "./encode";
-import { GRADE_SCHEMA } from "./schema";
+import { buildServerFields, encodeServerFields } from "./encode";
+import { SERVER_SCHEMA } from "./schema";
 import type { HostedGradeRow } from "@/lib/hostedGrades";
+
+const FINGERPRINT = "0x" + "ab".repeat(32);
 
 const ROW: HostedGradeRow & { id: number } = {
   id: 7,
@@ -71,10 +73,15 @@ const ROW: HostedGradeRow & { id: number } = {
   evidence: {
     resolvedVersion: "2.1.0",
     methodologyVersion: "litmus-v1",
-    toolDefsFingerprint: "fp123",
-    categories: [],
+    toolDefsFingerprint: FINGERPRINT,
+    categories: [
+      { code: "C-01", status: "pass" },
+      { code: "C-02", status: "skipped" },
+      { code: "C-03", status: "pass" },
+      // No C-04 in this v1 bundle ⇒ skipped sentinel (2).
+    ],
   },
-  tool_defs_fingerprint: "fp123",
+  tool_defs_fingerprint: FINGERPRINT,
   c01: null,
   c02: null,
   c03: null,
@@ -84,38 +91,54 @@ const ROW: HostedGradeRow & { id: number } = {
   published_at: "2026-01-02T00:00:00.000Z",
 };
 
-describe("buildFields", () => {
-  it("maps a hosted_runs row into attestation fields", () => {
-    const f = buildFields(ROW)!;
-    expect(f.server).toBe("npm/some-mcp");
-    expect(f.version).toBe("2.1.0");
-    expect(f.grade).toBe("B");
+describe("buildServerFields", () => {
+  it("maps a hosted_runs row into reconciled server attestation fields", () => {
+    const f = buildServerFields(ROW)!;
+    expect(f.serverRef).toBe("npm/some-mcp");
+    expect(f.resolvedVersion).toBe("2.1.0");
+    expect(f.overallGrade).toBe("B");
     expect(f.methodologyVersion).toBe("litmus-v1");
-    expect(f.toolDefsFingerprint).toBe("fp123");
+    expect(f.toolDefsFingerprint).toBe(FINGERPRINT);
+    expect(f.gradeC01).toBe(0); // pass
+    expect(f.gradeC02).toBe(2); // skipped
+    expect(f.gradeC03).toBe(0); // pass
+    expect(f.gradeC04).toBe(2); // absent ⇒ skipped sentinel
     expect(f.evidenceURI).toBe("https://polygraph.so/grade/npm/some-mcp?v=2.1.0");
     expect(f.evidenceHash).toMatch(/^0x[0-9a-f]{64}$/);
-    expect(f.issuedAt).toBe(BigInt(Date.parse("2026-01-02T00:00:00.000Z") / 1000));
+    expect(f.ranAt).toBe(BigInt(Date.parse("2026-01-02T00:00:00.000Z") / 1000));
   });
 
   it("returns null when the row has no valid grade", () => {
-    expect(buildFields({ ...ROW, grade: null })).toBeNull();
+    expect(buildServerFields({ ...ROW, grade: null })).toBeNull();
   });
 
-  it("uses empty string for an unresolved version", () => {
-    const f = buildFields({ ...ROW, evidence: { ...ROW.evidence, resolvedVersion: null } })!;
-    expect(f.version).toBe("");
+  it("uses empty string + no ?v for an unresolved version", () => {
+    const f = buildServerFields({ ...ROW, evidence: { ...ROW.evidence, resolvedVersion: null } })!;
+    expect(f.resolvedVersion).toBe("");
     expect(f.evidenceURI).toBe("https://polygraph.so/grade/npm/some-mcp");
+  });
+
+  it("falls back to the zero hash when no tool fingerprint is present", () => {
+    const f = buildServerFields({
+      ...ROW,
+      tool_defs_fingerprint: null,
+      evidence: { ...ROW.evidence, toolDefsFingerprint: undefined },
+    })!;
+    expect(f.toolDefsFingerprint).toBe("0x" + "00".repeat(32));
   });
 });
 
-describe("encodeFields", () => {
+describe("encodeServerFields", () => {
   it("produces EAS data that round-trips through the schema decoder", () => {
-    const f = buildFields(ROW)!;
-    const encoded = encodeFields(f);
-    const decoded = new SchemaEncoder(GRADE_SCHEMA).decodeData(encoded);
+    const f = buildServerFields(ROW)!;
+    const encoded = encodeServerFields(f);
+    const decoded = new SchemaEncoder(SERVER_SCHEMA).decodeData(encoded);
     const byName = Object.fromEntries(decoded.map((d) => [d.name, d.value.value]));
-    expect(byName.server).toBe("npm/some-mcp");
-    expect(byName.grade).toBe("B");
-    expect(String(byName.issuedAt)).toBe(String(f.issuedAt));
+    expect(byName.serverRef).toBe("npm/some-mcp");
+    expect(byName.overallGrade).toBe("B");
+    expect(String(byName.gradeC02)).toBe("2");
+    expect(String(byName.gradeC04)).toBe("2");
+    expect(String(byName.ranAt)).toBe(String(f.ranAt));
+    expect(String(byName.toolDefsFingerprint).toLowerCase()).toBe(FINGERPRINT);
   });
 });

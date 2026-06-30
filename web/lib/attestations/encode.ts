@@ -1,4 +1,4 @@
-import { keccak256, toUtf8Bytes } from "ethers";
+import { keccak256, toUtf8Bytes, ZeroHash } from "ethers";
 
 /**
  * Deterministic JSON serialization: object keys sorted, undefined values
@@ -41,55 +41,94 @@ export function evidenceURI(serverKey: string, version: string | null): string {
 }
 
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
-import { detailFromRow, type HostedGradeRow } from "@/lib/hostedGrades";
-import { GRADE_SCHEMA } from "./schema";
+import { detailFromRow, type HostedGradeRow, type PolygraphDetail } from "@/lib/hostedGrades";
+import { SERVER_SCHEMA } from "./schema";
 
-export interface GradeAttestationFields {
-  server: string;
-  version: string;
-  grade: string;
-  methodologyVersion: string;
+/** Fields of the reconciled SERVER schema (npm + https targets). Mirrors litmus
+ *  `LitmusAttestationFields`; the field order matches SERVER_SCHEMA exactly. */
+export interface ServerAttestationFields {
+  serverRef: string;
   toolDefsFingerprint: string;
+  gradeC01: number;
+  gradeC02: number;
+  gradeC03: number;
+  gradeC04: number;
+  overallGrade: string;
   evidenceHash: string;
   evidenceURI: string;
-  issuedAt: bigint;
+  methodologyVersion: string;
+  ranAt: bigint;
+  resolvedVersion: string;
+}
+
+const STATUS_UINT8: Record<string, number> = { pass: 0, fail: 1, skipped: 2 };
+
+/** Map a category's verdict to its on-chain uint8 (pass=0, fail=1, else=2).
+ *  Prefers the bundle's raw category status; falls back to the flat c01..c04
+ *  display string (taking its leading word, e.g. "skipped — reason" → "skipped").
+ *  Absent / "partial" / unknown ⇒ the skipped sentinel (2): never "pass". */
+function categoryUint8(detail: PolygraphDetail, code: string): number {
+  const flat: Record<string, string | null> = {
+    "C-01": detail.c01,
+    "C-02": detail.c02,
+    "C-03": detail.c03,
+    "C-04": detail.c04,
+  };
+  const raw = detail.categories.find((c) => c.code === code)?.status ?? flat[code] ?? "";
+  const word = raw.split(" ")[0];
+  return STATUS_UINT8[word] ?? 2;
+}
+
+/** Run timestamp (unix seconds) the grade was produced at: the evidence bundle's
+ *  `ranAt` (what litmus signs), falling back to `published_at` then 0. */
+function ranAtSeconds(row: HostedGradeRow): bigint {
+  const bundleRanAt = (row.evidence as { ranAt?: string } | null)?.ranAt;
+  const iso = bundleRanAt ?? row.published_at;
+  return iso ? BigInt(Math.floor(Date.parse(iso) / 1000)) : BigInt(0);
 }
 
 /**
- * Build attestation fields from a published hosted_runs row. Returns null if
- * the row carries no valid grade. Value resolution (bundle-vs-column fallback)
- * is delegated to detailFromRow so attested values equal site/CLI values.
+ * Build SERVER attestation fields from a published hosted_runs row. Returns null
+ * if the row carries no valid grade. Scalar resolution (bundle-vs-column
+ * fallback) is delegated to detailFromRow so attested values equal site/CLI
+ * values; per-category verdicts (incl. C-04) come from the bundle.
  */
-export function buildFields(row: HostedGradeRow): GradeAttestationFields | null {
+export function buildServerFields(row: HostedGradeRow): ServerAttestationFields | null {
   const resolved = detailFromRow(row);
   if (!resolved) return null;
   const { detail } = resolved;
-  const issuedAt = row.published_at
-    ? BigInt(Math.floor(Date.parse(row.published_at) / 1000))
-    : BigInt(0);
   return {
-    server: row.target,
-    version: detail.resolved_version ?? "",
-    grade: detail.grade,
-    methodologyVersion: detail.methodology_version,
-    toolDefsFingerprint: detail.tool_defs_fingerprint ?? "",
+    serverRef: row.target,
+    // bytes32: a sha256 tool-surface fingerprint ("0x"+64hex), or zero when absent.
+    toolDefsFingerprint: detail.tool_defs_fingerprint ?? ZeroHash,
+    gradeC01: categoryUint8(detail, "C-01"),
+    gradeC02: categoryUint8(detail, "C-02"),
+    gradeC03: categoryUint8(detail, "C-03"),
+    gradeC04: categoryUint8(detail, "C-04"),
+    overallGrade: detail.grade,
     evidenceHash: evidenceHash(row.evidence ?? {}),
     evidenceURI: evidenceURI(row.target, detail.resolved_version),
-    issuedAt,
+    methodologyVersion: detail.methodology_version,
+    ranAt: ranAtSeconds(row),
+    resolvedVersion: detail.resolved_version ?? "",
   };
 }
 
-/** ABI-encode the fields for an EAS attestation, per GRADE_SCHEMA. */
-export function encodeFields(f: GradeAttestationFields): string {
-  const encoder = new SchemaEncoder(GRADE_SCHEMA);
+/** ABI-encode the SERVER fields for an EAS attestation, per SERVER_SCHEMA. */
+export function encodeServerFields(f: ServerAttestationFields): string {
+  const encoder = new SchemaEncoder(SERVER_SCHEMA);
   return encoder.encodeData([
-    { name: "server", value: f.server, type: "string" },
-    { name: "version", value: f.version, type: "string" },
-    { name: "grade", value: f.grade, type: "string" },
-    { name: "methodologyVersion", value: f.methodologyVersion, type: "string" },
-    { name: "toolDefsFingerprint", value: f.toolDefsFingerprint, type: "string" },
+    { name: "serverRef", value: f.serverRef, type: "string" },
+    { name: "toolDefsFingerprint", value: f.toolDefsFingerprint, type: "bytes32" },
+    { name: "gradeC01", value: f.gradeC01, type: "uint8" },
+    { name: "gradeC02", value: f.gradeC02, type: "uint8" },
+    { name: "gradeC03", value: f.gradeC03, type: "uint8" },
+    { name: "gradeC04", value: f.gradeC04, type: "uint8" },
+    { name: "overallGrade", value: f.overallGrade, type: "string" },
     { name: "evidenceHash", value: f.evidenceHash, type: "bytes32" },
     { name: "evidenceURI", value: f.evidenceURI, type: "string" },
-    { name: "issuedAt", value: f.issuedAt, type: "uint64" },
+    { name: "methodologyVersion", value: f.methodologyVersion, type: "string" },
+    { name: "ranAt", value: f.ranAt, type: "uint64" },
+    { name: "resolvedVersion", value: f.resolvedVersion, type: "string" },
   ]);
 }

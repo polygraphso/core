@@ -1,7 +1,6 @@
 import { EAS } from "@ethereum-attestation-service/eas-sdk";
 import { ethers } from "ethers";
 import { getChainConfig } from "./chains";
-import { encodeFields, type GradeAttestationFields } from "./encode";
 
 function makeSigner(): ethers.Wallet {
   const pk = process.env.ATTESTER_PRIVATE_KEY;
@@ -19,17 +18,19 @@ export interface AttestResult {
   attester: string;
 }
 
-/** Build, sign, and submit an on-chain EAS attestation for a grade. */
-export async function attestGrade(fields: GradeAttestationFields): Promise<AttestResult> {
-  const schemaUid = process.env.EAS_SCHEMA_UID;
-  if (!schemaUid) throw new Error("EAS_SCHEMA_UID must be set");
+/**
+ * Sign and submit an on-chain EAS attestation. `data` is the ABI-encoded schema
+ * payload (`encodeServerFields` / `encodeSkillFields`) and `schemaUid` selects
+ * which registered schema it conforms to (server vs skill).
+ */
+export async function attestGrade(data: string, schemaUid: string): Promise<AttestResult> {
+  if (!schemaUid) throw new Error("schema UID must be set");
 
   const cfg = getChainConfig();
   const wallet = makeSigner();
   const eas = new EAS(cfg.easContract);
   eas.connect(wallet);
 
-  const data = encodeFields(fields);
   const tx = await eas.attest({
     schema: schemaUid,
     data: {

@@ -1,6 +1,6 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { HOSTED_GRADE_COLUMNS, type HostedGradeRow } from "@/lib/hostedGrades";
-import { buildFields } from "@/lib/attestations/encode";
+import { buildServerFields, encodeServerFields } from "@/lib/attestations/encode";
 import { attestGrade } from "@/lib/attestations/eas";
 import { getChainConfig, attestationUrl } from "@/lib/attestations/chains";
 import {
@@ -59,17 +59,18 @@ export async function POST(request: Request) {
     return Response.json({ error: "Published grade not found" }, { status: 400 });
   }
 
-  const fields = buildFields(row as HostedGradeRow);
+  const fields = buildServerFields(row as HostedGradeRow);
   if (!fields) {
     return Response.json({ error: "Row has no valid grade" }, { status: 400 });
   }
+  const schemaUid = process.env.EAS_SCHEMA_UID as string;
 
   const pendingId = await insertPending(db, {
     hosted_run_id: hostedRunId,
-    server: fields.server,
-    version: fields.version,
-    grade: fields.grade,
-    schema_uid: process.env.EAS_SCHEMA_UID,
+    server: fields.serverRef,
+    version: fields.resolvedVersion,
+    grade: fields.overallGrade,
+    schema_uid: schemaUid,
     chain_id: cfg.chainId,
     evidence_hash: fields.evidenceHash,
   });
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
   // (and wasted gas) on retry.
   let attested;
   try {
-    attested = await attestGrade(fields);
+    attested = await attestGrade(encodeServerFields(fields), schemaUid);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await markFailed(db, pendingId, msg);
