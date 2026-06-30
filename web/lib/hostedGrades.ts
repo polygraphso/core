@@ -16,7 +16,7 @@ export type LitmusGrade = "A" | "B" | "C" | "D" | "F";
 
 // Mirrors the website's ChecksSoFar select (plus published_at for dating).
 export const HOSTED_GRADE_COLUMNS =
-  "target, target_kind, grade, rationale, evidence, tool_defs_fingerprint, c01, c02, c03, resolved_version, published_at";
+  "target, target_kind, grade, rationale, evidence, tool_defs_fingerprint, content_hash, c01, c02, c03, resolved_version, published_at";
 
 interface EvidenceFinding {
   kind?: string;
@@ -57,6 +57,9 @@ export interface HostedGradeRow {
   rationale: string | null;
   evidence: EvidenceBundle | null;
   tool_defs_fingerprint: string | null;
+  /** Whole-directory sha256 ("0x"+64hex) — skills only; null for servers. The
+   *  skill attestation's trust anchor (twin of tool_defs_fingerprint). */
+  content_hash: string | null;
   c01: string | null;
   c02: string | null;
   c03: string | null;

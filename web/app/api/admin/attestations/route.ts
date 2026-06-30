@@ -1,6 +1,11 @@
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { HOSTED_GRADE_COLUMNS, type HostedGradeRow } from "@/lib/hostedGrades";
-import { buildServerFields, encodeServerFields } from "@/lib/attestations/encode";
+import {
+  buildServerFields,
+  encodeServerFields,
+  buildSkillFields,
+  encodeSkillFields,
+} from "@/lib/attestations/encode";
 import { attestGrade } from "@/lib/attestations/eas";
 import { getChainConfig, attestationUrl } from "@/lib/attestations/chains";
 import {
@@ -26,7 +31,7 @@ export async function POST(request: Request) {
   const db = getSupabaseAdmin();
   if (!db) return Response.json({ error: "Database not configured" }, { status: 500 });
 
-  if (!process.env.ATTESTER_PRIVATE_KEY || !process.env.BASE_RPC_URL || !process.env.EAS_SCHEMA_UID) {
+  if (!process.env.ATTESTER_PRIVATE_KEY || !process.env.BASE_RPC_URL) {
     return Response.json({ error: "Attestation wallet not configured" }, { status: 503 });
   }
   const cfg = getChainConfig();
@@ -45,13 +50,13 @@ export async function POST(request: Request) {
   }
 
   // Re-read the grade server-side; never trust client-supplied grade data.
-  // Restrict to registry_ref grades — the only kind the public /grade page can
-  // serve, so the attestation's evidenceURI always resolves.
+  // registry_ref → the /grade evidence page; skill → the /skill page — both kinds
+  // resolve the attestation's evidenceURI. (remote_url is not yet wired.)
   const { data: row, error } = await db
     .from("hosted_runs")
     .select(`id, ${HOSTED_GRADE_COLUMNS}`)
     .eq("id", hostedRunId)
-    .eq("target_kind", "registry_ref")
+    .in("target_kind", ["registry_ref", "skill"])
     .eq("status", "complete")
     .not("published_at", "is", null)
     .maybeSingle();
@@ -59,20 +64,39 @@ export async function POST(request: Request) {
     return Response.json({ error: "Published grade not found" }, { status: 400 });
   }
 
-  const fields = buildServerFields(row as HostedGradeRow);
-  if (!fields) {
-    return Response.json({ error: "Row has no valid grade" }, { status: 400 });
+  // Pick the schema by target kind: skills use the separate skill schema + UID.
+  const r = row as HostedGradeRow;
+  let data: string;
+  let schemaUid: string | undefined;
+  let server: string;
+  let version: string;
+  let grade: string;
+  let evidence_hash: string;
+  if (r.target_kind === "skill") {
+    const f = buildSkillFields(r);
+    if (!f) return Response.json({ error: "Row has no valid grade" }, { status: 400 });
+    schemaUid = process.env.EAS_SKILL_SCHEMA_UID;
+    data = encodeSkillFields(f);
+    ({ skillRef: server, resolvedRef: version, overallGrade: grade, evidenceHash: evidence_hash } = f);
+  } else {
+    const f = buildServerFields(r);
+    if (!f) return Response.json({ error: "Row has no valid grade" }, { status: 400 });
+    schemaUid = process.env.EAS_SCHEMA_UID;
+    data = encodeServerFields(f);
+    ({ serverRef: server, resolvedVersion: version, overallGrade: grade, evidenceHash: evidence_hash } = f);
   }
-  const schemaUid = process.env.EAS_SCHEMA_UID as string;
+  if (!schemaUid) {
+    return Response.json({ error: "Schema not configured for this target kind" }, { status: 503 });
+  }
 
   const pendingId = await insertPending(db, {
     hosted_run_id: hostedRunId,
-    server: fields.serverRef,
-    version: fields.resolvedVersion,
-    grade: fields.overallGrade,
+    server,
+    version,
+    grade,
     schema_uid: schemaUid,
     chain_id: cfg.chainId,
-    evidence_hash: fields.evidenceHash,
+    evidence_hash,
   });
 
   // Only the on-chain submission may mark the row failed. Once the tx lands we
@@ -80,7 +104,7 @@ export async function POST(request: Request) {
   // (and wasted gas) on retry.
   let attested;
   try {
-    attested = await attestGrade(encodeServerFields(fields), schemaUid);
+    attested = await attestGrade(data, schemaUid);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     await markFailed(db, pendingId, msg);

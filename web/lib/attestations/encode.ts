@@ -42,7 +42,14 @@ export function evidenceURI(serverKey: string, version: string | null): string {
 
 import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
 import { detailFromRow, type HostedGradeRow, type PolygraphDetail } from "@/lib/hostedGrades";
-import { SERVER_SCHEMA } from "./schema";
+import { skillRefToPath } from "@/lib/skillGrades";
+import { SERVER_SCHEMA, SKILL_SCHEMA } from "./schema";
+
+/** Public skill evidence page URL. The skill target's `#subpath` separator
+ *  becomes a path segment (skillRefToPath) so it survives the URL path. */
+export function skillEvidenceURI(skillRef: string): string {
+  return `${SITE_URL}/skill/${skillRefToPath(skillRef)}`;
+}
 
 /** Fields of the reconciled SERVER schema (npm + https targets). Mirrors litmus
  *  `LitmusAttestationFields`; the field order matches SERVER_SCHEMA exactly. */
@@ -130,5 +137,69 @@ export function encodeServerFields(f: ServerAttestationFields): string {
     { name: "methodologyVersion", value: f.methodologyVersion, type: "string" },
     { name: "ranAt", value: f.ranAt, type: "uint64" },
     { name: "resolvedVersion", value: f.resolvedVersion, type: "string" },
+  ]);
+}
+
+/** Fields of the SKILL schema (Claude/Agent skills). Mirrors litmus
+ *  `SkillAttestationFields`; field order matches SKILL_SCHEMA exactly. */
+export interface SkillAttestationFields {
+  skillRef: string;
+  contentHash: string;
+  gradeS01: number;
+  gradeS03: number;
+  gradeS04: number;
+  overallGrade: string;
+  evidenceHash: string;
+  evidenceURI: string;
+  methodologyVersion: string;
+  ranAt: bigint;
+  resolvedRef: string;
+}
+
+/** uint8 for a category read straight from the bundle (skills have no flat
+ *  c01..c04 columns). Absent / "partial" / unknown ⇒ skipped sentinel (2). */
+function bundleCategoryUint8(evidence: HostedGradeRow["evidence"], code: string): number {
+  const raw = evidence?.categories?.find((c) => c.code === code)?.status ?? "";
+  return STATUS_UINT8[raw.split(" ")[0]] ?? 2;
+}
+
+/**
+ * Build SKILL attestation fields from a published skill hosted_runs row. Returns
+ * null if the row has no valid grade or no content hash (the skill trust anchor —
+ * a skill attestation without it is unverifiable).
+ */
+export function buildSkillFields(row: HostedGradeRow): SkillAttestationFields | null {
+  if (!row.grade || !row.content_hash) return null;
+  const bundle = row.evidence;
+  return {
+    skillRef: row.target,
+    contentHash: row.content_hash,
+    gradeS01: bundleCategoryUint8(bundle, "S-01"),
+    gradeS03: bundleCategoryUint8(bundle, "S-03"),
+    gradeS04: bundleCategoryUint8(bundle, "S-04"),
+    overallGrade: row.grade,
+    evidenceHash: evidenceHash(bundle ?? {}),
+    evidenceURI: skillEvidenceURI(row.target),
+    methodologyVersion: bundle?.methodologyVersion ?? "litmus-skill",
+    ranAt: ranAtSeconds(row),
+    resolvedRef: row.resolved_version ?? "",
+  };
+}
+
+/** ABI-encode the SKILL fields for an EAS attestation, per SKILL_SCHEMA. */
+export function encodeSkillFields(f: SkillAttestationFields): string {
+  const encoder = new SchemaEncoder(SKILL_SCHEMA);
+  return encoder.encodeData([
+    { name: "skillRef", value: f.skillRef, type: "string" },
+    { name: "contentHash", value: f.contentHash, type: "bytes32" },
+    { name: "gradeS01", value: f.gradeS01, type: "uint8" },
+    { name: "gradeS03", value: f.gradeS03, type: "uint8" },
+    { name: "gradeS04", value: f.gradeS04, type: "uint8" },
+    { name: "overallGrade", value: f.overallGrade, type: "string" },
+    { name: "evidenceHash", value: f.evidenceHash, type: "bytes32" },
+    { name: "evidenceURI", value: f.evidenceURI, type: "string" },
+    { name: "methodologyVersion", value: f.methodologyVersion, type: "string" },
+    { name: "ranAt", value: f.ranAt, type: "uint64" },
+    { name: "resolvedRef", value: f.resolvedRef, type: "string" },
   ]);
 }

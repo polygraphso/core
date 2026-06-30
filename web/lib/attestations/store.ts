@@ -148,7 +148,7 @@ export async function listPublishedWithStatus(db: SupabaseClient): Promise<Admin
   const { data: runs, error: runsErr } = await db
     .from("hosted_runs")
     .select("id, target, grade, evidence, published_at")
-    .eq("target_kind", "registry_ref")
+    .in("target_kind", ["registry_ref", "skill"])
     .eq("status", "complete")
     .not("published_at", "is", null)
     .order("published_at", { ascending: false });

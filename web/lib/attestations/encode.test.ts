@@ -82,6 +82,7 @@ const ROW: HostedGradeRow & { id: number } = {
     ],
   },
   tool_defs_fingerprint: FINGERPRINT,
+  content_hash: null,
   c01: null,
   c02: null,
   c03: null,
@@ -140,5 +141,77 @@ describe("encodeServerFields", () => {
     expect(String(byName.gradeC04)).toBe("2");
     expect(String(byName.ranAt)).toBe(String(f.ranAt));
     expect(String(byName.toolDefsFingerprint).toLowerCase()).toBe(FINGERPRINT);
+  });
+});
+
+import { buildSkillFields, encodeSkillFields, skillEvidenceURI } from "./encode";
+import { SKILL_SCHEMA } from "./schema";
+
+const CONTENT_HASH = "0x" + "cd".repeat(32);
+
+const SKILL_ROW: HostedGradeRow & { id: number } = {
+  id: 9,
+  target: "github/anthropic/skills#pdf",
+  target_kind: "skill",
+  grade: "D",
+  rationale: "dangerous bundled command",
+  evidence: {
+    methodologyVersion: "litmus-skill-v1",
+    categories: [
+      { code: "S-01", status: "pass" },
+      { code: "S-03", status: "pass" },
+      { code: "S-04", status: "fail" },
+    ],
+  },
+  tool_defs_fingerprint: null,
+  content_hash: CONTENT_HASH,
+  c01: null,
+  c02: null,
+  c03: null,
+  resolved_version: "a1b2c3d", // commit sha the grade ran against
+  published_at: "2026-01-02T00:00:00.000Z",
+};
+
+describe("skillEvidenceURI", () => {
+  it("turns the #subpath into a path segment so the URL resolves", () => {
+    expect(skillEvidenceURI("github/anthropic/skills#pdf")).toBe(
+      "https://polygraph.so/skill/github/anthropic/skills/pdf",
+    );
+  });
+});
+
+describe("buildSkillFields", () => {
+  it("maps a skill row into skill attestation fields", () => {
+    const f = buildSkillFields(SKILL_ROW)!;
+    expect(f.skillRef).toBe("github/anthropic/skills#pdf");
+    expect(f.contentHash).toBe(CONTENT_HASH);
+    expect(f.gradeS01).toBe(0); // pass
+    expect(f.gradeS03).toBe(0); // pass
+    expect(f.gradeS04).toBe(1); // fail
+    expect(f.overallGrade).toBe("D");
+    expect(f.evidenceURI).toBe("https://polygraph.so/skill/github/anthropic/skills/pdf");
+    expect(f.resolvedRef).toBe("a1b2c3d");
+    expect(f.ranAt).toBe(BigInt(Date.parse("2026-01-02T00:00:00.000Z") / 1000));
+  });
+
+  it("returns null without a content hash (the skill trust anchor)", () => {
+    expect(buildSkillFields({ ...SKILL_ROW, content_hash: null })).toBeNull();
+  });
+
+  it("returns null without a grade", () => {
+    expect(buildSkillFields({ ...SKILL_ROW, grade: null })).toBeNull();
+  });
+});
+
+describe("encodeSkillFields", () => {
+  it("produces EAS data that round-trips through the skill schema decoder", () => {
+    const f = buildSkillFields(SKILL_ROW)!;
+    const decoded = new SchemaEncoder(SKILL_SCHEMA).decodeData(encodeSkillFields(f));
+    const byName = Object.fromEntries(decoded.map((d) => [d.name, d.value.value]));
+    expect(byName.skillRef).toBe("github/anthropic/skills#pdf");
+    expect(byName.overallGrade).toBe("D");
+    expect(String(byName.gradeS04)).toBe("1");
+    expect(String(byName.contentHash).toLowerCase()).toBe(CONTENT_HASH);
+    expect(String(byName.resolvedRef)).toBe("a1b2c3d");
   });
 });
