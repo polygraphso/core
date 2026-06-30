@@ -57,7 +57,7 @@ const STEPS = [
   {
     n: "01",
     title: "Re-grade",
-    body: "We re-run the open harness against every server and skill in a network's index on a set cadence — the same behavioral test, repeated. Not a one-time snapshot.",
+    body: "We re-run the harness against every server and skill in a network's index on a set schedule — the same behavioral test, repeated. Not a one-time snapshot.",
   },
   {
     n: "02",
@@ -67,7 +67,7 @@ const STEPS = [
   {
     n: "03",
     title: "Alert",
-    body: "Your team hears about a regression before your users do, with the evidence bundle attached. We wire this up per network when an ecosystem signs on.",
+    body: "Your team hears about a regression before your users do, with the evidence bundle attached.",
   },
 ];
 
@@ -103,8 +103,8 @@ export default async function EcosystemsPage() {
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
             Your network ships MCP servers and skills you don&rsquo;t fully control — a new release, a
             quiet regression, a swapped tool surface. We keep an independent, reproducible trust index
-            for the network and re-grade it on a cadence, so a grade you shipped on doesn&rsquo;t
-            quietly go stale.
+            for the network and re-grade it on a cadence, so the grade you shipped on doesn&rsquo;t go
+            stale on you.
           </p>
         </header>
 
@@ -149,20 +149,20 @@ export default async function EcosystemsPage() {
             label="Why continuous"
             title="An index is only as good as its last run."
           >
-            A behavioral grade describes a tool on the day it ran. The tool keeps changing — and a
+            A behavioral grade describes a tool on the day it ran. Then the tool changes — and a
             stale A is worse than no grade, because someone is trusting it.
           </SectionHeader>
 
           <figure className="border-l-2 pl-5" style={{ borderColor: "var(--color-oxblood)" }}>
             <blockquote className="font-serif text-ink text-lg md:text-xl leading-snug">
               A grade is a measurement, and measurements have a date.{" "}
-              <span className="text-oxblood">The tool it describes keeps shipping.</span>
+              <span className="text-oxblood">The tool it describes won&rsquo;t hold still.</span>
             </blockquote>
             <figcaption className="mt-3 text-[13px] leading-relaxed text-ink-muted max-w-2xl">
-              Third-party servers and skills get new releases, new dependencies, new owners — and a
-              tool surface can change after grading, which is exactly how a rug pull works. None of
-              that shows up in a grade you ran once. Re-running the same test on a cadence is the only
-              thing that keeps an index honest.
+              Third-party servers and skills get new releases and new owners, and a tool surface can
+              change after grading — which is exactly how a rug pull works. None of that shows up in a
+              grade you ran once. Re-running the same test, again and again, is the only thing that
+              keeps an index honest.
             </figcaption>
           </figure>
         </section>
