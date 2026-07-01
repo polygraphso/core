@@ -1,17 +1,13 @@
 /**
  * POST /api/monitor — subscribe to new-version regrade alerts for one server.
  *
- * Two paths (mirrors /api/notify):
- *   1. Anonymous:  {server_ref, email} → monitors row keyed on email.
- *   2. Signed-in:  {server_ref}        → email from the Supabase session, keyed
- *                                         on user_id.
- *
- * Idempotent on (target, email_or_user_id) via record_monitor's ON CONFLICT.
+ * Requires a Supabase session (enforced by proxy). Idempotent on
+ * (target, user_id) via record_monitor's ON CONFLICT. Maps the 'quota_exceeded'
+ * DB exception to 409 so the client can show a friendly message.
  *
  * v1 only accepts npm/pypi registry refs — the targets with a version stream the
  * alert engine can detect. Remote URLs (rejected by parseServerRef) and github
- * refs are turned away so we never create a monitor that can physically never
- * fire.
+ * refs are turned away so we never create a monitor that can physically never fire.
  */
 
 import { NextResponse } from "next/server";
@@ -23,9 +19,6 @@ import {
 } from "@/lib/identity";
 import { getSession } from "@/lib/session";
 import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
-
-const EMAIL_MAX_LEN = 254;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
@@ -51,9 +44,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "Invalid JSON body." }, { status: 400 });
   }
 
-  const { server_ref, email, company } = (payload ?? {}) as {
+  const { server_ref, company } = (payload ?? {}) as {
     server_ref?: unknown;
-    email?: unknown;
     company?: unknown;
   };
 
@@ -93,36 +85,31 @@ export async function POST(request: Request) {
     throw err;
   }
 
+  // Proxy guarantees a Supabase session for this route.
   const session = await getSession();
-
-  let rpcEmail: string | null = null;
-  let rpcUserId: string | null = null;
-
-  if (session) {
-    rpcUserId = session.userId;
-  } else {
-    if (typeof email !== "string") {
-      return NextResponse.json({ ok: false, message: "Enter a valid email address." }, { status: 400 });
-    }
-    const normalized = email.trim().toLowerCase();
-    if (
-      normalized.length === 0 ||
-      normalized.length > EMAIL_MAX_LEN ||
-      !EMAIL_RE.test(normalized)
-    ) {
-      return NextResponse.json({ ok: false, message: "Enter a valid email address." }, { status: 400 });
-    }
-    rpcEmail = normalized;
+  if (!session) {
+    return NextResponse.json({ ok: false, message: "Sign in to monitor servers." }, { status: 401 });
   }
 
   try {
     const supabase = getSupabase();
     const { error } = await supabase.rpc("record_monitor", {
       p_target: normalizedRef,
-      p_email: rpcEmail,
-      p_user_id: rpcUserId,
+      p_email: null,
+      p_user_id: session.userId,
     });
     if (error) {
+      if (error.message.includes("quota_exceeded")) {
+        return NextResponse.json(
+          {
+            ok: false,
+            code: "quota_exceeded",
+            message:
+              "You're already monitoring a server. Unsubscribe from it in your dashboard to add a new one.",
+          },
+          { status: 409 },
+        );
+      }
       console.error("[monitor] record_monitor failed:", error.message);
       return NextResponse.json(
         {

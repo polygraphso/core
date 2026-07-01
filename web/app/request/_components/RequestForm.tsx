@@ -3,13 +3,6 @@
 import { useState } from "react";
 import { HoneypotField } from "@/app/_components/HoneypotField";
 
-// Free "grade this server" intake. target + email (+ optional note) →
-// POST /api/grade-requests → confirmation with the demand count. No
-// payment, no login — the goodwill step. The server stays authoritative;
-// the live hint and email check are just instant feedback.
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
 function targetHint(raw: string): { text: string; warn: boolean } | null {
   const t = raw.trim();
   if (!t) return null;
@@ -25,9 +18,8 @@ function targetHint(raw: string): { text: string; warn: boolean } | null {
   return null;
 }
 
-export function RequestForm() {
+export function RequestForm({ sessionEmail }: { sessionEmail: string }) {
   const [target, setTarget] = useState("");
-  const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   const [company, setCompany] = useState(""); // honeypot
   const [state, setState] = useState<"idle" | "submitting" | "ok" | "error">("idle");
@@ -41,11 +33,6 @@ export function RequestForm() {
       setMessage("Enter a server — a registry ref or an https:// MCP URL.");
       return;
     }
-    if (!EMAIL_RE.test(email.trim())) {
-      setState("error");
-      setMessage("Enter a valid email — it's how you'll hear back.");
-      return;
-    }
     setState("submitting");
     setMessage("");
     try {
@@ -54,7 +41,6 @@ export function RequestForm() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           target: target.trim(),
-          email: email.trim(),
           note: note.trim() || undefined,
           company,
         }),
@@ -95,14 +81,14 @@ export function RequestForm() {
             {result.demand > 1 ? (
               <>
                 <span className="font-mono text-ink">{result.demand}</span>{" "}
-                people have asked for this server — demand moves it up the
-                bench.
+                people have asked for this server — demand moves it up the bench.
               </>
             ) : (
               <>You&rsquo;re the first to ask for this one.</>
             )}{" "}
-            We&rsquo;ll email you when its grade publishes. One email, nothing
-            else.
+            We&rsquo;ll email you at{" "}
+            <span className="font-mono text-ink">{sessionEmail}</span> when its
+            grade publishes.
           </p>
           <button
             type="button"
@@ -128,7 +114,7 @@ export function RequestForm() {
       <HoneypotField value={company} onChange={setCompany} />
       <div className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
         <span>request a grade</span>
-        <span className="hidden sm:inline">free · email-gated</span>
+        <span className="hidden sm:inline">free</span>
       </div>
       <div className="p-4 md:p-6 space-y-4">
         <label className="block">
@@ -160,22 +146,6 @@ export function RequestForm() {
 
         <label className="block">
           <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
-            Email — where the grade lands
-          </span>
-          <input
-            type="email"
-            required
-            inputMode="email"
-            autoComplete="email"
-            placeholder="you@company.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full bg-parchment border hairline px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
-          />
-        </label>
-
-        <label className="block">
-          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
             Why you want it — optional
           </span>
           <textarea
@@ -188,16 +158,22 @@ export function RequestForm() {
           />
         </label>
 
-        <div className="flex items-center justify-between gap-4 pt-1">
-          <button
-            type="submit"
-            disabled={state === "submitting"}
-            className="inline-flex items-center justify-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {state === "submitting" ? "Adding…" : "Add to the queue"}
-          </button>
-          <p className="font-mono text-[10.5px] text-ink-faint">
-            Free. We grade it on our own timeline.
+        <div className="flex flex-col gap-3 pt-1">
+          <div className="flex items-center justify-between gap-4">
+            <button
+              type="submit"
+              disabled={state === "submitting"}
+              className="inline-flex items-center justify-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {state === "submitting" ? "Adding…" : "Add to the queue"}
+            </button>
+            <p className="font-mono text-[10.5px] text-ink-faint">
+              Free. We grade it on our own timeline.
+            </p>
+          </div>
+          <p className="font-mono text-[11px] text-ink-faint">
+            Requesting as{" "}
+            <span className="text-ink">{sessionEmail}</span>.
           </p>
         </div>
 

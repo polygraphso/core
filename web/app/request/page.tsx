@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
 import { RequestForm } from "./_components/RequestForm";
 
 export const metadata: Metadata = {
@@ -8,7 +10,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/request" },
 };
 
-export default function RequestPage() {
+export default async function RequestPage() {
+  const session = await getSession();
+  if (!session) redirect("/login?next=/request");
+
   return (
     <main className="flex-1">
       <div className="mx-auto max-w-3xl px-6 pt-14 pb-24 md:pt-20 md:pb-32">
@@ -24,7 +29,7 @@ export default function RequestPage() {
           </p>
         </header>
 
-        <RequestForm />
+        <RequestForm sessionEmail={session.email} />
 
         <p className="mt-8 font-mono text-[11px] text-ink-faint leading-relaxed">
           Just want to hear about new grades in general?{" "}
