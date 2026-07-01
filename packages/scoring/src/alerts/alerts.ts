@@ -21,6 +21,7 @@ import { parseServerRef, type ParsedServerRef } from "@polygraph/core";
 import { fetchNpm } from "../adapters/npm.js";
 import { fetchPypi } from "../adapters/pypi.js";
 import { buildAlertEmail, type EmailSender } from "./email.js";
+import { gradeMeetsThreshold } from "./grades.js";
 import type { AlertStore } from "./store.js";
 
 /** Default per-run enqueue cap — a cheap circuit breaker against a runaway pass. */
@@ -124,6 +125,19 @@ export async function runAlerts(store: AlertStore, deps: AlertsDeps = {}): Promi
       const latest = await store.latestPublishedGrade(monitor.target);
       if (!latest) continue;
       if (latest.id === monitor.last_notified_run_id) continue;
+
+      // Threshold gate: the watcher only wants email at/below a chosen grade.
+      // A suppressed grade is recorded as seen (dedup watermark advances) but
+      // sends nothing and writes no alert_deliveries row — the "Recent alerts"
+      // log and "Last alerted" line stay truthful to real sends.
+      if (!gradeMeetsThreshold(latest.grade, monitor.alert_min_grade)) {
+        await store.markSeen(monitor.id, latest.id);
+        result.skipped.push({
+          target: monitor.target,
+          reason: `below alert threshold (${monitor.alert_min_grade})`,
+        });
+        continue;
+      }
 
       const deliveryId = await store.claimDelivery({
         monitor_id: monitor.id,

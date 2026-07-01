@@ -29,6 +29,7 @@ interface MonitorRow {
   last_notified_grade: string | null;
   last_notified_version: string | null;
   last_notified_at: string | null;
+  alert_min_grade: "C" | "D" | "F" | null;
 }
 
 interface GradeRow {
@@ -65,7 +66,7 @@ export default async function DashboardPage() {
     db
       .from("monitors")
       .select(
-        "id, target, unsubscribe_token, unsubscribed_at, created_at, last_notified_grade, last_notified_version, last_notified_at",
+        "id, target, unsubscribe_token, unsubscribed_at, created_at, last_notified_grade, last_notified_version, last_notified_at, alert_min_grade",
       )
       .eq("user_id", session.userId)
       .order("created_at", { ascending: false }),
@@ -133,7 +134,8 @@ export default async function DashboardPage() {
           <div>
             <h1 className="font-serif text-3xl text-ink tracking-tight">Monitors</h1>
             <p className="mt-2 text-ink-muted text-sm leading-relaxed max-w-md">
-              You&rsquo;ll get one email per new-version regrade for each server you watch.
+              By default, one email per new-version regrade. Set a grade threshold on any
+              monitor to hear only about the grades you care about.
             </p>
           </div>
           <a

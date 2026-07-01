@@ -12,6 +12,7 @@ export interface MonitorEntry {
   last_notified_grade: string | null;
   last_notified_version: string | null;
   last_notified_at: string | null;
+  alert_min_grade: "C" | "D" | "F" | null;
   currentGrade: string | null;
   currentVersion: string | null;
   mcpPath: string;
@@ -42,8 +43,31 @@ function GradePill({ grade }: { grade: string | null }) {
 function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [minGrade, setMinGrade] = useState<"C" | "D" | "F" | null>(monitor.alert_min_grade);
   const router = useRouter();
   const isActive = !monitor.unsubscribed_at;
+
+  async function saveThreshold(next: "C" | "D" | "F" | null) {
+    const prev = minGrade;
+    setMinGrade(next); // optimistic — the <select> is controlled by this state
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/monitor", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ monitor_id: monitor.id, min_grade: next }),
+      });
+      const body = (await res.json()) as { ok: boolean; message?: string };
+      if (!body.ok) throw new Error(body.message ?? "Couldn't save your setting.");
+      router.refresh();
+    } catch (err) {
+      setMinGrade(prev); // revert on failure
+      setError(err instanceof Error ? err.message : "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function toggleSubscription() {
     setBusy(true);
@@ -102,6 +126,29 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
                 v{monitor.currentVersion}
               </span>
             )}
+          </div>
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            <label
+              htmlFor={`thr-${monitor.id}`}
+              className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-faint"
+            >
+              Email me on
+            </label>
+            <select
+              id={`thr-${monitor.id}`}
+              aria-label="Alert threshold"
+              value={minGrade ?? ""}
+              onChange={(e) =>
+                saveThreshold(e.target.value === "" ? null : (e.target.value as "C" | "D" | "F"))
+              }
+              disabled={busy || !isActive}
+              className="font-mono text-[11px] bg-parchment border hairline px-2 py-1 text-ink focus:outline-none focus:border-ink disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <option value="">every regrade</option>
+              <option value="C">C or worse</option>
+              <option value="D">D or worse</option>
+              <option value="F">F only</option>
+            </select>
           </div>
           {monitor.last_notified_at && (
             <p className="mt-2 font-mono text-[11px] text-ink-faint">

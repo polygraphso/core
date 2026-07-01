@@ -20,6 +20,7 @@ class FakeStore implements AlertStore {
   deliveries = new Map<string, { id: string; input: ClaimDeliveryInput }>();
   marks: Array<{ id: string; status: string; detail: unknown }> = [];
   watermarks: Array<{ monitorId: string; grade: PublishedGrade }> = [];
+  seen: Array<{ monitorId: string; runId: string }> = [];
   private deliverySeq = 0;
 
   constructor(opts: {
@@ -75,6 +76,11 @@ class FakeStore implements AlertStore {
       m.last_notified_grade = grade.grade;
     }
   }
+  async markSeen(monitorId: string, runId: string) {
+    this.seen.push({ monitorId, runId });
+    const m = this.monitors.find((x) => x.id === monitorId);
+    if (m) m.last_notified_run_id = runId; // dedup watermark only; grade/at untouched
+  }
 }
 
 function monitor(over: Partial<MonitorRecord> = {}): MonitorRecord {
@@ -85,6 +91,7 @@ function monitor(over: Partial<MonitorRecord> = {}): MonitorRecord {
     unsubscribe_token: "tok-1",
     last_notified_run_id: null,
     last_notified_grade: null,
+    alert_min_grade: null,
     ...over,
   };
 }
@@ -232,6 +239,75 @@ describe("runAlerts — reconcile pass", () => {
     const result = await runAlerts(store, { fetchLatestVersion: async () => "2.0.0", sender });
     expect(sent).toHaveLength(0);
     expect(result.skipped.some((s) => /no email/.test(s.reason))).toBe(true);
+  });
+});
+
+describe("runAlerts — alert-grade threshold", () => {
+  it("suppresses the email when the new grade is above the monitor's threshold", async () => {
+    const store = new FakeStore({
+      monitors: [monitor({ alert_min_grade: "D" })],
+      latest: { "npm/@scope/srv": { id: "run-9", resolved_version: "2.0.0", grade: "B" } },
+      publishedVersions: ["npm/@scope/srv@2.0.0"],
+    });
+    const { sender, sent } = recordingSender();
+    const result = await runAlerts(store, { fetchLatestVersion: async () => "2.0.0", sender });
+    expect(sent).toHaveLength(0);
+    expect(result.sent).toBe(0);
+    expect(result.notified).toBe(0);
+    // Recorded as seen (dedup advances) but no delivery claimed, no display change.
+    expect(store.seen).toEqual([{ monitorId: "m1", runId: "run-9" }]);
+    expect(store.deliveries.size).toBe(0);
+    expect(store.watermarks).toEqual([]);
+    expect(result.skipped.some((s) => /below alert threshold/.test(s.reason))).toBe(true);
+  });
+
+  it("sends when the new grade meets the threshold (at the boundary)", async () => {
+    const store = new FakeStore({
+      monitors: [monitor({ alert_min_grade: "C" })],
+      latest: { "npm/@scope/srv": { id: "run-9", resolved_version: "2.0.0", grade: "C" } },
+      publishedVersions: ["npm/@scope/srv@2.0.0"],
+    });
+    const { sender, sent } = recordingSender();
+    const result = await runAlerts(store, { fetchLatestVersion: async () => "2.0.0", sender });
+    expect(sent).toHaveLength(1);
+    expect(result.sent).toBe(1);
+    expect(store.seen).toEqual([]); // send path doesn't use markSeen
+  });
+
+  it("does not reprocess a suppressed grade on the next run (dedup watermark advanced)", async () => {
+    const store = new FakeStore({
+      monitors: [monitor({ alert_min_grade: "F" })],
+      latest: { "npm/@scope/srv": { id: "run-9", resolved_version: "2.0.0", grade: "C" } },
+      publishedVersions: ["npm/@scope/srv@2.0.0"],
+    });
+    const { sender } = recordingSender();
+    await runAlerts(store, { fetchLatestVersion: async () => "2.0.0", sender });
+    await runAlerts(store, { fetchLatestVersion: async () => "2.0.0", sender });
+    // First run marks it seen; the watermark match short-circuits the second run.
+    expect(store.seen).toEqual([{ monitorId: "m1", runId: "run-9" }]);
+  });
+
+  it("a suppressed grade leaves the prior EMAILED grade intact for a later email", async () => {
+    const store = new FakeStore({
+      monitors: [
+        monitor({ alert_min_grade: "D", last_notified_grade: "B", last_notified_run_id: "run-0" }),
+      ],
+      latest: { "npm/@scope/srv": { id: "run-1", resolved_version: "2.0.0", grade: "C" } },
+      publishedVersions: ["npm/@scope/srv@2.0.0", "npm/@scope/srv@3.0.0"],
+    });
+    const { sender, sent } = recordingSender();
+
+    // Run 1: C is above "D or worse" → suppressed; last_notified_grade stays "B".
+    await runAlerts(store, { fetchLatestVersion: async () => "2.0.0", sender });
+    expect(sent).toHaveLength(0);
+    expect(store.monitors[0]!.last_notified_run_id).toBe("run-1");
+    expect(store.monitors[0]!.last_notified_grade).toBe("B");
+
+    // Run 2: a worse grade F crosses the threshold → email shows the last emailed grade.
+    store.latest.set("npm/@scope/srv", { id: "run-2", resolved_version: "3.0.0", grade: "F" });
+    await runAlerts(store, { fetchLatestVersion: async () => "3.0.0", sender });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.email.subject).toContain("B → F");
   });
 });
 
