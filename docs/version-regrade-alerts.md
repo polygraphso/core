@@ -50,10 +50,13 @@ grades — each side keeps its existing responsibility.
 
 Migrations in `packages/core/supabase/migrations/`:
 
-**`20260701120000_hosted_runs_source.sql`** — adds `hosted_runs.source text not
-null default 'paid'`. The default preserves every existing row's behavior; only
-`source='monitor'` is special-cased (claimable without payment, auto-published).
-Plus a partial index on in-flight monitor rows for the enqueue guard.
+**`20260701120000_hosted_runs_source.sql`** — adds `hosted_runs.source text`
+(**nullable, no default**). `NULL` = untagged (existing rows, the paid flow,
+curated publishes, admin regrades — none re-labeled); only `source='monitor'` is
+special-cased (claimable without payment, auto-published). Deliberately not
+`default 'paid'`: the payment signal is `paid_at`, not `source`, so tagging a
+curated/admin row 'paid' would contradict its null `paid_at`. Plus a partial index
+on in-flight monitor rows for the enqueue guard.
 
 **`20260701120100_monitors.sql`** — mirrors `notify_requests`:
 
@@ -108,8 +111,11 @@ Run hourly by **`.github/workflows/alerts.yml`** (`alerts:ci`).
 
 - **`deploy/db/claim_next_hosted_run.sql`** — the claim now drains
   `status='queued' AND (paid_at IS NOT NULL OR source='monitor')`, ordered
-  `(source='monitor'), coalesce(paid_at, created_at)` so **paid rows always drain
-  first** — a monitor backlog can never starve a paying customer.
+  `(source IS NOT DISTINCT FROM 'monitor'), coalesce(paid_at, created_at)` so
+  **paid rows always drain first** — a monitor backlog can never starve a paying
+  customer. `IS NOT DISTINCT FROM` is NULL-safe: since `source` is nullable, a
+  plain `source = 'monitor'` would sort untagged/paid rows (NULL) *after* the
+  monitors (NULLS-LAST) and invert the priority.
 - **`packages/runner/src/worker.ts`** — `writeGradeResult` branches on
   `source==='monitor'`: it calls `unpublishPrevious(target, resolvedVersion)` then
   stamps `published_at` (auto-publish). Paid rows stay grade-only — the web mint
