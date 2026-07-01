@@ -1,11 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { verifySession, ADMIN_COOKIE } from "@/lib/adminAuth";
 
-// Two auth systems coexist keyed on path prefix:
-//   /admin* and /api/admin* → HMAC-cookie admin gate (unchanged)
-//   /dashboard*, /monitor*, /notify*, /request*, /api/monitor*, /api/notify*,
-//   /api/grade-requests* → Supabase SSR user gate
+// All gated paths use Supabase SSR user auth. Admin paths additionally
+// require is_admin = true in the profiles table.
 //
 // The unsubscribe endpoint (/api/monitor/unsubscribe) is token-authed from
 // email links and must remain publicly reachable — it is explicitly excluded
@@ -24,38 +21,13 @@ export const config = {
   ],
 };
 
-// Routes that bypass the admin gate (publicly reachable without a session).
-const ADMIN_PUBLIC = new Set([
-  "/admin/login",
-  "/api/admin/login",
-  "/api/admin/logout",
-]);
-
 // Routes that bypass the user gate. The unsubscribe endpoint is token-authed
 // from email links and must stay reachable without a Supabase session.
 const USER_PUBLIC = new Set(["/api/monitor/unsubscribe"]);
 
-async function adminGate(request: NextRequest): Promise<NextResponse> {
-  const { pathname } = request.nextUrl;
-  if (ADMIN_PUBLIC.has(pathname)) return NextResponse.next();
-
-  const token = request.cookies.get(ADMIN_COOKIE)?.value;
-  const ok = await verifySession(token, Math.floor(Date.now() / 1000));
-  if (ok) return NextResponse.next();
-
-  if (pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const url = request.nextUrl.clone();
-  url.pathname = "/admin/login";
-  url.search = "";
-  return NextResponse.redirect(url);
-}
-
 async function userGate(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
-  // Unsubscribe is token-authed from email links — must bypass auth check.
   if (USER_PUBLIC.has(pathname)) return NextResponse.next();
 
   // Supabase SSR pattern: create a mutable response so the client can refresh
@@ -66,7 +38,6 @@ async function userGate(request: NextRequest): Promise<NextResponse> {
   const sbKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!sbUrl || !sbKey) {
-    // Auth not configured yet — treat as unauthenticated.
     return makeLoginRedirect(request, supabaseResponse);
   }
 
@@ -92,8 +63,27 @@ async function userGate(request: NextRequest): Promise<NextResponse> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user) return supabaseResponse;
-  return makeLoginRedirect(request, supabaseResponse);
+  if (!user) return makeLoginRedirect(request, supabaseResponse);
+
+  // Admin paths require is_admin = true in app_metadata (service-role-set,
+  // included in the JWT — no extra DB query needed).
+  const isAdminPath =
+    pathname.startsWith("/admin") || pathname.startsWith("/api/admin");
+  if (isAdminPath) {
+    const isAdmin =
+      (user.app_metadata as Record<string, unknown>)?.is_admin === true;
+    if (!isAdmin) {
+      if (pathname.startsWith("/api/")) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
+  }
+
+  return supabaseResponse;
 }
 
 function makeLoginRedirect(
@@ -121,13 +111,6 @@ function makeLoginRedirect(
 }
 
 // Next 16 renamed the middleware file/function convention to `proxy`.
-// The two auth systems are keyed by path prefix — no overlap.
 export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-    return adminGate(request);
-  }
-
   return userGate(request);
 }

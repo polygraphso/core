@@ -1,16 +1,24 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { SignOutButton } from "./SignOutButton";
 
 type NavItem = {
   href: string;
   label: string;
   active: (pathname: string) => boolean;
+  external?: boolean;
 };
 
-const NAV: NavItem[] = [
+const USER_NAV: NavItem[] = [
   { href: "/dashboard", label: "Monitors", active: (p) => p === "/dashboard" || p.startsWith("/dashboard/monitors") },
+];
+
+const ADMIN_NAV: NavItem[] = [
+  { href: "/admin", label: "Metrics", active: (p) => p === "/admin" },
+  { href: "/admin/attestations", label: "Attestations", active: (p) => p.startsWith("/admin/attestations") },
+  { href: "/admin/users", label: "Users", active: (p) => p.startsWith("/admin/users") },
+  { href: "/admin/monitors", label: "All monitors", active: (p) => p.startsWith("/admin/monitors") },
+  { href: "/ecosystems", label: "Ecosystems", active: (p) => p.startsWith("/ecosystems"), external: true },
 ];
 
 function Brand() {
@@ -27,34 +35,55 @@ function Brand() {
   );
 }
 
-export function DashboardSidebar({ pathname }: { pathname: string }) {
+function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+  const active = item.active(pathname);
+  return (
+    <a
+      href={item.href}
+      aria-current={active ? "page" : undefined}
+      className={`block border-l-2 pl-[18px] pr-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] transition-colors ${
+        active
+          ? "border-oxblood text-ink bg-oxblood/5"
+          : "border-transparent text-ink-muted hover:text-ink hover:bg-ink/[0.03]"
+      }`}
+    >
+      {item.label}
+      {item.external && (
+        <span aria-hidden className="ml-1 text-ink-faint">↗</span>
+      )}
+    </a>
+  );
+}
+
+interface Props {
+  pathname: string;
+  isAdmin: boolean;
+}
+
+export function DashboardSidebar({ pathname, isAdmin }: Props) {
   return (
     <>
       {/* Desktop — fixed left rail */}
       <aside className="hidden sm:flex sm:fixed sm:inset-y-0 sm:left-0 sm:w-56 sm:flex-col border-r border-rule bg-parchment-50">
         <div className="px-5 py-5 border-b border-rule">
           <Brand />
-          <p className="section-label mt-3">Dashboard</p>
         </div>
 
-        <nav className="flex-1 py-5" aria-label="Dashboard sections">
-          {NAV.map((item) => {
-            const active = item.active(pathname);
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={`block border-l-2 pl-[18px] pr-5 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] transition-colors ${
-                  active
-                    ? "border-oxblood text-ink bg-oxblood/5"
-                    : "border-transparent text-ink-muted hover:text-ink hover:bg-ink/[0.03]"
-                }`}
-              >
-                {item.label}
-              </a>
-            );
-          })}
+        <nav className="flex-1 py-5 overflow-y-auto" aria-label="Dashboard sections">
+          {USER_NAV.map((item) => (
+            <NavLink key={item.href} item={item} pathname={pathname} />
+          ))}
+
+          {isAdmin && (
+            <>
+              <p className="px-5 pt-5 pb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+                Admin
+              </p>
+              {ADMIN_NAV.map((item) => (
+                <NavLink key={item.href} item={item} pathname={pathname} />
+              ))}
+            </>
+          )}
         </nav>
 
         <div className="px-5 py-5 border-t border-rule flex flex-col gap-3">
@@ -71,27 +100,42 @@ export function DashboardSidebar({ pathname }: { pathname: string }) {
       {/* Mobile — sticky top bar */}
       <div className="sm:hidden sticky top-0 z-40 border-b border-rule bg-parchment-50">
         <div className="flex items-center justify-between px-5 py-3">
-          <div className="flex items-baseline gap-3">
-            <Brand />
-            <span className="section-label">Dashboard</span>
-          </div>
+          <Brand />
           <SignOutButton />
         </div>
-        <nav className="flex border-t border-rule" aria-label="Dashboard sections">
-          {NAV.map((item) => {
+        <nav className="flex border-t border-rule overflow-x-auto" aria-label="Dashboard sections">
+          {USER_NAV.map((item) => {
             const active = item.active(pathname);
             return (
               <a
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                className={`flex-1 text-center border-b-2 py-3 font-mono text-[11px] uppercase tracking-[0.18em] transition-colors ${
+                className={`shrink-0 text-center border-b-2 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] transition-colors ${
                   active
                     ? "border-oxblood text-ink bg-oxblood/5"
                     : "border-transparent text-ink-muted hover:text-ink"
                 }`}
               >
                 {item.label}
+              </a>
+            );
+          })}
+          {isAdmin && ADMIN_NAV.map((item) => {
+            const active = item.active(pathname);
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={`shrink-0 text-center border-b-2 px-4 py-3 font-mono text-[11px] uppercase tracking-[0.18em] transition-colors ${
+                  active
+                    ? "border-oxblood text-ink bg-oxblood/5"
+                    : "border-transparent text-ink-muted hover:text-ink"
+                }`}
+              >
+                {item.label}
+                {item.external && <span aria-hidden className="ml-1 text-ink-faint">↗</span>}
               </a>
             );
           })}
