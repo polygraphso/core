@@ -37,3 +37,4 @@ jobs:
           #   POLYGRAPH_SITE_URL (default "https://polygraph.so")
           ALERT_FROM_EMAIL: ${{ vars.ALERT_FROM_EMAIL }}
           POLYGRAPH_SITE_URL: ${{ vars.POLYGRAPH_SITE_URL }}
+          RESEND_BASE_URL: ${{ vars.RESEND_BASE_URL }}
