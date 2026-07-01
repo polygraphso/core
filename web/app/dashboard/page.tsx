@@ -11,6 +11,7 @@ import { getSession } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { refToPath } from "@/lib/badgeData";
 import { MonitorsList, type MonitorEntry } from "./_components/MonitorsList";
+import { AddMonitorForm } from "./_components/AddMonitorForm";
 
 export const dynamic = "force-dynamic";
 
@@ -53,7 +54,7 @@ export default async function DashboardPage() {
   const db = getSupabaseAdmin();
   if (!db) {
     return (
-      <main className="p-8">
+      <main className="px-8 py-12">
         <p className="font-mono text-sm text-oxblood">Database not configured.</p>
       </main>
     );
@@ -117,7 +118,7 @@ export default async function DashboardPage() {
 
   return (
     <main className="flex-1">
-      <div className="mx-auto max-w-3xl px-6 pt-14 pb-24 md:pt-16 md:pb-32">
+      <div className="max-w-2xl mx-auto px-8 pt-14 pb-24 md:pt-16 md:pb-32">
 
         {/* Header */}
         <div className="border-t hairline pt-6 mb-10">
@@ -142,6 +143,8 @@ export default async function DashboardPage() {
             Browse grades →
           </a>
         </div>
+
+        {activeCount < 1 && <AddMonitorForm />}
 
         <MonitorsList
           monitors={monitorEntries}

@@ -24,9 +24,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// Agent grades are read live from hosted_runs per request (like /base) — render
-// per-request so the page never serves a stale snapshot.
-export const dynamic = "force-dynamic";
+// Cache for 1 hour — grades update at most daily.
+export const revalidate = 3600;
 
 const GRADE_ORDER: SkillGrade[] = ["A", "B", "D", "F"];
 const FAIL = GRADE_HEX.F;

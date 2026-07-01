@@ -4,6 +4,8 @@ import { createServerSupabase } from "@/lib/supabaseServer";
 export interface PolygraphSession {
   userId: string;
   email: string;
+  name: string | null;
+  avatarUrl: string | null;
 }
 
 /**
@@ -21,7 +23,13 @@ export async function getSession(): Promise<PolygraphSession | null> {
       error,
     } = await supabase.auth.getUser();
     if (error || !user) return null;
-    return { userId: user.id, email: user.email ?? "" };
+    const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+    return {
+      userId: user.id,
+      email: user.email ?? "",
+      name: (meta.full_name ?? meta.name ?? meta.user_name ?? null) as string | null,
+      avatarUrl: (meta.avatar_url ?? null) as string | null,
+    };
   } catch {
     return null;
   }

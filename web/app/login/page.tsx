@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getSession } from "@/lib/session";
 import { LoginForm } from "./_components/LoginForm";
 
 export const metadata: Metadata = {
@@ -13,6 +15,9 @@ export default async function LoginPage({
 }: {
   searchParams: SearchParams;
 }) {
+  const session = await getSession();
+  if (session) redirect("/dashboard");
+
   const { next = "/dashboard" } = await searchParams;
   const safeNext = next.startsWith("/") ? next : "/dashboard";
 

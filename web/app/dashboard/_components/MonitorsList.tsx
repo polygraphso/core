@@ -149,18 +149,9 @@ export function MonitorsList({
 
   if (monitors.length === 0) {
     return (
-      <div className="border hairline bg-parchment-50 p-6 text-center">
-        <p className="font-mono text-sm text-ink-muted">No monitors yet.</p>
-        <p className="mt-2 font-mono text-[11px] text-ink-faint">
-          Go to an MCP report page and click &ldquo;Monitor this server&rdquo; to get started.
-        </p>
-        <a
-          href="/rankings"
-          className="mt-4 inline-block font-mono text-[11px] uppercase tracking-widest text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
-        >
-          Browse grades →
-        </a>
-      </div>
+      <p className="font-mono text-[11px] text-ink-faint mt-4">
+        No monitors yet. Enter a server above to get started.
+      </p>
     );
   }
 

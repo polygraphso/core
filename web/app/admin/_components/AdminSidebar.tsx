@@ -28,6 +28,16 @@ const NAV: NavItem[] = [
     active: (p) => p.startsWith("/admin/attestations"),
   },
   {
+    href: "/admin/users",
+    label: "Users",
+    active: (p) => p.startsWith("/admin/users"),
+  },
+  {
+    href: "/admin/monitors",
+    label: "Monitors",
+    active: (p) => p.startsWith("/admin/monitors"),
+  },
+  {
     href: "/ecosystems",
     label: "Ecosystems",
     active: (p) => p.startsWith("/ecosystems"),

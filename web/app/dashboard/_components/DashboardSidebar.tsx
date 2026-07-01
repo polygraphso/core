@@ -11,8 +11,6 @@ type NavItem = {
 
 const NAV: NavItem[] = [
   { href: "/dashboard", label: "Monitors", active: (p) => p === "/dashboard" || p.startsWith("/dashboard/monitors") },
-  { href: "/dashboard/alerts", label: "Alerts", active: (p) => p.startsWith("/dashboard/alerts") },
-  { href: "/dashboard/account", label: "Account", active: (p) => p.startsWith("/dashboard/account") },
 ];
 
 function Brand() {
