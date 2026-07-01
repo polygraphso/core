@@ -146,7 +146,6 @@ export default async function DashboardPage() {
 
         {activeCount < 1 && <AddMonitorForm />}
 
-
         <MonitorsList
           monitors={monitorEntries}
           quota={{ used: activeCount, max: 1 }}

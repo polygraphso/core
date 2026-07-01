@@ -18,7 +18,6 @@ export default async function LoginPage({
   const session = await getSession();
   if (session) redirect("/dashboard");
 
-
   const { next = "/dashboard" } = await searchParams;
   const safeNext = next.startsWith("/") ? next : "/dashboard";
 
