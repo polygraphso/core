@@ -147,10 +147,12 @@ export async function runAlerts(store: AlertStore, deps: AlertsDeps = {}): Promi
         if (!deps.sender) {
           throw new Error("no email sender configured");
         }
+        let sendOk = false;
         try {
           const sent = await deps.sender.send(monitor.email, email);
           await store.markDelivery(deliveryId, "sent", { resendMessageId: sent.id });
           result.sent += 1;
+          sendOk = true;
           log(`[alerts] sent ${monitor.target} → ${monitor.email} (${latest.grade})`);
         } catch (sendErr) {
           const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
@@ -158,12 +160,16 @@ export async function runAlerts(store: AlertStore, deps: AlertsDeps = {}): Promi
           result.failed += 1;
           log(`[alerts] send failed ${monitor.target} → ${monitor.email}: ${msg}`);
         }
+        // Only advance the watermark on success. A failed send leaves the
+        // delivery row as 'failed'; the next cron pass will see the watermark
+        // unchanged, re-enter, and claim_or_retry_delivery will reset the row
+        // to 'pending' so the send is retried.
+        if (sendOk) await store.advanceWatermark(monitor.id, latest);
+      } else {
+        // deliveryId null = the unique constraint found an existing 'sent' row
+        // (a concurrent run already delivered). Advance so we don't loop forever.
+        await store.advanceWatermark(monitor.id, latest);
       }
-
-      // Advance the watermark regardless of who sent (the unique constraint makes
-      // the send exactly-once); this also clears a stuck state if a prior run
-      // claimed but crashed before sending.
-      await store.advanceWatermark(monitor.id, latest);
     } catch (err) {
       result.skipped.push({
         target: monitor.target,
