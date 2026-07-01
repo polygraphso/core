@@ -55,6 +55,12 @@ function keyFromParams(parts: string[] | undefined): string | null {
   return decodeRef(raw);
 }
 
+/** Monitoring watches a registry version stream, so it's npm/pypi only (a remote
+ *  endpoint or github ref has no version to detect). */
+function isMonitorable(key: string): boolean {
+  return key.startsWith("npm/") || key.startsWith("pypi/");
+}
+
 function shortFingerprint(fp: string | null): string | null {
   if (!fp) return null;
   if (fp.length <= 16) return fp;
@@ -318,6 +324,30 @@ function Graded({
 
       {/* how to fix — only when there's something to fix (non-A) */}
       {grade !== "A" ? <FixCta target={serverKey} /> : null}
+
+      {/* monitor — this grade is for one version; watch for the next one */}
+      {isMonitorable(serverKey) ? (
+        <div className="mt-12 border-t hairline pt-6">
+          <h2 className="font-serif text-lg text-ink mb-1">Watch for new-version regrades</h2>
+          <p className="font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl mb-4">
+            This grade is a snapshot of{" "}
+            {detail.resolved_version ? (
+              <span className="font-mono text-[12px] text-ink">{detail.resolved_version}</span>
+            ) : (
+              "one version"
+            )}
+            . Get an email when {serverKey} ships a new version and polygraph re-runs the litmus
+            on it — one message per new version, one-click unsubscribe.
+          </p>
+          <Link
+            href={`/monitor?for=${serverKey}`}
+            className="inline-flex items-center gap-2 border hairline px-5 py-3 font-mono text-sm tracking-wide text-ink-muted hover:text-ink transition-colors"
+          >
+            Monitor this server
+            <span aria-hidden className="text-base leading-none">→</span>
+          </Link>
+        </div>
+      ) : null}
 
       <AdoptionSignals adoption={adoption} />
 
