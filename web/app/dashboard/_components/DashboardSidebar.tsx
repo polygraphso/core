@@ -1,54 +1,22 @@
 "use client";
 
-// Persistent navigation for the admin area. Two sections today — Usage metrics
-// and Grade attestations — plus sign-out and the way back to the public site.
-// The rail is the one place that knows about all of them, so each page no
-// longer carries its own ad-hoc links.
-//
-// Mirrors the SiteHeader pattern: a fixed left rail on desktop (`hidden
-// sm:flex`) and a separate compact top bar below the `sm` breakpoint
-// (`sm:hidden`), rather than trying to make one element be both.
+import { usePathname } from "next/navigation";
+import { SignOutButton } from "./SignOutButton";
 
 type NavItem = {
   href: string;
   label: string;
   active: (pathname: string) => boolean;
-  // Links out of the admin shell to a standalone surface (its own chrome, no
-  // rail) — flagged with a ↗ so the jump is expected. The ecosystems hub is
-  // unlisted/noindex and has no other entry point, so the admin nav surfaces
-  // it for now.
-  external?: boolean;
 };
 
 const NAV: NavItem[] = [
-  { href: "/admin", label: "Metrics", active: (p) => p === "/admin" },
-  {
-    href: "/admin/attestations",
-    label: "Attestations",
-    active: (p) => p.startsWith("/admin/attestations"),
-  },
-  {
-    href: "/admin/users",
-    label: "Users",
-    active: (p) => p.startsWith("/admin/users"),
-  },
-  {
-    href: "/admin/monitors",
-    label: "Monitors",
-    active: (p) => p.startsWith("/admin/monitors"),
-  },
-  {
-    href: "/ecosystems",
-    label: "Ecosystems",
-    active: (p) => p.startsWith("/ecosystems"),
-    external: true,
-  },
+  { href: "/dashboard", label: "Monitors", active: (p) => p === "/dashboard" || p.startsWith("/dashboard/monitors") },
 ];
 
 function Brand() {
   return (
     <a
-      href="/admin"
+      href="/dashboard"
       className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
     >
       <span className="inline-block w-1.5 h-1.5 bg-oxblood pulse-soft" aria-hidden />
@@ -59,27 +27,17 @@ function Brand() {
   );
 }
 
-function SignOut() {
-  return (
-    <form method="post" action="/api/admin/logout">
-      <button className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted hover:text-oxblood transition-colors">
-        Sign out
-      </button>
-    </form>
-  );
-}
-
-export function AdminSidebar({ pathname }: { pathname: string }) {
+export function DashboardSidebar({ pathname }: { pathname: string }) {
   return (
     <>
       {/* Desktop — fixed left rail */}
       <aside className="hidden sm:flex sm:fixed sm:inset-y-0 sm:left-0 sm:w-56 sm:flex-col border-r border-rule bg-parchment-50">
         <div className="px-5 py-5 border-b border-rule">
           <Brand />
-          <p className="section-label mt-3">Admin</p>
+          <p className="section-label mt-3">Dashboard</p>
         </div>
 
-        <nav className="flex-1 py-5" aria-label="Admin sections">
+        <nav className="flex-1 py-5" aria-label="Dashboard sections">
           {NAV.map((item) => {
             const active = item.active(pathname);
             return (
@@ -94,11 +52,6 @@ export function AdminSidebar({ pathname }: { pathname: string }) {
                 }`}
               >
                 {item.label}
-                {item.external && (
-                  <span aria-hidden className="ml-1 text-ink-faint">
-                    ↗
-                  </span>
-                )}
               </a>
             );
           })}
@@ -111,7 +64,7 @@ export function AdminSidebar({ pathname }: { pathname: string }) {
           >
             View site ↗
           </a>
-          <SignOut />
+          <SignOutButton />
         </div>
       </aside>
 
@@ -120,11 +73,11 @@ export function AdminSidebar({ pathname }: { pathname: string }) {
         <div className="flex items-center justify-between px-5 py-3">
           <div className="flex items-baseline gap-3">
             <Brand />
-            <span className="section-label">Admin</span>
+            <span className="section-label">Dashboard</span>
           </div>
-          <SignOut />
+          <SignOutButton />
         </div>
-        <nav className="flex border-t border-rule" aria-label="Admin sections">
+        <nav className="flex border-t border-rule" aria-label="Dashboard sections">
           {NAV.map((item) => {
             const active = item.active(pathname);
             return (
@@ -139,11 +92,6 @@ export function AdminSidebar({ pathname }: { pathname: string }) {
                 }`}
               >
                 {item.label}
-                {item.external && (
-                  <span aria-hidden className="ml-1 text-ink-faint">
-                    ↗
-                  </span>
-                )}
               </a>
             );
           })}

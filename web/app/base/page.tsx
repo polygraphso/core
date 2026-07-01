@@ -22,8 +22,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// Always render per-request against runtime env + the latest grade rows.
-export const dynamic = "force-dynamic";
+// Cache for 1 hour — grades update at most daily.
+export const revalidate = 3600;
 
 const GRADE_ORDER: LitmusGrade[] = ["A", "B", "C", "D", "F"];
 

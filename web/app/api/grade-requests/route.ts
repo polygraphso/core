@@ -16,9 +16,8 @@ import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { ServerRefParseError, parseServerRef, serverKey } from "@/lib/identity";
 import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
+import { getSession } from "@/lib/session";
 
-const EMAIL_MAX_LEN = 254;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const TARGET_MAX_LEN = 512;
 const NOTE_MAX_LEN = 2000;
 
@@ -95,18 +94,15 @@ export async function POST(request: Request) {
     );
   }
 
-  const normalizedEmail =
-    typeof email === "string" ? email.trim().toLowerCase() : "";
-  if (
-    normalizedEmail.length === 0 ||
-    normalizedEmail.length > EMAIL_MAX_LEN ||
-    !EMAIL_RE.test(normalizedEmail)
-  ) {
+  // Proxy guarantees a session for this route; use it server-authoritatively.
+  const session = await getSession();
+  if (!session) {
     return NextResponse.json(
-      { ok: false, message: "Enter a valid email — it's how you'll hear back." },
-      { status: 400 },
+      { ok: false, message: "Sign in to request a grade." },
+      { status: 401 },
     );
   }
+  const normalizedEmail = session.email;
 
   // Optional note, trimmed and length-guarded; empty string → null.
   let normalizedNote: string | null = null;

@@ -23,9 +23,6 @@ import {
 import { getSession } from "@/lib/session";
 import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
 
-const EMAIL_MAX_LEN = 254;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -93,42 +90,21 @@ export async function POST(request: Request) {
     throw err;
   }
 
+  // Proxy guarantees a Supabase session for this route.
   const session = await getSession();
-
-  // Resolve identity. Signed-in callers may omit email; we use the session's.
-  // Anonymous callers must supply a valid email.
-  let rpcEmail: string | null = null;
-  let rpcUserId: string | null = null;
-
-  if (session) {
-    rpcUserId = session.userId;
-  } else {
-    if (typeof email !== "string") {
-      return NextResponse.json(
-        { ok: false, message: "Enter a valid email address." },
-        { status: 400 },
-      );
-    }
-    const normalized = email.trim().toLowerCase();
-    if (
-      normalized.length === 0 ||
-      normalized.length > EMAIL_MAX_LEN ||
-      !EMAIL_RE.test(normalized)
-    ) {
-      return NextResponse.json(
-        { ok: false, message: "Enter a valid email address." },
-        { status: 400 },
-      );
-    }
-    rpcEmail = normalized;
+  if (!session) {
+    return NextResponse.json(
+      { ok: false, message: "Sign in to request notifications." },
+      { status: 401 },
+    );
   }
 
   try {
     const supabase = getSupabase();
     const { error } = await supabase.rpc("record_notify_request", {
       p_server_ref: normalizedRef,
-      p_email: rpcEmail,
-      p_user_id: rpcUserId,
+      p_email: null,
+      p_user_id: session.userId,
     });
     if (error) {
       console.error("[notify] record_notify_request failed:", error.message);

@@ -6,23 +6,38 @@ import {
   getNotifyMetrics,
   getUntrackedDemand,
 } from "@/lib/adminMetrics";
+import { getSupabaseAdmin } from "@/lib/supabase";
 import { Panel, KpiCard, MiniBars, BarList, EmptyNote, RecentList } from "./_components/ui";
+
+async function getUserCount() {
+  const db = getSupabaseAdmin();
+  if (!db) return { users: 0, activeMonitors: 0 };
+  const [usersResult, monitorsResult] = await Promise.all([
+    db.auth.admin.listUsers({ perPage: 1 }),
+    db.from("monitors").select("id", { count: "exact", head: true }).is("unsubscribed_at", null),
+  ]);
+  return {
+    users: (usersResult.data as { total?: number } | null)?.total ?? 0,
+    activeMonitors: monitorsResult.count ?? 0,
+  };
+}
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 
 export default async function AdminPage() {
-  const [top, waitlist, grades, notify, untracked] = await Promise.all([
+  const [top, waitlist, grades, notify, untracked, userCount] = await Promise.all([
     getTopline(),
     getWaitlistMetrics(),
     getGradeRequestMetrics(),
     getNotifyMetrics(),
     getUntrackedDemand(),
+    getUserCount(),
   ]);
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-6 py-12">
+    <main className="w-full px-8 py-12">
       <div className="mb-8">
         <p className="section-label mb-1">Internal</p>
         <h1 className="font-serif text-2xl text-ink">Usage metrics</h1>
@@ -31,22 +46,11 @@ export default async function AdminPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-10">
         <KpiCard label="Waitlist" value={top.waitlist} />
-        <KpiCard
-          label="Grade requests"
-          value={top.gradeRequests}
-          sub={`${top.gradeQueued} queued`}
-        />
-        <KpiCard
-          label="Notify requests"
-          value={top.notify}
-          sub={`${top.notifyUnfulfilled} unfulfilled`}
-        />
+        <KpiCard label="Grade requests" value={top.gradeRequests} sub={`${top.gradeQueued} queued`} />
+        <KpiCard label="Notify requests" value={top.notify} sub={`${top.notifyUnfulfilled} unfulfilled`} />
         <KpiCard label="Untracked servers" value={top.untrackedServers} />
-        <KpiCard
-          label="Attestations"
-          value={top.attestations}
-          sub={`${top.attestationsPending} pending · on-chain`}
-        />
+        <KpiCard label="Attestations" value={top.attestations} sub={`${top.attestationsPending} pending · on-chain`} />
+        <KpiCard label="Auth users" value={userCount.users} sub={`${userCount.activeMonitors} active monitors`} />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -151,6 +155,7 @@ export default async function AdminPage() {
           )}
         </Panel>
       </div>
+
     </main>
   );
 }

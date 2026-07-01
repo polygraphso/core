@@ -68,10 +68,7 @@ export interface AlertStore {
 export function supabaseAlertStore(supabase: SupabaseClient): AlertStore {
   return {
     async activeMonitors() {
-      const { data, error } = await supabase
-        .from("monitors")
-        .select("id, target, email, unsubscribe_token, last_notified_run_id, last_notified_grade")
-        .is("unsubscribed_at", null);
+      const { data, error } = await supabase.rpc("active_monitors_with_email");
       if (error) throw new Error(`activeMonitors: ${error.message}`);
       return (data ?? []) as MonitorRecord[];
     },

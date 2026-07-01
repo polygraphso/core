@@ -7,13 +7,13 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminAttestationsPage() {
   const db = getSupabaseAdmin();
-  if (!db) return <main className="p-8 font-mono text-sm">Database not configured.</main>;
+  if (!db) return <main className="px-8 py-12 font-mono text-sm">Database not configured.</main>;
 
   const cfg = getChainConfig();
   const rows = await listLatestRunsWithStatus(db);
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
+    <main className="px-8 py-12">
       <p className="section-label mb-1">Internal</p>
       <h1 className="font-serif text-3xl mb-1">Grade attestations</h1>
       <p className="font-mono text-[11px] text-ink/60 mb-1">
