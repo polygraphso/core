@@ -120,6 +120,7 @@ export function supabaseAlertStore(supabase: SupabaseClient): AlertStore {
         target_kind: "registry_ref",
         source: "monitor",
         status: "queued",
+        email: "monitor@polygraph.so",
       });
       if (error) throw new Error(`enqueueMonitorRegrade(${target}): ${error.message}`);
     },
