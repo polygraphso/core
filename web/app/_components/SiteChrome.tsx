@@ -23,8 +23,12 @@ export function SiteChrome({
   footer: ReactNode;
   children: ReactNode;
 }) {
-  const isAdmin = (usePathname() ?? "").startsWith("/admin");
-  if (isAdmin) return <>{children}</>;
+  const pathname = usePathname() ?? "";
+  const hasOwnChrome =
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/login");
+  if (hasOwnChrome) return <>{children}</>;
   return (
     <>
       {header}

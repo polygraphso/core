@@ -1,23 +1,28 @@
-/**
- * Supabase session reader for RSC + route handlers.
- *
- * Auth (GitHub OAuth) is on the onboarding-brief roadmap but isn't wired
- * into web/ yet — no /auth/callback, no sign-in surface. So this helper
- * intentionally returns null today. When auth lands, this is the single
- * place to swap in `@supabase/ssr`'s `createServerClient` + cookie-based
- * session lookup; the /notify page and /api/notify route will pick up
- * the signed-in branch with no further changes.
- *
- * Returning a typed shape (rather than `any` or just user-id) keeps the
- * callers honest: today they handle null, tomorrow they get email +
- * user_id from the same call.
- */
+import "server-only";
+import { createServerSupabase } from "@/lib/supabaseServer";
 
 export interface PolygraphSession {
   userId: string;
   email: string;
 }
 
+/**
+ * Returns the current Supabase session for RSC + route handlers.
+ *
+ * Uses getUser() (not getSession()) — re-validates the JWT server-side so
+ * the userId is trustworthy. getSession() trusts the cookie payload and can
+ * be spoofed; all userId-filtered reads depend on this distinction.
+ */
 export async function getSession(): Promise<PolygraphSession | null> {
-  return null;
+  try {
+    const supabase = await createServerSupabase();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error || !user) return null;
+    return { userId: user.id, email: user.email ?? "" };
+  } catch {
+    return null;
+  }
 }

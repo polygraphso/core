@@ -166,6 +166,14 @@ url = ""
 # If enabled, the nonce check will be skipped. Required for local sign in with Google auth.
 skip_nonce_check = false
 
+[auth.external.github]
+enabled = true
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID)"
+# DO NOT commit your OAuth client secret to git.
+secret = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET)"
+# Local dev: the Supabase local callback URL is the default and can be omitted.
+# redirect_uri = ""
+
 [edge_runtime]
 enabled = true
 # Configure one of the supported request policies: `oneshot`, `per_worker`.
