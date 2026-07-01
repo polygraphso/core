@@ -1,0 +1,39 @@
+# .github/workflows/alerts.yml
+name: regrade-alerts
+
+on:
+  schedule:
+    - cron: "23 * * * *" # hourly, offset off the top of the hour
+  workflow_dispatch: {}
+
+concurrency:
+  group: regrade-alerts
+  cancel-in-progress: false
+
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      # No `version:` here — it conflicts with package.json's `packageManager`
+      # field (pnpm/action-setup@v4 errors on "multiple versions specified").
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          # 22+: @supabase/supabase-js needs a global WebSocket (realtime client
+          # throws on Node 20 — "install ws for Node < 22").
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Enqueue new-version regrades and email watchers
+        run: pnpm --filter @polygraph/scoring alerts:ci
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # Optional overrides (sensible defaults in code):
+          #   ALERT_FROM_EMAIL   (default "polygraph <alerts@polygraph.so>")
+          #   POLYGRAPH_SITE_URL (default "https://polygraph.so")
+          ALERT_FROM_EMAIL: ${{ vars.ALERT_FROM_EMAIL }}
+          POLYGRAPH_SITE_URL: ${{ vars.POLYGRAPH_SITE_URL }}

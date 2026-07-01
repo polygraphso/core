@@ -109,6 +109,49 @@ export interface RunRow {
   error: Record<string, unknown> | null;
 }
 
+/**
+ * A new-version regrade subscription. Mirrors the `monitors` table. Exactly one
+ * of `email` / `user_id` is set (the XOR constraint). `last_notified_run_id` is
+ * the dedup watermark — the hosted_runs.id of the published grade last sent to
+ * this watcher; the other `last_notified_*` fields are display/audit only.
+ */
+export interface MonitorRow {
+  id: string;
+  target: string;
+  target_kind: "registry_ref";
+  email: string | null;
+  user_id: string | null;
+  unsubscribe_token: string;
+  unsubscribed_at: string | null;
+  created_at: string;
+  last_notified_run_id: string | null;
+  last_notified_version: string | null;
+  last_notified_grade: string | null;
+  last_notified_at: string | null;
+}
+
+export type AlertDeliveryStatus = "pending" | "sent" | "failed";
+
+/**
+ * One alert email attempt. Mirrors the `alert_deliveries` table. The
+ * `(monitor_id, hosted_run_id)` unique constraint is the double-email defense:
+ * the reconcile pass claims a delivery here before sending.
+ */
+export interface AlertDeliveryRow {
+  id: string;
+  monitor_id: string;
+  hosted_run_id: string;
+  target: string;
+  version: string | null;
+  grade: string | null;
+  email: string;
+  status: AlertDeliveryStatus;
+  resend_message_id: string | null;
+  error: string | null;
+  created_at: string;
+  sent_at: string | null;
+}
+
 // ── LISTEN/NOTIFY payloads ───────────────────────────────────────────────────
 
 export interface VersionDetectedPayload {
