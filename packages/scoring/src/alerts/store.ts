@@ -126,24 +126,16 @@ export function supabaseAlertStore(supabase: SupabaseClient): AlertStore {
     },
 
     async claimDelivery(input) {
-      const { data, error } = await supabase
-        .from("alert_deliveries")
-        .upsert(
-          {
-            monitor_id: input.monitor_id,
-            hosted_run_id: input.hosted_run_id,
-            target: input.target,
-            version: input.version,
-            grade: input.grade,
-            email: input.email,
-            status: "pending",
-          },
-          { onConflict: "monitor_id,hosted_run_id", ignoreDuplicates: true },
-        )
-        .select("id");
+      const { data, error } = await supabase.rpc("claim_or_retry_delivery", {
+        p_monitor_id: input.monitor_id,
+        p_hosted_run_id: input.hosted_run_id,
+        p_target: input.target,
+        p_version: input.version,
+        p_grade: input.grade,
+        p_email: input.email,
+      });
       if (error) throw new Error(`claimDelivery(${input.monitor_id}): ${error.message}`);
-      const row = (data ?? [])[0] as { id: string } | undefined;
-      return row?.id ?? null;
+      return (data as string | null) ?? null;
     },
 
     async markDelivery(id, status, detail) {
