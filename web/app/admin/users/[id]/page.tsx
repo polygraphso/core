@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { EmptyNote } from "../../_components/ui";
 import { Pagination } from "../../_components/Pagination";
+import { AdminToggleButton } from "./AdminToggleButton";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -48,8 +49,12 @@ export default async function AdminUserDetailPage({
   const db = getSupabaseAdmin();
   if (!db) return <main className="max-w-4xl mx-auto px-8 py-12"><EmptyNote>Supabase not configured.</EmptyNote></main>;
 
-  const { data: { user }, error } = await db.auth.admin.getUserById(id);
+  const [{ data: { user }, error }, profileResult] = await Promise.all([
+    db.auth.admin.getUserById(id),
+    db.from("profiles").select("is_admin").eq("id", id).maybeSingle(),
+  ]);
   if (error || !user) notFound();
+  const isAdmin = profileResult.data?.is_admin === true;
 
   // Load all monitors for this user (small per-user dataset; need all IDs for deliveries)
   const monitorsResult = await db
@@ -114,31 +119,39 @@ export default async function AdminUserDetailPage({
       </a>
 
       {/* Header */}
-      <div className="mt-6 mb-10 flex items-center gap-4">
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={name ?? user.email ?? ""} width={48} height={48} className="rounded-full border hairline" />
-        ) : (
-          <span className="w-12 h-12 rounded-full bg-ink flex items-center justify-center font-mono text-lg text-parchment select-none">
-            {(name ?? user.email ?? "?").slice(0, 1).toUpperCase()}
-          </span>
-        )}
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-serif text-2xl text-ink">{name ?? user.email}</h1>
-            {provider === "github" && (user.user_metadata?.user_name as string | undefined) && (
-              <a
-                href={`https://github.com/${user.user_metadata!.user_name as string}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-mono text-base text-ink-faint hover:text-ink transition-colors"
-                title="GitHub profile"
-              >
-                ↗
-              </a>
+      <div className="mt-6 mb-10 flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={name ?? user.email ?? ""} width={48} height={48} className="rounded-full border hairline" />
+          ) : (
+            <span className="w-12 h-12 rounded-full bg-ink flex items-center justify-center font-mono text-lg text-parchment select-none">
+              {(name ?? user.email ?? "?").slice(0, 1).toUpperCase()}
+            </span>
+          )}
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-serif text-2xl text-ink">{name ?? user.email}</h1>
+              {provider === "github" && (user.user_metadata?.user_name as string | undefined) && (
+                <a
+                  href={`https://github.com/${user.user_metadata!.user_name as string}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-base text-ink-faint hover:text-ink transition-colors"
+                  title="GitHub profile"
+                >
+                  ↗
+                </a>
+              )}
+            </div>
+            {name && <p className="font-mono text-xs text-ink-muted mt-0.5">{user.email}</p>}
+            {isAdmin && (
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-oxblood mt-1 inline-block">
+                Admin
+              </span>
             )}
           </div>
-          {name && <p className="font-mono text-xs text-ink-muted mt-0.5">{user.email}</p>}
         </div>
+        <AdminToggleButton userId={id} isAdmin={isAdmin} />
       </div>
 
       {/* Meta */}
