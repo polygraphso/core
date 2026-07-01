@@ -16,7 +16,9 @@
     "score": "node --env-file=../../.env --import tsx ./src/scripts/score.ts",
     "score:ci": "node --import tsx ./src/scripts/score.ts",
     "top": "node --env-file=../../.env --import tsx ./src/scripts/top.ts",
-    "poll": "node --env-file=../../.env --import tsx ./src/scripts/poll.ts"
+    "poll": "node --env-file=../../.env --import tsx ./src/scripts/poll.ts",
+    "alerts": "node --env-file=../../.env --import tsx ./src/scripts/alerts.ts",
+    "alerts:ci": "node --import tsx ./src/scripts/alerts.ts"
   },
   "engines": {
     "node": ">=20.6.0"
@@ -24,6 +26,7 @@
   "dependencies": {
     "@polygraph/core": "workspace:*",
     "@supabase/supabase-js": "^2.45.0",
+    "resend": "^4.0.0",
     "yaml": "^2.5.0"
   },
   "devDependencies": {
