@@ -7,6 +7,7 @@ const NAV: Array<{ href: string; label: string }> = [
   { href: "/#badge", label: "Get a badge" },
   { href: "/request", label: "Request" },
   { href: "/methodology", label: "Methodology" },
+  { href: "/dashboard", label: "Dashboard" },
 ];
 
 export function SiteHeader() {
