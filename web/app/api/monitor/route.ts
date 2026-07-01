@@ -135,3 +135,71 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true });
 }
+
+/**
+ * PATCH /api/monitor — set the alert threshold on one of the caller's monitors.
+ *
+ * Body: { monitor_id: string, min_grade: "C" | "D" | "F" | null }. null means
+ * "every regrade" (an email on every new grade). Ownership is enforced in the
+ * set_monitor_alert_grade RPC (it matches (id, user_id)), so a monitor the
+ * caller doesn't own updates zero rows — no IDOR via the service-role client.
+ */
+export async function PATCH(request: Request) {
+  const limited = await enforceRateLimit(request, "monitor", { max: 30, windowSeconds: 60 });
+  if (limited) return limited;
+
+  let payload: unknown;
+  try {
+    payload = await request.json();
+  } catch {
+    return NextResponse.json({ ok: false, message: "Invalid JSON body." }, { status: 400 });
+  }
+
+  const { monitor_id, min_grade } = (payload ?? {}) as {
+    monitor_id?: unknown;
+    min_grade?: unknown;
+  };
+
+  if (typeof monitor_id !== "string" || monitor_id.length === 0) {
+    return NextResponse.json({ ok: false, message: "monitor_id is required." }, { status: 400 });
+  }
+  // Defense in depth — the RPC re-validates, but reject junk up front.
+  if (min_grade !== null && !(typeof min_grade === "string" && ["C", "D", "F"].includes(min_grade))) {
+    return NextResponse.json(
+      { ok: false, message: "min_grade must be 'C', 'D', 'F', or null." },
+      { status: 400 },
+    );
+  }
+
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ ok: false, message: "Sign in to manage monitors." }, { status: 401 });
+  }
+
+  try {
+    const supabase = getSupabase();
+    const { error } = await supabase.rpc("set_monitor_alert_grade", {
+      p_monitor_id: monitor_id,
+      p_user_id: session.userId,
+      p_min_grade: min_grade,
+    });
+    if (error) {
+      console.error("[monitor] set_monitor_alert_grade failed:", error.message);
+      return NextResponse.json(
+        { ok: false, message: "Couldn't save your setting. Try again." },
+        { status: 500 },
+      );
+    }
+  } catch (err) {
+    console.error(
+      "[monitor] supabase client init failed:",
+      err instanceof Error ? err.message : String(err),
+    );
+    return NextResponse.json(
+      { ok: false, message: "Couldn't save your setting. Try again." },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ ok: true });
+}

@@ -110,6 +110,14 @@ export interface RunRow {
 }
 
 /**
+ * Per-monitor alert threshold. NULL means "every regrade" (an email on every
+ * new published grade — the default). Otherwise the engine only emails when the
+ * new grade is at or below this letter on the A>B>C>D>F scale. No 'B' option by
+ * design; grades are A,B,C,D,F (no 'E').
+ */
+export type AlertMinGrade = "C" | "D" | "F" | null;
+
+/**
  * A new-version regrade subscription. Mirrors the `monitors` table. Exactly one
  * of `email` / `user_id` is set (the XOR constraint). `last_notified_run_id` is
  * the dedup watermark — the hosted_runs.id of the published grade last sent to
@@ -128,6 +136,7 @@ export interface MonitorRow {
   last_notified_version: string | null;
   last_notified_grade: string | null;
   last_notified_at: string | null;
+  alert_min_grade: AlertMinGrade;
 }
 
 export type AlertDeliveryStatus = "pending" | "sent" | "failed";
