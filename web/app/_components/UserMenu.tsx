@@ -8,9 +8,10 @@ interface Props {
   email: string;
   name: string | null;
   avatarUrl: string | null;
+  isAdmin: boolean;
 }
 
-export function UserMenu({ email, name, avatarUrl }: Props) {
+export function UserMenu({ email, name, avatarUrl, isAdmin }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -82,6 +83,15 @@ export function UserMenu({ email, name, avatarUrl }: Props) {
           >
             Dashboard
           </a>
+          {isAdmin && (
+            <a
+              href="/admin"
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted hover:text-ink hover:bg-ink/[0.03] transition-colors"
+            >
+              Admin
+            </a>
+          )}
           <button
             onClick={signOut}
             className="w-full text-left px-4 py-2.5 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted hover:text-ink hover:bg-ink/[0.03] transition-colors border-t hairline"
