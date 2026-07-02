@@ -154,11 +154,11 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        {activeCount < 1 && <AddMonitorForm />}
+        {(session.isAdmin || activeCount < 1) && <AddMonitorForm />}
 
         <MonitorsList
           monitors={monitorEntries}
-          quota={{ used: activeCount, max: 1 }}
+          quota={{ used: activeCount, max: session.isAdmin ? null : 1 }}
         />
 
         {/* Alert history */}
