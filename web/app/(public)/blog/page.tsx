@@ -31,7 +31,7 @@ export default async function BlogIndexPage() {
   const posts = await getAllPosts();
 
   return (
-      <article className="max-w-3xl">
+      <article className="mx-auto max-w-3xl">
         <header className="mb-14">
           <p className="section-label mb-4">Blog · notes</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function PostNotFound() {
   return (
-    <article className="max-w-3xl">
+    <article className="mx-auto max-w-3xl">
         <p className="section-label mb-4">404 · post not found</p>
         <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight">
           That post doesn&apos;t exist

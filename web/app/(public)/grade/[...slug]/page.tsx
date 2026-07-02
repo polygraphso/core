@@ -62,7 +62,7 @@ export default async function GradePage({
   ];
 
   return (
-    <div className="max-w-3xl">
+    <div className="mx-auto max-w-3xl">
       <p className="section-label mb-4">Polygraph grade</p>
       <h1 className="font-mono text-2xl text-ink break-all mb-1">{serverKey}</h1>
       <p className="font-mono text-xs text-ink/60 mb-8">

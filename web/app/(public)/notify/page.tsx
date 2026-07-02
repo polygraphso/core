@@ -45,7 +45,7 @@ export default async function NotifyPage({
   const serverRef = resolveServerRef(rawFor);
 
   return (
-      <section className="max-w-3xl">
+      <section className="mx-auto max-w-3xl">
         <div className="border-t hairline pt-6 mb-10">
           <div className="flex items-baseline gap-4">
             <span className="section-label tabular">§ NOTIFY</span>

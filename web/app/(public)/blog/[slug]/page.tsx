@@ -59,7 +59,7 @@ export default async function BlogPostPage({
   if (!post) notFound();
 
   return (
-      <article className="max-w-3xl">
+      <article className="mx-auto max-w-3xl">
         <header className="mb-12">
           <p className="section-label mb-4">Blog · {formatDate(post.date)}</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">

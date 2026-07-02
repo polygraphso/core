@@ -93,7 +93,7 @@ function Swatch({
 
 export default function BrandKitPage() {
   return (
-      <article className="max-w-3xl">
+      <article className="mx-auto max-w-3xl">
         <header className="mb-14">
           <p className="section-label mb-4">Brand kit · assets &amp; basics</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">

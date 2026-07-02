@@ -15,7 +15,7 @@ export default async function RequestPage() {
   if (!session) redirect("/login?next=/request");
 
   return (
-      <div className="max-w-3xl">
+      <div className="mx-auto max-w-3xl">
         <header className="mb-10">
           <p className="section-label mb-4">Grade queue · free</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
