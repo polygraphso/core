@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Methodology — litmus-v10",
+  title: "Methodology — litmus-v11",
   description:
-    "The litmus test, v10: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence. Plus litmus-skill-v2: a static safety scan of Agent Skills, graded A/B/D/F.",
+    "The litmus test, v11: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence. Plus litmus-skill-v2: a static safety scan of Agent Skills, graded A/B/D/F.",
   alternates: { canonical: "/methodology" },
 };
 
 // Faithful rendering of litmus-test.md (polygraphso/hosted-service repo) — the
-// authoritative methodologyVersion: "litmus-v10" spec. Content edits belong
+// authoritative methodologyVersion: "litmus-v11" spec. Content edits belong
 // in the spec first; this page mirrors it.
 
 function Section({
@@ -59,7 +59,7 @@ export default function MethodologyPage() {
       <article className="mx-auto max-w-3xl px-6 pt-14 pb-24 md:pt-20 md:pb-32">
         <header className="mb-14">
           <p className="section-label mb-4">
-            Methodology · litmus-v10 · specification
+            Methodology · litmus-v11 · specification
           </p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             The litmus test
@@ -68,7 +68,7 @@ export default function MethodologyPage() {
             A behavioral evaluation of an MCP server — what it{" "}
             <em>does</em> when exercised the way an agent would, not what its
             README says. The string{" "}
-            <Inline>methodologyVersion: &quot;litmus-v10&quot;</Inline> travels
+            <Inline>methodologyVersion: &quot;litmus-v11&quot;</Inline> travels
             with every grade this spec produces. The same lab also grades{" "}
             <strong className="text-ink not-italic">Agent Skills</strong> under a
             separate static methodology, <Inline>litmus-skill-v2</Inline> —{" "}
@@ -102,7 +102,7 @@ export default function MethodologyPage() {
           <SubHead>What a passing grade does — and does not — claim</SubHead>
           <p>
             It <strong className="text-ink">does</strong> claim: against{" "}
-            <Inline>litmus-v10</Inline>, on the exact tool surface identified by
+            <Inline>litmus-v11</Inline>, on the exact tool surface identified by
             the fingerprint, the server did not exhibit the failure modes
             below, and the evidence is published and re-runnable.
           </p>
@@ -182,11 +182,42 @@ export default function MethodologyPage() {
             (<Inline>polygraph.egress</Inline> in its manifest). Egress matching
             that list on <strong className="text-ink">host and port</strong> is
             permitted and recorded; anything beyond it — or a declared host
-            reached on an undeclared port — is overreach and fails. A passing
+            reached on an undeclared port — is overreach and fails, unless the
+            harness can infer it as an expected upstream (below). A passing
             C-02 means <em>no overreach</em>, not <em>no network</em>; the
             declared hosts are surfaced in the evidence for the consumer to
             judge. A host-level DNAT gateway captures hard-coded IPs and DoH
             too, so an IP literal can&rsquo;t dodge the check.
+          </p>
+          <p>
+            <strong className="text-ink">Expected-upstream inference (v11).</strong>{" "}
+            An honest API-wrapper — a tool that transparently calls the API it
+            advertises (<Inline>openai_chat</Inline> →{" "}
+            <Inline>api.openai.com</Inline>) — used to be capped at D for that
+            undeclared egress, even though the upstream is the very API its own
+            surface names. Before an undeclared host is counted as overreach,
+            the harness now infers whether it is a plausible upstream for the
+            server&rsquo;s own surface: a host named{" "}
+            <strong className="text-ink">verbatim</strong> in the tool text
+            (strong), or an egress host whose{" "}
+            <strong className="text-ink">registrable label</strong> matches a
+            non-generic <strong className="text-ink">brand token</strong> drawn
+            from the surface and the package owner/name (medium, plain-TLD hosts
+            only). A match reclassifies the attempt from overreach into an
+            informational <Inline>egress-inferred</Inline> finding —{" "}
+            <em>disclosure, not exoneration</em>: the operator is still advised
+            to declare the host in <Inline>polygraph.egress</Inline>. Guardrails
+            keep lookalikes out — whole-label (never substring) matching, a
+            generic-label stoplist, registrable-label-only matching (so{" "}
+            <Inline>openai.evil-cdn.com</Inline> is not cleared), and
+            shared-tenant suffixes (<Inline>github.io</Inline>,{" "}
+            <Inline>vercel.app</Inline>, …) treated as their own level (so{" "}
+            <Inline>attacker.github.io</Inline> does not inherit{" "}
+            <Inline>foo.github.io</Inline>&rsquo;s match). This only ever turns a
+            false D into a correct pass, never the reverse. The independent{" "}
+            <strong className="text-ink">C-03 probe 4.2</strong>{" "}
+            canary-in-egress check is unchanged and still floors a real
+            exfiltration at F regardless of C-02.
           </p>
           <p>
             Probe 2.2 requires that the harness runs the server itself. For a
@@ -259,7 +290,7 @@ export default function MethodologyPage() {
           </p>
           <figure className="border hairline bg-parchment-50 mt-2">
             <figcaption className="px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-              Grade rubric · litmus-v10 §5
+              Grade rubric · litmus-v11 §5
             </figcaption>
             <table className="w-full text-left text-sm">
               <thead>
@@ -284,7 +315,7 @@ export default function MethodologyPage() {
                 <tr className="border-b hairline align-top opacity-60">
                   <td className="px-4 py-3 font-serif text-xl text-grade-c">C</td>
                   <td className="px-4 py-3">
-                    Reserved — no litmus-v10 condition maps to it. Future probe
+                    Reserved — no litmus-v11 condition maps to it. Future probe
                     categories may claim it.
                   </td>
                 </tr>
@@ -324,7 +355,7 @@ export default function MethodologyPage() {
           <ul className="list-none space-y-3">
             <li>
               <strong className="text-ink">Deterministic harness.</strong>{" "}
-              Same server version + same <Inline>litmus-v10</Inline> harness →
+              Same server version + same <Inline>litmus-v11</Inline> harness →
               same findings. The bait, jailbreak, and malformed batteries are
               varied but fixed — no randomness in probe verdicts; timestamps
               and environment are recorded, not baked in.
@@ -346,7 +377,7 @@ export default function MethodologyPage() {
             <li>
               <strong className="text-ink">Re-runnable.</strong> Anyone — a
               skeptic, a counterparty, a future independent verifier — can
-              re-run <Inline>litmus-v10</Inline> against the same server and
+              re-run <Inline>litmus-v11</Inline> against the same server and
               compare fingerprint and grade. A false grade is falsifiable, not
               merely disputable.
             </li>
@@ -414,18 +445,25 @@ export default function MethodologyPage() {
 
         <Section num="07" label="Versioning" id="versioning">
           <p>
-            This page documents <Inline>litmus-v10</Inline>. Probes evolve as
+            This page documents <Inline>litmus-v11</Inline>. Probes evolve as
             agents do; new failure modes get new probe IDs within their
             family. A change that alters pass/fail semantics bumps the
             methodology version. Every evidence bundle and every attestation
             embeds the methodology version that produced it, so a grade is
             always tied to the spec it was measured against — earlier{" "}
-            <Inline>litmus-v1</Inline>…<Inline>v9</Inline>{" "}
+            <Inline>litmus-v1</Inline>…<Inline>v10</Inline>{" "}
             grades stay valid as
             their own version&rsquo;s results.
           </p>
           <p className="text-sm">
             <span className="text-ink-faint">Changelog · </span>
+            <Inline>litmus-v11</Inline>{" "}
+            adds expected-upstream inference to C-02 probe 2.2: an honest
+            API-wrapper that reaches the API its own surface names is
+            reclassified from egress overreach into an informational{" "}
+            <Inline>egress-inferred</Inline> finding (disclosure, not
+            exoneration), so it is no longer wrongly capped at D — a
+            false-positive fix that only turns a wrong D into a correct pass.{" "}
             <Inline>litmus-v10</Inline>{" "}
             narrows C-02 probe 2.1 so an honestly
             read-only data tool is no longer misread as lying about a mutation

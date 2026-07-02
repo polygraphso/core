@@ -30,7 +30,7 @@ describe("joinRunsWithAttestations", () => {
         target_kind: "registry_ref",
         grade: "A",
         evidence: { resolvedVersion: "1.0.0" },
-        methodology_version: "litmus-v10",
+        methodology_version: "litmus-v11",
         published_at: "2026-06-30T00:00:00Z",
       },
       {
@@ -44,7 +44,7 @@ describe("joinRunsWithAttestations", () => {
       },
     ];
     const out = joinRunsWithAttestations(withMeta, []);
-    expect(out[0]).toMatchObject({ methodology_version: "litmus-v10", published: true });
+    expect(out[0]).toMatchObject({ methodology_version: "litmus-v11", published: true });
     expect(out[1]).toMatchObject({ methodology_version: "litmus-skill-v2", published: false });
   });
 
