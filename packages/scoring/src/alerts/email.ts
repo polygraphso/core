@@ -157,7 +157,7 @@ export function resendSender(opts?: { apiKey?: string; from?: string }): EmailSe
   if (!apiKey) {
     throw new Error("RESEND_API_KEY must be set to send alert emails.");
   }
-  const from = opts?.from ?? process.env.ALERT_FROM_EMAIL ?? DEFAULT_FROM;
+  const from = opts?.from || process.env.ALERT_FROM_EMAIL || DEFAULT_FROM;
   const resend = new Resend(apiKey);
   return {
     async send(to, email) {
