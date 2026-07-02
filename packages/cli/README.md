@@ -44,7 +44,7 @@ polygraphso check github/anthropic/mcp-server-foo
 Graded server:
 
 ```
-→ polygraph: A · version 2.1.0 · litmus-v10 · 2026-06-24
+→ polygraph: A · version 2.1.0 · litmus-v11 · 2026-06-24
 → evidence → polygraph.so/mcp/npm/@modelcontextprotocol/server-filesystem
 ```
 
@@ -53,7 +53,7 @@ date. If the version you'd actually run differs from the graded one, the check r
 grade for the version in play and notes the gap:
 
 ```
-→ polygraph: A · version 2.1.0 · litmus-v10 · 2026-06-24
+→ polygraph: A · version 2.1.0 · litmus-v11 · 2026-06-24
 → note: graded 2.1.0; your version is 2.2.0 (not yet graded)
 → evidence → polygraph.so/mcp/npm/@modelcontextprotocol/server-filesystem
 ```

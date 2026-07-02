@@ -73,7 +73,7 @@ polygraphso-mcp   # talks JSON-RPC on stdin/stdout
   "status": "graded",
   "polygraph": "A",
   "polygraph_detail": {
-    "methodology_version": "litmus-v10",
+    "methodology_version": "litmus-v11",
     "resolved_version": "2.1.0",
     "evidence_url": "https://polygraph.so/mcp/npm/@modelcontextprotocol/server-filesystem"
   }
