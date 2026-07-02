@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ECOSYSTEMS, type EcosystemStats } from "@/lib/ecosystems";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import { SectionHeader } from "@/app/_components/SectionHeader";
+import { EcosystemCta } from "@/app/_components/EcosystemCta";
 
 /**
  * UNLISTED ecosystems hub. Not linked from nav/footer, not in any sitemap,
@@ -219,30 +220,13 @@ export default async function EcosystemsPage() {
         <section>
           <SectionHeader number="§ 05" label="Get monitored" />
 
-          <div className="border hairline bg-parchment-50 p-6 md:p-8">
-            <h2 className="font-serif text-2xl md:text-3xl text-ink tracking-tight">
-              Monitor your ecosystem.
-            </h2>
-            <p className="mt-3 max-w-2xl text-ink-muted leading-relaxed">
-              Run an independent, continuous trust index for your network&rsquo;s MCP servers, agents,
-              and skills — re-graded on a cadence, with regressions flagged to your team. We set it up
-              per network; tell us what you ship.
-            </p>
-            <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4">
-              <a
-                href="mailto:hello@polygraph.so?subject=Monitor%20our%20ecosystem%20with%20polygraph"
-                className="inline-flex items-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors"
-              >
-                Start monitoring <span aria-hidden>→</span>
-              </a>
-              <Link
-                href="/base"
-                className="inline-flex items-center gap-1.5 pb-0.5 font-mono text-[12px] uppercase tracking-[0.16em] text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
-              >
-                See a live index <span aria-hidden>→</span>
-              </Link>
-            </div>
-          </div>
+          <EcosystemCta
+            heading="Monitor your ecosystem."
+            body="Run an independent, continuous trust index for your network's MCP servers, agents, and skills — re-graded on a cadence, with regressions flagged to your team. We set it up per network; tell us what you ship."
+            mailtoSubject="Monitor our ecosystem with polygraph"
+            secondaryHref="/base"
+            secondaryLabel="See a live index"
+          />
         </section>
 
         <p className="mt-12 font-mono text-[11px] text-ink-faint leading-relaxed border-t hairline pt-5">
