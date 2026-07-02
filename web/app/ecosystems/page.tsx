@@ -26,6 +26,14 @@ export const metadata: Metadata = {
 // Stats come from the live hosted_runs loaders; render per-request like /base & /bankr.
 export const dynamic = "force-dynamic";
 
+// The one ask this page exists to trigger. Shared by the hero CTA, the § 01
+// "not listed" tile, and (via its own subject) the closing EcosystemCta, so the
+// conversation always opens the same way.
+const CONTACT_EMAIL = "hello@polygraph.so";
+const ECOSYSTEM_MAILTO = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
+  "Monitor our ecosystem with polygraph",
+)}`;
+
 /** The grade-distribution strip — bar + legend, lifted from /base so every
  *  ecosystem surface reads the same. */
 function Distribution({ stats }: { stats: EcosystemStats }) {
@@ -107,10 +115,35 @@ export default async function EcosystemsPage() {
             for the network and re-grade it on a cadence, so the grade you shipped on doesn&rsquo;t go
             stale on you.
           </p>
+
+          {/* The ask, above the fold — a reader can act on the first screen. */}
+          <div className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
+            <a
+              href={ECOSYSTEM_MAILTO}
+              className="inline-flex items-center gap-2 rounded-[3px] bg-ink px-6 py-3.5 font-mono text-sm tracking-wide text-parchment transition-colors hover:bg-oxblood"
+            >
+              Start monitoring your ecosystem <span aria-hidden>→</span>
+            </a>
+            <a
+              href="#live-indexes"
+              className="inline-flex items-center gap-1.5 pb-0.5 font-mono text-[12px] uppercase tracking-[0.16em] text-ink-muted border-b hairline border-dotted transition-colors hover:text-oxblood"
+            >
+              See a live index <span aria-hidden>↓</span>
+            </a>
+          </div>
+          <p className="mt-3 font-mono text-[12px] text-ink-faint">
+            or email{" "}
+            <a
+              href={ECOSYSTEM_MAILTO}
+              className="text-ink-muted underline decoration-dotted underline-offset-2 transition-colors hover:text-oxblood"
+            >
+              {CONTACT_EMAIL}
+            </a>
+          </p>
         </header>
 
         {/* § 01 — Proof first: the live indexes. */}
-        <section className="mb-16">
+        <section id="live-indexes" className="mb-16 scroll-mt-24">
           <SectionHeader number="§ 01" label="Live indexes" title="What a trust index looks like.">
             Every grade below is read live from the same evidence the per-network pages show —
             current, reproducible, and yours to re-run against the open harness.
@@ -140,6 +173,27 @@ export default async function EcosystemsPage() {
                 </div>
               </Link>
             ))}
+
+            {/* The "where's mine?" tile — the ask, placed where a reader is
+                already comparing example indexes. Ghosted so it reads as
+                "add yours," not another graded network. */}
+            <a
+              href={ECOSYSTEM_MAILTO}
+              className="group flex min-w-0 flex-col justify-center rounded-[5px] border border-dashed hairline px-5 py-5 transition-colors hover:border-oxblood hover:bg-[#efe8d6]"
+            >
+              <p className="section-label mb-2">Your network</p>
+              <h2 className="font-serif text-2xl text-ink tracking-tight">Not listed yet?</h2>
+              <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
+                Start a trust index for your ecosystem&rsquo;s servers, agents, and skills — graded,
+                then re-graded on a cadence.
+              </p>
+              <span className="mt-4 inline-flex items-center gap-2 font-mono text-[11px] text-oxblood">
+                Start monitoring
+                <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
+                  →
+                </span>
+              </span>
+            </a>
           </div>
         </section>
 
@@ -217,7 +271,7 @@ export default async function EcosystemsPage() {
         </section>
 
         {/* § 05 — The ask: an honest, mailto conversation-starter. */}
-        <section>
+        <section id="get-monitored" className="scroll-mt-24">
           <SectionHeader number="§ 05" label="Get monitored" />
 
           <EcosystemCta
