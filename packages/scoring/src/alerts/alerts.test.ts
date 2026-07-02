@@ -217,7 +217,7 @@ describe("runAlerts — reconcile pass", () => {
     expect(store.watermarks).toEqual([{ monitorId: "m1", grade: { id: "run-9", resolved_version: "2.0.0", grade: "B" } }]);
   });
 
-  it("marks the delivery failed but still advances the watermark when the send throws", async () => {
+  it("marks the delivery failed and does NOT advance the watermark, so it retries next pass", async () => {
     const store = new FakeStore({
       monitors: [monitor()],
       latest: { "npm/@scope/srv": { id: "run-9", resolved_version: "2.0.0", grade: "D" } },
@@ -227,7 +227,9 @@ describe("runAlerts — reconcile pass", () => {
     const result = await runAlerts(store, { fetchLatestVersion: async () => "2.0.0", sender: failingSender });
     expect(result.failed).toBe(1);
     expect(store.marks[0]).toMatchObject({ status: "failed" });
-    expect(store.watermarks).toHaveLength(1);
+    // Watermark stays put on failure: next cron pass re-enters and
+    // claim_or_retry_delivery resets the 'failed' row to 'pending' to retry.
+    expect(store.watermarks).toHaveLength(0);
   });
 
   it("skips monitors with no email (future signed-in mode) without throwing", async () => {
