@@ -9,6 +9,7 @@ import {
 import { GRADE_HEX } from "@/lib/gradeColors";
 import type { LitmusGrade } from "@/lib/hostedGrades";
 import { InfoTip } from "@/app/_components/InfoTip";
+import { EcosystemCta } from "@/app/_components/EcosystemCta";
 
 /**
  * UNLISTED Base-network MCP index. Not linked from nav/footer, not in any
@@ -296,6 +297,18 @@ export default async function BaseIndexPage() {
         {GROUP_ORDER.map((g) => (
           <CohortSection key={g} label={GROUP_LABEL[g]} rows={entries.filter((e) => e.group === g)} />
         ))}
+
+        {/* Monitoring CTA — this table is the live proof; the ask is to keep it live. */}
+        <section className="mt-14 border-t hairline pt-8">
+          <p className="section-label mb-5">Monitor this ecosystem</p>
+          <EcosystemCta
+            heading="Monitor the Base MCP ecosystem."
+            body="This index is a snapshot. We re-grade Base's MCP servers and skills on a cadence and flag regressions — a dropped grade, a newly failing probe, a changed tool surface — before they reach your users. Set up per network."
+            mailtoSubject="Monitor the Base MCP ecosystem with polygraph"
+            secondaryHref="/rankings"
+            secondaryLabel="See the full index"
+          />
+        </section>
 
         <p className="mt-9 font-mono text-[11px] text-ink-faint leading-relaxed border-t hairline pt-5">
           C-01 tool-output injection · C-02 permission/egress overreach · C-03 sensitive-data handling ·

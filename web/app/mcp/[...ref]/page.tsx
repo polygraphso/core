@@ -19,6 +19,8 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { fetchAdoptionForServer, type ServerAdoption } from "@/lib/rankings";
 import { EmbedSnippets } from "@/app/_components/EmbedSnippets";
 import { FixCta } from "@/app/_components/FixCta";
+import { ShareGrade } from "@/app/_components/ShareGrade";
+import { ReportFaq } from "@/app/_components/ReportFaq";
 
 const ORIGIN = "https://polygraph.so";
 
@@ -85,10 +87,10 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   const cardUrl = `/api/badge/card?server=${path}`;
   const result = await getGrade(key);
   if (result) {
-    const title = `polygraph: ${key} — grade ${result.grade}`;
+    const title = `${key} — MCP security grade ${result.grade} | polygraph`;
     return {
       title,
-      description: `${key} scored ${result.grade} on the polygraph behavioral litmus (${result.detail.methodology_version}). A reproducible, evidence-backed grade.`,
+      description: `Is ${key} safe to use? polygraph ran its behavioral litmus (${result.detail.methodology_version}) and graded it ${result.grade} — testing tool-output injection, egress overreach, sensitive-data handling, and adversarial input. Reproducible and evidence-backed.`,
       alternates: { canonical },
       openGraph: { title, url: canonical, images: [cardUrl] },
       twitter: { card: "summary_large_image", images: [cardUrl] },
@@ -287,6 +289,11 @@ function Graded({
 
       <AdoptionLine adoption={adoption} />
 
+      <ShareGrade
+        pageUrl={pageUrl}
+        text={`${serverKey} graded ${grade} by polygraph — a reproducible behavioral test you can re-run yourself.`}
+      />
+
       {/* category breakdown */}
       <dl className="mt-10 border-t hairline">
         {CATEGORY_LABELS.map(({ code, name }) => {
@@ -383,6 +390,8 @@ function Graded({
         </div>
         <EmbedSnippets badgeUrl={badgeUrl} cardUrl={cardUrl} pageUrl={pageUrl} />
       </div>
+
+      <ReportFaq kind="mcp" subject={serverKey} grade={grade} />
     </>
   );
 }

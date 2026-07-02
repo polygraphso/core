@@ -32,6 +32,8 @@ import { findLatestConfirmedByServer } from "@/lib/attestations/store";
 import { getChainConfig, attestationUrl, attesterName } from "@/lib/attestations/chains";
 import { FixCta } from "@/app/_components/FixCta";
 import { EmbedSnippets } from "@/app/_components/EmbedSnippets";
+import { ShareGrade } from "@/app/_components/ShareGrade";
+import { ReportFaq } from "@/app/_components/ReportFaq";
 
 const ORIGIN = "https://polygraph.so";
 
@@ -87,22 +89,28 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   if (!target) {
     return { title: "Skill grade", robots: { index: false, follow: true } };
   }
-  const canonical = `/skill/${skillRefToPath(target)}`;
+  const path = skillRefToPath(target);
+  const canonical = `/skill/${path}`;
+  const cardUrl = `/api/badge/skill/card?skill=${path}`;
   const name = skillDisplayName(target);
   const result = await getGrade(target);
   if (result) {
-    const title = `polygraph: ${name} — skill grade ${result.grade}`;
+    const title = `${name} — skill security grade ${result.grade} | polygraph`;
     return {
       title,
-      description: `The ${name} skill scored ${result.grade} on the polygraph static skill litmus (${result.detail.methodology_version}). A reproducible, content-hash-anchored grade.`,
+      description: `Is the ${name} skill safe? polygraph's static skill litmus (${result.detail.methodology_version}) graded it ${result.grade} — checking prompt-injection, data-exfiltration instructions, and dangerous bundled commands. Content-hash-anchored and reproducible.`,
       alternates: { canonical },
+      openGraph: { title, url: canonical, images: [cardUrl] },
+      twitter: { card: "summary_large_image", images: [cardUrl] },
       robots: { index: true, follow: true },
     };
   }
+  const title = `polygraph: ${name} — not yet graded`;
   return {
-    title: `polygraph: ${name} — not yet graded`,
+    title,
     description: `The ${name} skill hasn't been graded by polygraph yet.`,
     alternates: { canonical },
+    openGraph: { title, url: canonical, images: [cardUrl] },
     robots: { index: false, follow: true },
   };
 }
@@ -205,6 +213,11 @@ function Graded({
         instructions are interpreted by an agent at runtime.
       </p>
 
+      <ShareGrade
+        pageUrl={pageUrl}
+        text={`${name} graded ${grade} by polygraph's static skill litmus — reproducible and content-hash-anchored.`}
+      />
+
       {/* category breakdown */}
       <div className="mt-10 border-t hairline">
         {detail.categories.map((cat) => (
@@ -271,6 +284,8 @@ function Graded({
         </div>
         <EmbedSnippets badgeUrl={badgeUrl} cardUrl={cardUrl} pageUrl={pageUrl} />
       </div>
+
+      <ReportFaq kind="skill" subject={name} grade={grade} />
     </>
   );
 }
