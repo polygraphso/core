@@ -320,6 +320,34 @@ export async function fetchPublishedRemoteGrades(db: SupabaseClient): Promise<Ra
   return rows;
 }
 
+/**
+ * `target → newest published_at` for every published registry-server and skill
+ * grade — the `lastmod` source for the sitemap, keyed by the same `target` the
+ * grade helpers key on. Best-effort: an empty map on any read failure just means
+ * the sitemap omits `lastModified`, never that a URL is dropped.
+ */
+export async function fetchPublishedLastModified(
+  db: SupabaseClient,
+): Promise<Map<string, string>> {
+  const { data, error } = await db
+    .from("hosted_runs")
+    .select("target, published_at")
+    .in("target_kind", ["registry_ref", "skill"])
+    .eq("status", "complete")
+    .not("published_at", "is", null)
+    .order("published_at", { ascending: false });
+  if (error) {
+    console.warn("[rankings] published lastmod read soft-failed:", error.message);
+    return new Map();
+  }
+  const map = new Map<string, string>();
+  for (const row of (data ?? []) as Array<{ target: string; published_at: string | null }>) {
+    // Rows arrive newest-first, so the first sighting per target is the newest.
+    if (row.published_at && !map.has(row.target)) map.set(row.target, row.published_at);
+  }
+  return map;
+}
+
 export interface ServerAdoption {
   /** 0–100 adoption dimension. */
   adoptionScore: number;

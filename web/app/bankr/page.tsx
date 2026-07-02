@@ -12,6 +12,7 @@ import {
 import { refToPath } from "@/lib/badgeData";
 import { skillRefToPath } from "@/lib/skillGrades";
 import { GRADE_HEX } from "@/lib/gradeColors";
+import { EcosystemCta } from "@/app/_components/EcosystemCta";
 
 /**
  * UNLISTED Bankr ecosystem trust index. Not linked from nav/footer, not in any
@@ -214,6 +215,18 @@ export default async function BankrIndexPage() {
         {/* Agent MCP servers */}
         <div className="section-label pt-9 pb-1 px-3">Agent MCP servers <span className="text-ink-faint">· {agents.length}</span></div>
         {agents.map((a) => <AgentRow key={a.project} a={a} />)}
+
+        {/* Monitoring CTA — this index is the live proof; the ask is to keep it live. */}
+        <section className="mt-14 border-t hairline pt-8">
+          <p className="section-label mb-5">Monitor this ecosystem</p>
+          <EcosystemCta
+            heading="Monitor the Bankr skill marketplace."
+            body="This index is a snapshot. We re-grade Bankr's skills and agent MCP servers on a cadence and flag regressions — a dropped grade, a newly failing check, a changed tool surface — as the marketplace ships. Set up per network."
+            mailtoSubject="Monitor the Bankr ecosystem with polygraph"
+            secondaryHref="/rankings"
+            secondaryLabel="See the full index"
+          />
+        </section>
 
         <p className="mt-9 font-mono text-[11px] text-ink-faint leading-relaxed border-t hairline pt-5">
           Skills: S-01 prompt-injection · S-03 exfil instructions · S-04 dangerous bundled commands (static,
