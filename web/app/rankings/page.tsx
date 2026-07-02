@@ -62,7 +62,7 @@ export default async function RankingsPage() {
     <main className="flex-1">
       <article className="mx-auto max-w-4xl px-6 pt-14 pb-24 md:pt-20 md:pb-32">
         <header className="mb-12">
-          <p className="section-label mb-4">Index · litmus-v10</p>
+          <p className="section-label mb-4">Index · litmus-v11</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             The Polygraph Index
           </h1>

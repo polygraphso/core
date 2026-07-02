@@ -7,7 +7,7 @@ const row = (server: string, target_kind: string): AdminRow => ({
   server,
   target_kind,
   version: "",
-  methodology_version: "litmus-v10",
+  methodology_version: "litmus-v11",
   grade: "A",
   published: false,
   status: "none",

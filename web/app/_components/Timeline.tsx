@@ -10,7 +10,7 @@ const steps: Array<{
 }> = [
   {
     status: "now",
-    title: "litmus-v10 harness",
+    title: "litmus-v11 harness",
     body: "Built and running: nine probes across four categories, a grade from A to F, evidence attached.",
   },
   {
