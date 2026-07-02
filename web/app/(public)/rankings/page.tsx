@@ -1,0 +1,117 @@
+// web/app/rankings/page.tsx
+import type { Metadata } from "next";
+import { getSupabaseAdmin } from "@/lib/supabase";
+import {
+  fetchTopRanked,
+  fetchPublishedGradeDetailMap,
+  fetchPublishedRemoteGrades,
+  mergeRankings,
+  type RankingRow,
+} from "@/lib/rankings";
+import { fetchPublishedSkillGrades, type SkillIndexRow } from "@/lib/skillGrades";
+import { GradesIndex } from "./_components/GradesIndex";
+
+export const metadata: Metadata = {
+  // Keep the established brand/SEO title even though the page now also indexes
+  // skills — "MCP Security Index" is the flagship surface; skills are a tab.
+  title: "The MCP Security Index",
+  description:
+    "MCP servers and Agent Skills graded with the open litmus harness — servers for behavior (ranked by adoption), skills for static safety. A grade is a measurement, not a guarantee; re-run it yourself.",
+  alternates: { canonical: "/rankings" },
+};
+
+// Re-render at most every 10 min; a fresh score run or regrade surfaces within the window.
+export const revalidate = 600;
+
+// Upper bound on the adoption universe we pull; we then keep only graded servers.
+// Comfortably covers the full scored set (~78 today).
+const ADOPTION_UNIVERSE = 200;
+
+export default async function RankingsPage() {
+  const db = getSupabaseAdmin();
+  let rows: RankingRow[] = [];
+  let skillRows: SkillIndexRow[] = [];
+  let lastRefreshed = "";
+  if (db) {
+    const [ranked, grades, remote, skills] = await Promise.all([
+      // Pull the full scored set so every graded server is covered, then keep
+      // only graded servers (below) — the index shows graded MCPs, ranked by adoption.
+      fetchTopRanked(db, ADOPTION_UNIVERSE),
+      fetchPublishedGradeDetailMap(db),
+      fetchPublishedRemoteGrades(db),
+      fetchPublishedSkillGrades(db),
+    ]);
+    skillRows = skills;
+    // Newest score timestamp across the ranked set — ISO strings compare lexically.
+    lastRefreshed = ranked.reduce((max, r) => (r.computedAt > max ? r.computedAt : max), "");
+    const registryRows = mergeRankings(ranked, grades)
+      .filter((r) => r.grade !== null)
+      .map((r, i) => ({ ...r, rank: i + 1 }));
+    // Remote/hosted endpoints carry no adoption rank — append them after the
+    // adoption-ranked registry servers (the table shows "—" for their rank + adoption).
+    const remoteRows = remote.map((r, i) => ({ ...r, rank: registryRows.length + i + 1 }));
+    rows = [...registryRows, ...remoteRows];
+  }
+  const refreshedDate = lastRefreshed ? lastRefreshed.slice(0, 10) : null;
+  const liveCount = rows.filter((r) => r.remote).length;
+  const registryCount = rows.length - liveCount;
+  const skillCount = skillRows.length;
+  const empty = rows.length === 0 && skillCount === 0;
+
+  return (
+      <article>
+        <header className="mb-12">
+          <p className="section-label mb-4">Index · litmus-v11</p>
+          <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
+            The Polygraph Index
+          </h1>
+          <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
+            Every grade we publish — MCP servers tested for behavior and ordered by adoption, Agent
+            Skills scanned for safety. What each one <em>does</em>, not what its README claims.
+          </p>
+          <p className="mt-4 max-w-2xl text-ink-muted leading-relaxed text-sm">
+            {empty ? (
+              <>No grades published yet. Check back shortly.</>
+            ) : (
+              <>
+                {registryCount > 0 ? (
+                  <>
+                    {registryCount} MCP {registryCount === 1 ? "server" : "servers"} graded, ranked
+                    by adoption
+                  </>
+                ) : null}
+                {liveCount > 0 ? (
+                  <>
+                    {" "}
+                    · {liveCount} live {liveCount === 1 ? "endpoint" : "endpoints"} (hosted, egress
+                    unverified)
+                  </>
+                ) : null}
+                {skillCount > 0 ? (
+                  <>
+                    {" "}
+                    · {skillCount} {skillCount === 1 ? "skill" : "skills"} scanned
+                  </>
+                ) : null}
+                {refreshedDate ? <> · adoption data as of {refreshedDate}</> : null}. A grade is a
+                measurement, not a guarantee; you can re-run the open harness yourself.
+              </>
+            )}
+          </p>
+          <div className="mt-8 flex flex-wrap items-center gap-4">
+            <a
+              href="/request"
+              className="inline-flex items-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors"
+            >
+              Request a grade
+            </a>
+            <span className="font-mono text-[11px] text-ink-faint leading-relaxed max-w-xs">
+              Not up yet? Add it to the bench — free, and we email you when it publishes.
+            </span>
+          </div>
+        </header>
+
+        <GradesIndex serverRows={rows} skillRows={skillRows} />
+      </article>
+  );
+}
