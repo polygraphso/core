@@ -5,7 +5,6 @@ const NAV: Array<{ href: string; label: string }> = [
   { href: "/rankings", label: "Grades" },
   { href: "/#install", label: "Install" },
   { href: "/#badge", label: "Get a badge" },
-  { href: "/request", label: "Request" },
   { href: "/methodology", label: "Methodology" },
 ];
 
