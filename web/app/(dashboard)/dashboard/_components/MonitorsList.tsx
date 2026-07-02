@@ -190,7 +190,8 @@ export function MonitorsList({
   quota,
 }: {
   monitors: MonitorEntry[];
-  quota: { used: number; max: number };
+  // max === null means uncapped (admins).
+  quota: { used: number; max: number | null };
 }) {
   const [key, setKey] = useState(0);
 
@@ -206,7 +207,9 @@ export function MonitorsList({
     <div className="grid gap-3">
       <div className="flex items-center justify-between">
         <p className="font-mono text-[11px] text-ink-faint uppercase tracking-widest">
-          {quota.used} of {quota.max} slot{quota.max !== 1 ? "s" : ""} used
+          {quota.max === null
+            ? `${quota.used} monitor${quota.used !== 1 ? "s" : ""}`
+            : `${quota.used} of ${quota.max} slot${quota.max !== 1 ? "s" : ""} used`}
         </p>
       </div>
       <div key={key} className="grid gap-2">
