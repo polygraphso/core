@@ -8,8 +8,7 @@ A polygraph is the behavioral trust grade polygraph.so issues for an MCP server:
 
 - **`check_server`** — look up the published polygraph for a specific MCP server (`server_ref` like `npm/@modelcontextprotocol/server-filesystem`). An optional `@<version>` suffix looks up that exact version.
 - **`list_servers`** — enumerate every server polygraph has graded, sorted by grade (A first).
-
-A `notify_about` tool (request a polygraph for an untracked server) is **not implemented yet**; for an untracked server `check_server` returns a `notify_url` the user can subscribe to instead.
+- **`request_grade`** — add an ungraded server to polygraph's public grading queue. The natural follow-up when `check_server` returns `not_available`. Free and best-effort: polygraph runs the litmus test and publishes the grade, which you read later by calling `check_server` again. No contact details are asked of the agent.
 
 ## Install in Claude Desktop
 
@@ -85,14 +84,16 @@ An ungraded server:
 ```json
 {
   "status": "not_available",
-  "notify_url": "https://polygraph.so/notify?for=npm/obscure-mcp-server"
+  "notify_url": "https://polygraph.so/notify?for=npm/obscure-mcp-server",
+  "message": "No published polygraph for npm/obscure-mcp-server yet — treat it as unevaluated. Call request_grade to add it to the public queue, or grade it yourself with the self_grade command.",
+  "self_grade": "npx -y -p @polygraphso/litmus polygraphso-litmus litmus npm/obscure-mcp-server"
 }
 ```
 
 - `status` is `"graded"` when a published grade exists, `"not_available"` otherwise.
 - `polygraph` is the published grade — `"A" | "B" | "D" | "F"` (no C).
 - `polygraph_detail` carries the per-check results (C-01/C-02/C-03), the tool-surface fingerprint, the methodology version, and `resolved_version` (the version the grade was run against).
-- `notify_url` (on `not_available`) is where a user can subscribe to be notified when the polygraph is published.
+- On `not_available`: `message` explains the next steps, `self_grade` is a one-shot command to grade the server yourself, and `notify_url` is where a user can subscribe to be notified when the polygraph is published. Call `request_grade` to add the server to the public queue.
 
 `list_servers()`:
 
