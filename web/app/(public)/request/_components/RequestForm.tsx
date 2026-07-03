@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { HoneypotField } from "@/app/_components/HoneypotField";
 import { ServerCombobox, type ComboboxResult } from "@/app/_components/ServerCombobox";
-import { refToPath } from "@/lib/badgeData";
+import { refToPath } from "@/lib/serverRef";
 
 function targetHint(raw: string): { text: string; warn: boolean } | null {
   const t = raw.trim();
