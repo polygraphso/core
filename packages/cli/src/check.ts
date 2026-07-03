@@ -31,9 +31,31 @@ type ApiResponse =
   | {
       status: "not_available";
       notify_url: string;
+      message?: string;
+      /** One-shot command to grade the server yourself with the open litmus. */
+      self_grade?: string;
     };
 
 const GRADES = new Set(["A", "B", "C", "D", "F"]);
+
+/**
+ * The "not available yet" block: what it means plus the two things you can do —
+ * queue a grade, or (when the API offers it) grade it yourself now — then the
+ * notify outlet. `displayUrl` is the scheme-stripped notify URL.
+ */
+function formatNotAvailable(
+  ref: string,
+  body: { self_grade?: string },
+  displayUrl: string,
+): string {
+  const lines = [
+    "→ not available yet",
+    `→ request a grade → polygraphso request ${ref}`,
+  ];
+  if (body.self_grade) lines.push(`→ grade it now → ${body.self_grade}`);
+  lines.push(`→ notify me → ${displayUrl}`);
+  return lines.join("\n");
+}
 
 /**
  * The version of an npm package as installed in the current project, so a bare
@@ -151,9 +173,7 @@ export async function runCheck(args: readonly string[]): Promise<number> {
   }
 
   if (body.status === "not_available") {
-    process.stdout.write(
-      `→ not available yet\n→ notify me → ${displayUrl}\n`,
-    );
+    process.stdout.write(formatNotAvailable(canonical, body, displayUrl) + "\n");
     return 0;
   }
 
@@ -161,4 +181,4 @@ export async function runCheck(args: readonly string[]): Promise<number> {
   return 1;
 }
 
-export const __testing = { USAGE_HINT };
+export const __testing = { USAGE_HINT, formatNotAvailable };

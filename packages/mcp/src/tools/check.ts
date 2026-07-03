@@ -41,8 +41,9 @@ export const CHECK_TOOL_DESCRIPTION = [
   "    tool-surface fingerprint, the methodology version, and `resolved_version`",
   "    (the version the grade was run against).",
   "  - not_available: this server (or the requested version) hasn't been graded",
-  "    yet. The response includes a notify URL the user can subscribe to. Treat",
-  "    this as 'no data' — neither safe nor unsafe.",
+  "    yet. Treat this as 'no data' — neither safe nor unsafe. The response's",
+  "    `message` explains next steps: call `request_grade` to add it to the",
+  "    public grading queue, or run the `self_grade` command to grade it now.",
 ].join("\n");
 
 export const checkInputShape = {

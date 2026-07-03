@@ -42,6 +42,15 @@ interface GradedResponse {
 interface NotAvailableResponse {
   status: "not_available";
   notify_url: string;
+  /** Plain-English, agent-actionable summary of what "not_available" means and
+   *  what to do next. */
+  message: string;
+  /** One-shot command to grade the server yourself with the open litmus. */
+  self_grade: string;
+}
+
+function selfGradeCommand(refKey: string): string {
+  return `npx -y -p @polygraphso/litmus polygraphso-litmus litmus ${refKey}`;
 }
 
 const NOTIFY_BASE = "https://polygraph.so/notify";
@@ -130,6 +139,12 @@ export async function POST(request: Request) {
     const miss: NotAvailableResponse = {
       status: "not_available",
       notify_url: notifyUrl(refKey),
+      message:
+        `No published polygraph for ${refKey} yet — treat it as unevaluated ` +
+        `(neither safe nor unsafe). To get it graded, call request_grade to add ` +
+        `it to the public queue (free), or grade it yourself now with the ` +
+        `self_grade command.`,
+      self_grade: selfGradeCommand(refKey),
     };
     return Response.json(miss);
   }
