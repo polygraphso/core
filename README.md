@@ -15,8 +15,7 @@ core/
 │   │                 #   row types, server identity. Owns the shared `hosted_runs` schema.
 │   ├── scoring/      # @polygraph/scoring — the daily adoption-signal pipeline
 │   │                 #   (npm/pypi/github + OpenSSF + Glama/Smithery + deps.dev)
-│   ├── cli/          # polygraphso — the published lookup CLI (sub-second over precomputed grades)
-│   └── mcp/          # @polygraphso/mcp — an MCP server exposing polygraph lookups as tools
+│   └── cli/          # polygraphso — the published lookup CLI (sub-second over precomputed grades)
 ├── brand/            # logomark, wordmark, social preview (SVG + PNG)
 └── .claude/          # local dev tooling (preview launch config, etc.)
 ```

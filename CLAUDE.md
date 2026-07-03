@@ -6,7 +6,7 @@ This is the source-of-truth code repo for **polygraph.so** (formerly `poligrafo.
 
 - `README.md` — repo layout and dev commands.
 - `web/` — the polygraph.so site (Next.js 16, App Router, Tailwind v4): landing, the MCP Security Index (`/rankings`), per-server (`/mcp`) and per-skill (`/skill`) grade reports, ecosystem indices (`/bankr`, `/base`), blog, and the embeddable grade badge. Has its own `AGENTS.md` warning that this Next.js may differ from training-data conventions; consult `web/node_modules/next/dist/docs/` before guessing.
-- `packages/` — `core` (the data model: Supabase migrations, row types, server identity; owns the `hosted_runs` schema), `scoring` (`@polygraph/scoring`, the daily adoption-signal pipeline), `cli` (`polygraphso`, the published lookup CLI), `mcp` (`@polygraphso/mcp`, the lookup MCP server).
+- `packages/` — `core` (the data model: Supabase migrations, row types, server identity; owns the `hosted_runs` schema), `scoring` (`@polygraph/scoring`, the daily adoption-signal pipeline), `cli` (`polygraphso`, the published lookup CLI). The lookup MCP tools (check_server / list_servers / request_grade) ship with `@polygraphso/litmus` (the litmus repo), which consumes this repo's public `/api/cli/*` endpoints.
 - `brand/` — logomark, wordmark, social-preview source SVGs + GitHub-ready PNGs.
 - Strategy & standing conventions live in the workspace-level `CLAUDE.md` (the cross-repo map across `litmus/`, `hosted-service/`, `core/`) and this repo's `README.md`. The behavioral methodology is the litmus spec — `hosted-service/docs/litmus-test.md`, mirrored at [polygraph.so/methodology](https://polygraph.so/methodology). Don't restate or relitigate decisions captured there — anchor against them.
 
