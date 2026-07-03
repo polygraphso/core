@@ -15,6 +15,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { parseGradeTarget } from "@/lib/gradeTarget";
+import { verifyRunnable, checkRegistryExists } from "@/lib/verifyRunnable";
+import { gateKnownMcp, isCatalogedServer } from "@/lib/knownMcp";
 import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
 import { getSession } from "@/lib/session";
 
@@ -69,6 +71,39 @@ export async function POST(request: Request) {
     );
   }
 
+  // Only queue targets the harness could actually run: an https:// endpoint,
+  // or an npm/pypi package that exists. A bare github repo (or a typo) isn't a
+  // runnable target — reject it here rather than parking dead rows in the queue.
+  const runnable = await verifyRunnable(parsed, checkRegistryExists);
+  if (!runnable.ok) {
+    return NextResponse.json(
+      { ok: false, message: runnable.reason },
+      { status: 422 },
+    );
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    console.error("[grade-requests] Supabase is not configured");
+    return NextResponse.json(
+      {
+        ok: false,
+        message:
+          "Couldn't save your request. Try again or email hello@polygraph.so.",
+      },
+      { status: 500 },
+    );
+  }
+
+  // The queue is MCP-only. verifyRunnable proved it's a real package; this
+  // proves it's plausibly an MCP server (a known catalog entry, or an
+  // mcp/server-named ref) so a real-but-unrelated package or a typo doesn't
+  // become a dead grade request.
+  const known = await gateKnownMcp(parsed, (ref) => isCatalogedServer(supabase, ref));
+  if (!known.ok) {
+    return NextResponse.json({ ok: false, message: known.reason }, { status: 422 });
+  }
+
   // Proxy guarantees a session for this route; use it server-authoritatively.
   const session = await getSession();
   if (!session) {
@@ -89,19 +124,6 @@ export async function POST(request: Request) {
       );
     }
     normalizedNote = note.trim();
-  }
-
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
-    console.error("[grade-requests] Supabase is not configured");
-    return NextResponse.json(
-      {
-        ok: false,
-        message:
-          "Couldn't save your request. Try again or email hello@polygraph.so.",
-      },
-      { status: 500 },
-    );
   }
 
   const { data, error } = await supabase.rpc("record_grade_request", {

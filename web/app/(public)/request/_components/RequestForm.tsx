@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { HoneypotField } from "@/app/_components/HoneypotField";
+import { ServerCombobox, type ComboboxResult } from "@/app/_components/ServerCombobox";
+import { refToPath } from "@/lib/serverRef";
 
 function targetHint(raw: string): { text: string; warn: boolean } | null {
   const t = raw.trim();
@@ -22,9 +25,24 @@ export function RequestForm({ sessionEmail }: { sessionEmail: string }) {
   const [target, setTarget] = useState("");
   const [note, setNote] = useState("");
   const [company, setCompany] = useState(""); // honeypot
-  const [state, setState] = useState<"idle" | "submitting" | "ok" | "error">("idle");
+  const [state, setState] = useState<"idle" | "submitting" | "ok" | "error" | "redirecting">("idle");
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<{ created: boolean; demand: number } | null>(null);
+  const router = useRouter();
+
+  // A catalog pick that we've already graded needs no request — send the user
+  // straight to its report. Anything else just prefills the field to submit.
+  function onSelectResult(r: ComboboxResult) {
+    setState("idle");
+    setMessage("");
+    if (r.graded) {
+      setTarget(r.target);
+      setState("redirecting");
+      router.push(`/mcp/${refToPath(r.target)}`);
+      return;
+    }
+    setTarget(r.target);
+  }
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -117,24 +135,25 @@ export function RequestForm({ sessionEmail }: { sessionEmail: string }) {
         <span className="hidden sm:inline">free</span>
       </div>
       <div className="p-4 md:p-6 space-y-4">
-        <label className="block">
-          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
-            MCP server — registry ref or https:// URL
-          </span>
-          <input
-            type="text"
-            inputMode="text"
-            autoComplete="off"
-            autoCorrect="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            maxLength={512}
-            placeholder="npm/@modelcontextprotocol/server-filesystem · or · https://mcp.example.com"
+        <div className="block">
+          <label
+            htmlFor="request-target"
+            className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2"
+          >
+            MCP server — search our catalog, or paste a ref / https:// URL
+          </label>
+          <ServerCombobox
+            inputId="request-target"
             value={target}
-            onChange={(e) => setTarget(e.target.value)}
-            className="w-full bg-parchment border hairline px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
+            onValueChange={(v) => { setTarget(v); if (state !== "submitting") setState("idle"); }}
+            onSelectResult={onSelectResult}
+            onSubmitFreeform={(normalized) => setTarget(normalized)}
+            placeholder="context7 · npm/@scope/server · https://mcp.example.com"
+            freeformVerb="Request"
+            aria-describedby="request-target-hint"
           />
           <span
+            id="request-target-hint"
             aria-live="polite"
             className={`block mt-1.5 font-mono text-[10.5px] min-h-4 transition-opacity ${
               hint ? "opacity-100" : "opacity-0"
@@ -142,7 +161,7 @@ export function RequestForm({ sessionEmail }: { sessionEmail: string }) {
           >
             {hint ? `→ ${hint.text}` : "—"}
           </span>
-        </label>
+        </div>
 
         <label className="block">
           <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
@@ -162,10 +181,14 @@ export function RequestForm({ sessionEmail }: { sessionEmail: string }) {
           <div className="flex items-center justify-between gap-4">
             <button
               type="submit"
-              disabled={state === "submitting"}
+              disabled={state === "submitting" || state === "redirecting"}
               className="inline-flex items-center justify-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {state === "submitting" ? "Adding…" : "Add to the queue"}
+              {state === "submitting"
+                ? "Adding…"
+                : state === "redirecting"
+                  ? "Opening report…"
+                  : "Add to the queue"}
             </button>
             <p className="font-mono text-[10.5px] text-ink-faint">
               Free. We grade it on our own timeline.

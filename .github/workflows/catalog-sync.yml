@@ -1,0 +1,57 @@
+# .github/workflows/catalog-sync.yml
+# Daily incremental refresh of the MCP discovery catalog (catalog_servers +
+# catalog_listings) from directory providers, then a capped resolution pass that
+# turns newly-discovered servers into runnable grading targets. Sync is cheap —
+# walks newest-first and stops once the newest servers are all already known.
+# Resolve chips through the priority queue in a capped batch each run. Run the
+# one-time full backfill via workflow_dispatch (input: mode=backfill) or locally.
+name: catalog-sync
+
+on:
+  schedule:
+    - cron: "37 5 * * *" # daily 05:37 UTC (offset from adoption-score / alerts)
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "incremental (default) or backfill (full walk)"
+        type: choice
+        default: incremental
+        options:
+          - incremental
+          - backfill
+
+concurrency:
+  group: catalog-sync
+  cancel-in-progress: false
+
+jobs:
+  catalog-sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      # No `version:` — conflicts with package.json's `packageManager` field.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          # 22+: @supabase/supabase-js needs a global WebSocket on Node < 22.
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Catalog sync
+        run: |
+          if [ "${{ github.event.inputs.mode }}" = "backfill" ]; then
+            pnpm --filter @polygraph/scoring catalog:sync:ci -- --backfill
+          else
+            pnpm --filter @polygraph/scoring catalog:sync:ci
+          fi
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      # Resolve a capped batch of discovered servers into runnable grading
+      # targets. Runs after sync so freshly-discovered servers are in the queue.
+      - name: Catalog resolve
+        run: pnpm --filter @polygraph/scoring catalog:resolve:ci
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
