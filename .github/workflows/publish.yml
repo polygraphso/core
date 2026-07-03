@@ -1,0 +1,69 @@
+name: Publish npm packages
+
+# Publishes a core package to npm when a package-scoped tag is pushed.
+# The tag prefix selects the package (mirrors litmus's litmus-v* convention):
+#   git tag mcp-v0.3.0 && git push origin mcp-v0.3.0   ->  @polygraphso/mcp
+#   git tag cli-v0.3.1 && git push origin cli-v0.3.1   ->  polygraphso (CLI)
+#
+# Tag the version you set in the package's package.json, on main, after the
+# release PR is merged (tagging a branch orphans the tag).
+#
+# Requires repo secret NPM_TOKEN — an npm automation token with publish rights
+# to the @polygraphso scope and the polygraphso package.
+
+on:
+  push:
+    tags:
+      - "mcp-v*"
+      - "cli-v*"
+  workflow_dispatch: {}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Enable corepack (pnpm)
+        run: corepack enable
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 20
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Test
+        run: pnpm -r --if-present test
+
+      # Map the tag prefix to a pnpm filter. Empty on workflow_dispatch (a branch
+      # ref), which makes the build/publish steps below no-ops — so a dispatch is
+      # a safe dry-run (install/typecheck/test only), never an unreviewed publish.
+      - name: Resolve package from tag
+        id: pkg
+        run: |
+          case "${GITHUB_REF_NAME}" in
+            mcp-v*) echo "filter=@polygraphso/mcp" >> "$GITHUB_OUTPUT" ;;
+            cli-v*) echo "filter=polygraphso" >> "$GITHUB_OUTPUT" ;;
+            *)      echo "filter=" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Build
+        if: steps.pkg.outputs.filter != ''
+        run: pnpm --filter ${{ steps.pkg.outputs.filter }} build
+
+      # Ref guard: only publish from a package-scoped release TAG, never from a
+      # workflow_dispatch on an arbitrary branch.
+      - name: Publish
+        if: steps.pkg.outputs.filter != '' && (startsWith(github.ref, 'refs/tags/mcp-v') || startsWith(github.ref, 'refs/tags/cli-v'))
+        run: pnpm --filter ${{ steps.pkg.outputs.filter }} publish --no-git-checks --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
