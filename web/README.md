@@ -54,7 +54,7 @@ Aesthetic target: arXiv-preprint / lab-report **for the chrome**, product-page *
 
 ## Current state
 
-Shipped and live. The landing hero leads with the tagline ("We polygraph AI tools so you don't have to."), positioning as the sub-headline, and a single primary CTA — **Install the CLI** (`npx polygraphso check <mcp-server>`). Behavioral grades are live across the site, read from the shared `hosted_runs` table: the MCP Security Index (`/rankings`), per-server (`/mcp`) and per-skill (`/skill`) reports, and the homepage grade browser (`ChecksSoFar`). The `polygraphso` CLI and `@polygraphso/mcp` are published; the `/methodology` page is live. Per the three-layer model, **the CLI is a thin lookup over precomputed grades — it does not run probes locally**; an unevaluated server returns "not available yet" with a notify link.
+Shipped and live. The landing hero leads with the tagline ("We polygraph AI tools so you don't have to."), positioning as the sub-headline, and a single primary CTA — **Install the CLI** (`npx polygraphso check <mcp-server>`). Behavioral grades are live across the site, read from the shared `hosted_runs` table: the MCP Security Index (`/rankings`), per-server (`/mcp`) and per-skill (`/skill`) reports, and the homepage grade browser (`ChecksSoFar`). The `polygraphso` CLI is published (the MCP lookup tools ship with `@polygraphso/litmus`); the `/methodology` page is live. Per the three-layer model, **the CLI is a thin lookup over precomputed grades — it does not run probes locally**; an unevaluated server returns "not available yet" with a notify link.
 
 Open follow-ups:
 
