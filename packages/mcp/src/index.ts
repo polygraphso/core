@@ -7,12 +7,15 @@
  * we read JSON-RPC on stdin, write on stdout, log to stderr (stdout is
  * reserved for the JSON-RPC framing).
  *
- * Tools registered for v0.1.0:
- *   - check_server  → POST /api/cli/check
- *   - list_servers  → GET  /api/cli/list
+ * Tools registered:
+ *   - check_server   → POST /api/cli/check          (read)
+ *   - list_servers   → GET  /api/cli/list           (read)
+ *   - request_grade  → POST /api/cli/grade-request  (write: queue an ungraded
+ *                      server; the natural follow-up to a not_available check)
  *
- * `notify_about` is deferred to v0.2 because POST /api/notify hasn't shipped
- * yet — see packages/mcp/README.md "Roadmap".
+ * Email notification stays a web-only funnel (/notify) — an agent has no
+ * inbox, so request_grade takes no contact details and instead attributes
+ * the request to the connected client (agent_id).
  */
 
 import { readFileSync } from "node:fs";
@@ -35,6 +38,24 @@ import {
   LIST_TOOL_TITLE,
   handleList,
 } from "./tools/list.js";
+import {
+  REQUEST_TOOL_DESCRIPTION,
+  REQUEST_TOOL_NAME,
+  REQUEST_TOOL_TITLE,
+  handleRequestGrade,
+  requestInputShape,
+} from "./tools/request.js";
+
+/**
+ * Identity of the connected MCP client (the "agent"), from the initialize
+ * handshake — e.g. "claude-ai/1.2.0". Undefined before initialize or when the
+ * client didn't announce itself. Used to attribute grade requests.
+ */
+function clientAgentId(server: McpServer): string | undefined {
+  const client = server.server.getClientVersion();
+  if (!client?.name) return undefined;
+  return client.version ? `${client.name}/${client.version}` : client.name;
+}
 
 function readVersion(): string {
   const here = dirname(fileURLToPath(import.meta.url));
@@ -91,6 +112,23 @@ export function buildServer(): McpServer {
       },
     },
     handleList,
+  );
+
+  server.registerTool(
+    REQUEST_TOOL_NAME,
+    {
+      title: REQUEST_TOOL_TITLE,
+      description: REQUEST_TOOL_DESCRIPTION,
+      inputSchema: requestInputShape,
+      annotations: {
+        title: REQUEST_TOOL_TITLE,
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+      },
+    },
+    (args) => handleRequestGrade(args, clientAgentId(server)),
   );
 
   return server;

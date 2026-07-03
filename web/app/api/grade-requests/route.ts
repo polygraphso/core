@@ -14,37 +14,12 @@
 
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { ServerRefParseError, parseServerRef, serverKey } from "@/lib/identity";
+import { parseGradeTarget } from "@/lib/gradeTarget";
 import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
 import { getSession } from "@/lib/session";
 
 const TARGET_MAX_LEN = 512;
 const NOTE_MAX_LEN = 2000;
-
-function parseTarget(
-  raw: string,
-): { target: string; kind: "registry_ref" | "remote_url" } | { error: string } {
-  if (raw.startsWith("https://")) {
-    try {
-      const url = new URL(raw);
-      if (url.protocol !== "https:") throw new Error("not https");
-      return { target: url.toString(), kind: "remote_url" };
-    } catch {
-      return { error: "Enter a valid https:// MCP URL." };
-    }
-  }
-  try {
-    return { target: serverKey(parseServerRef(raw)), kind: "registry_ref" };
-  } catch (err) {
-    if (err instanceof ServerRefParseError) {
-      return {
-        error:
-          "Enter a registry ref (npm/…, pypi/…, github/owner/repo) or an https:// MCP URL.",
-      };
-    }
-    throw err;
-  }
-}
 
 export async function POST(request: Request) {
   const limited = await enforceRateLimit(request, "grade-requests", { max: 10, windowSeconds: 60 });
@@ -86,7 +61,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const parsed = parseTarget(target.trim());
+  const parsed = parseGradeTarget(target.trim());
   if ("error" in parsed) {
     return NextResponse.json(
       { ok: false, message: parsed.error },
