@@ -20,12 +20,14 @@ import { parseGradeTarget } from "@/lib/gradeTarget";
 import { verifyRunnable, checkRegistryExists } from "@/lib/verifyRunnable";
 import { gateKnownMcp, isCatalogedServer } from "@/lib/knownMcp";
 import { enforceRateLimit } from "@/lib/rateLimit";
+import { recordAgentCall, resolveAgentIdentity } from "@/lib/agentIdentity";
 
 interface GradeRequestBody {
   server_ref?: unknown;
   email?: unknown;
   agent_id?: unknown;
   source?: unknown;
+  agent_meta?: unknown;
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -111,6 +113,19 @@ export async function POST(request: Request) {
     console.error("[cli/grade-request] record_grade_request failed:", error.message);
     return Response.json({ error: "Request failed." }, { status: 500 });
   }
+
+  // Per-agent observability (registry + daily counters). Best-effort — the
+  // queue write above already succeeded.
+  await recordAgentCall(
+    supabase,
+    resolveAgentIdentity({
+      agentId: body.agent_id,
+      source: body.source,
+      agentMeta: body.agent_meta,
+      userAgent: request.headers.get("user-agent"),
+    }),
+    "grade_request",
+  );
 
   // The RPC returns a single row: { created, demand }.
   const row = Array.isArray(data) ? data[0] : data;

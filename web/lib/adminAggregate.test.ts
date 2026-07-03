@@ -3,8 +3,47 @@ import {
   bucketByDay,
   tally,
   summarizeLookups,
+  summarizeAgentActivity,
   type DayBucket,
 } from "@/lib/adminAggregate";
+
+describe("summarizeAgentActivity", () => {
+  const today = new Date("2026-07-03T12:00:00Z");
+  const rows = [
+    { day: "2026-07-03", agent_name: "claude-code", endpoint: "check", hit_count: 5, miss_count: 2, call_count: 7 },
+    { day: "2026-07-03", agent_name: "claude-code", endpoint: "grade_request", hit_count: 0, miss_count: 0, call_count: 1 },
+    { day: "2026-07-02", agent_name: "ua:curl", endpoint: "check", hit_count: 1, miss_count: 0, call_count: 1 },
+  ];
+
+  it("zero-fills a per-day call series over the window", () => {
+    const s = summarizeAgentActivity(rows, 3, today);
+    expect(s.perDay).toEqual([
+      { date: "2026-07-01", count: 0 },
+      { date: "2026-07-02", count: 1 },
+      { date: "2026-07-03", count: 8 },
+    ]);
+  });
+
+  it("ranks agents and endpoints by total calls", () => {
+    const s = summarizeAgentActivity(rows, 3, today);
+    expect(s.byAgent).toEqual([
+      { key: "claude-code", count: 8 },
+      { key: "ua:curl", count: 1 },
+    ]);
+    expect(s.byEndpoint[0]).toEqual({ key: "check", count: 8 });
+  });
+
+  it("ignores rows outside the window and handles empty input", () => {
+    const s = summarizeAgentActivity(
+      [{ day: "2026-06-01", agent_name: "old", endpoint: "check", hit_count: 1, miss_count: 0, call_count: 1 }],
+      3,
+      today,
+    );
+    expect(s.byAgent).toEqual([]);
+    expect(s.perDay.every((b) => b.count === 0)).toBe(true);
+    expect(summarizeAgentActivity([], 3, today).byEndpoint).toEqual([]);
+  });
+});
 
 describe("summarizeLookups", () => {
   const rows = [

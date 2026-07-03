@@ -154,9 +154,21 @@ pypi/mcp-server-fetch`}
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">Request</h3>
           <Code>
 {`{
-  "server_ref": "npm/@modelcontextprotocol/server-filesystem"
+  "server_ref": "npm/@modelcontextprotocol/server-filesystem",
+  "source": "mcp",               // optional: "mcp" or "cli"
+  "agent_id": "claude-code/2.1", // optional: calling client, name/version
+  "agent_meta": {                // optional: what the client declared
+    "title": "Claude Code",
+    "capabilities": ["sampling", "roots"]
+  }
 }`}
           </Code>
+          <p className="text-sm">
+            The identity fields are optional and aggregate-only: they feed
+            per-agent usage counters (software metadata — never IPs, never
+            request logs). Callers that send nothing are counted by a
+            normalized <Inline>User-Agent</Inline>.
+          </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">
             Response · graded
@@ -307,9 +319,10 @@ pypi/mcp-server-fetch`}
           <Code>
 {`{
   "server_ref": "npm/some-owner/some-package",
-  "source": "cli",              // optional: "cli" (default) or "mcp"
-  "agent_id": "claude-code/2.1" // optional: calling client, name/version
-  // "email": "you@example.com" // optional: get notified when the grade lands
+  "source": "cli",               // optional: "cli" (default) or "mcp"
+  "agent_id": "claude-code/2.1", // optional: calling client, name/version
+  "agent_meta": { "capabilities": ["sampling"] } // optional, like /check
+  // "email": "you@example.com"  // optional: get notified when the grade lands
 }`}
           </Code>
           <p className="text-sm">
