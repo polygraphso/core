@@ -6,7 +6,7 @@ import type {
   MonitorRecord,
   PublishedGrade,
 } from "./store.js";
-import { buildAlertEmail } from "./email.js";
+import { buildAlertEmail, buildDigestEmail } from "./email.js";
 import type { ComposedEmail, EmailSender } from "./email.js";
 
 /** In-memory AlertStore that models the unique (monitor, run) delivery constraint. */
@@ -244,6 +244,80 @@ describe("runAlerts — reconcile pass", () => {
   });
 });
 
+describe("runAlerts — per-recipient batching", () => {
+  it("sends ONE digest for two monitors sharing an email, covering both servers", async () => {
+    const store = new FakeStore({
+      monitors: [
+        monitor({ id: "m1", target: "npm/@scope/a", email: "dev@example.com" }),
+        monitor({ id: "m2", target: "npm/@scope/b", email: "dev@example.com" }),
+      ],
+      latest: {
+        "npm/@scope/a": { id: "run-a", resolved_version: "1.0.0", grade: "D" },
+        "npm/@scope/b": { id: "run-b", resolved_version: "2.0.0", grade: "B" },
+      },
+      publishedVersions: ["npm/@scope/a@1.0.0", "npm/@scope/b@2.0.0"],
+    });
+    const { sender, sent } = recordingSender();
+    const result = await runAlerts(store, {
+      fetchLatestVersion: async () => null, // enqueue pass is irrelevant here
+      sender,
+    });
+
+    // Exactly one email, addressed once, mentioning both servers.
+    expect(sent).toHaveLength(1);
+    expect(sent[0]!.to).toBe("dev@example.com");
+    expect(sent[0]!.email.text).toContain("npm/@scope/a");
+    expect(sent[0]!.email.text).toContain("npm/@scope/b");
+    expect(sent[0]!.email.subject).toBe("polygraph: 2 monitored servers regraded");
+
+    // Both deliveries recorded sent and both watermarks advanced.
+    expect(result.notified).toBe(2);
+    expect(result.sent).toBe(2);
+    expect(store.marks.map((m) => m.status)).toEqual(["sent", "sent"]);
+    expect(store.watermarks.map((w) => w.monitorId).sort()).toEqual(["m1", "m2"]);
+  });
+
+  it("sends a separate email to each distinct recipient", async () => {
+    const store = new FakeStore({
+      monitors: [
+        monitor({ id: "m1", target: "npm/@scope/a", email: "a@x.com" }),
+        monitor({ id: "m2", target: "npm/@scope/b", email: "b@x.com" }),
+      ],
+      latest: {
+        "npm/@scope/a": { id: "run-a", resolved_version: "1.0.0", grade: "D" },
+        "npm/@scope/b": { id: "run-b", resolved_version: "2.0.0", grade: "B" },
+      },
+      publishedVersions: ["npm/@scope/a@1.0.0", "npm/@scope/b@2.0.0"],
+    });
+    const { sender, sent } = recordingSender();
+    await runAlerts(store, { fetchLatestVersion: async () => null, sender });
+
+    expect(sent).toHaveLength(2);
+    expect(sent.map((s) => s.to).sort()).toEqual(["a@x.com", "b@x.com"]);
+  });
+
+  it("on a digest send failure, marks every delivery failed and advances no watermark", async () => {
+    const store = new FakeStore({
+      monitors: [
+        monitor({ id: "m1", target: "npm/@scope/a", email: "dev@example.com" }),
+        monitor({ id: "m2", target: "npm/@scope/b", email: "dev@example.com" }),
+      ],
+      latest: {
+        "npm/@scope/a": { id: "run-a", resolved_version: "1.0.0", grade: "D" },
+        "npm/@scope/b": { id: "run-b", resolved_version: "2.0.0", grade: "F" },
+      },
+      publishedVersions: ["npm/@scope/a@1.0.0", "npm/@scope/b@2.0.0"],
+    });
+    const failingSender: EmailSender = { send: vi.fn(async () => { throw new Error("smtp down"); }) };
+    const result = await runAlerts(store, { fetchLatestVersion: async () => null, sender: failingSender });
+
+    expect(result.failed).toBe(2);
+    expect(store.marks.map((m) => m.status)).toEqual(["failed", "failed"]);
+    // Watermarks stay put so the next cron pass retries the whole digest.
+    expect(store.watermarks).toHaveLength(0);
+  });
+});
+
 describe("runAlerts — alert-grade threshold", () => {
   it("suppresses the email when the new grade is above the monitor's threshold", async () => {
     const store = new FakeStore({
@@ -345,10 +419,19 @@ describe("buildAlertEmail", () => {
     expect(a.text).not.toMatch(/\/fix\?for=/);
   });
 
-  it("always includes the one-click unsubscribe link with the token", () => {
+  it("carries the one-click unsubscribe token in the List-Unsubscribe header", () => {
     const e = buildAlertEmail({ target: "npm/x", version: "1", grade: "A", priorGrade: null, unsubscribeToken: "tok-xyz" });
-    expect(e.text).toContain("/api/monitor/unsubscribe?token=tok-xyz");
-    expect(e.html).toContain("/api/monitor/unsubscribe?token=tok-xyz");
+    expect(e.headers?.["List-Unsubscribe"]).toContain("/api/monitor/unsubscribe?token=tok-xyz");
+    expect(e.headers?.["List-Unsubscribe-Post"]).toBe("List-Unsubscribe=One-Click");
+  });
+
+  it("links the body to the dashboard to manage monitors (no raw unsubscribe link in the body)", () => {
+    const e = buildAlertEmail({ target: "npm/x", version: "1", grade: "A", priorGrade: null, unsubscribeToken: "tok-xyz" });
+    expect(e.text).toContain("Manage your monitors: https://polygraph.so/dashboard");
+    expect(e.html).toContain("https://polygraph.so/dashboard");
+    // The token unsubscribe URL lives only in the header, not the visible body.
+    expect(e.text).not.toContain("/api/monitor/unsubscribe?token=tok-xyz");
+    expect(e.html).not.toContain("/api/monitor/unsubscribe?token=tok-xyz");
   });
 
   it("uses the configured site origin", () => {
@@ -361,5 +444,45 @@ describe("buildAlertEmail", () => {
       siteUrl: "https://staging.polygraph.so/",
     });
     expect(e.text).toContain("https://staging.polygraph.so/mcp/npm/x");
+    expect(e.text).toContain("https://staging.polygraph.so/dashboard");
+  });
+
+  it("falls back to the default origin for a blank or malformed siteUrl (the empty-var bug)", () => {
+    for (const siteUrl of ["", "   ", "not-a-url", "ftp://x"]) {
+      const e = buildAlertEmail({ target: "npm/@polygraphso/litmus", version: "1", grade: "A", priorGrade: null, unsubscribeToken: "t", siteUrl });
+      // Absolute https links — never a root-relative path that mail clients
+      // "repair" into http://<first-segment>/…
+      expect(e.text).toContain("https://polygraph.so/mcp/npm/@polygraphso/litmus");
+      expect(e.text).toContain("https://polygraph.so/dashboard");
+      expect(e.text).not.toContain("http://mcp/");
+      expect(e.headers?.["List-Unsubscribe"]).toContain("https://polygraph.so/api/monitor/unsubscribe?token=t");
+    }
+  });
+});
+
+describe("buildDigestEmail", () => {
+  it("summarizes multiple changes in one email with a report link per server", () => {
+    const e = buildDigestEmail({
+      changes: [
+        { target: "npm/@scope/a", version: "1.0.0", grade: "D", priorGrade: "A", unsubscribeToken: "tok-a" },
+        { target: "npm/@scope/b", version: "2.0.0", grade: "B", priorGrade: null, unsubscribeToken: "tok-b" },
+      ],
+    });
+    expect(e.subject).toBe("polygraph: 2 monitored servers regraded");
+    expect(e.text).toContain("https://polygraph.so/mcp/npm/@scope/a");
+    expect(e.text).toContain("https://polygraph.so/mcp/npm/@scope/b");
+    expect(e.text).toContain("Grade: A → D");
+    expect(e.text).toContain("Grade: B");
+    // One dashboard link, and every token present in the List-Unsubscribe header.
+    expect(e.text).toContain("Manage your monitors: https://polygraph.so/dashboard");
+    expect(e.headers?.["List-Unsubscribe"]).toContain("token=tok-a");
+    expect(e.headers?.["List-Unsubscribe"]).toContain("token=tok-b");
+  });
+
+  it("renders a single change with the single-server subject (not the digest count)", () => {
+    const e = buildDigestEmail({
+      changes: [{ target: "npm/@scope/a", version: "1.0.0", grade: "D", priorGrade: "A", unsubscribeToken: "t" }],
+    });
+    expect(e.subject).toBe("@scope/a v1.0.0: grade A → D");
   });
 });

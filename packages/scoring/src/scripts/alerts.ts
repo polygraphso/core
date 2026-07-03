@@ -20,7 +20,9 @@ async function main(): Promise<void> {
   const supabase = getSupabaseClient();
   const store = supabaseAlertStore(supabase);
   const sender = resendSender();
-  const siteUrl = process.env.POLYGRAPH_SITE_URL;
+  // Treat a blank POLYGRAPH_SITE_URL (an undefined GitHub Actions `${{ vars.X }}`
+  // expands to "") as unset so the link origin falls back to the default.
+  const siteUrl = process.env.POLYGRAPH_SITE_URL?.trim() || undefined;
 
   console.log("[alerts] starting");
   const start = Date.now();
