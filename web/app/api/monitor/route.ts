@@ -18,6 +18,8 @@ import {
   serverKey,
 } from "@/lib/identity";
 import { getSession } from "@/lib/session";
+import { verifyRunnable, checkRegistryExists } from "@/lib/verifyRunnable";
+import { gateKnownMcp, isCatalogedServer } from "@/lib/knownMcp";
 import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
 
 function getSupabase() {
@@ -91,8 +93,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "Sign in to monitor servers." }, { status: 401 });
   }
 
+  // Same gate as the grade-request funnel: only monitor a target the harness
+  // could actually run (an npm/pypi package that exists) and that is plausibly
+  // an MCP server — otherwise we'd watch a non-existent or unrelated package
+  // (npm/benfica, npm/context) that can never produce a meaningful regrade.
+  const gateTarget = { target: normalizedRef, kind: "registry_ref" as const };
+  const runnable = await verifyRunnable(gateTarget, checkRegistryExists);
+  if (!runnable.ok) {
+    return NextResponse.json({ ok: false, message: runnable.reason }, { status: 422 });
+  }
+
   try {
     const supabase = getSupabase();
+
+    const known = await gateKnownMcp(gateTarget, (ref) => isCatalogedServer(supabase, ref));
+    if (!known.ok) {
+      return NextResponse.json({ ok: false, message: known.reason }, { status: 422 });
+    }
+
     const { error } = await supabase.rpc("record_monitor", {
       p_target: normalizedRef,
       p_email: null,
