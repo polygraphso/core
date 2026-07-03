@@ -126,6 +126,17 @@ export async function POST(request: Request) {
     }
   }
 
+  // Usage counter: record every lookup — a hit (published grade returned) or a
+  // miss — so we can see total volume and the hit/miss ratio, not just misses.
+  // Best-effort: never fail the lookup on a counter error.
+  const { error: lookupErr } = await supabase.rpc("bump_lookup", {
+    p_server_ref: refKey,
+    p_hit: published !== null,
+  });
+  if (lookupErr) {
+    console.error("[cli/check] bump_lookup failed:", lookupErr.message);
+  }
+
   if (!published) {
     // No grade for any version — bump demand, return the notify outlet.
     const { error: bumpErr } = await supabase.rpc("bump_untracked_demand", {

@@ -5,6 +5,7 @@ import {
   getGradeRequestMetrics,
   getNotifyMetrics,
   getUntrackedDemand,
+  getLookupStats,
 } from "@/lib/adminMetrics";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { Panel, KpiCard, MiniBars, BarList, EmptyNote, RecentList } from "./_components/ui";
@@ -27,12 +28,13 @@ export const revalidate = 0;
 export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 
 export default async function AdminPage() {
-  const [top, waitlist, grades, notify, untracked, userCount] = await Promise.all([
+  const [top, waitlist, grades, notify, untracked, lookups, userCount] = await Promise.all([
     getTopline(),
     getWaitlistMetrics(),
     getGradeRequestMetrics(),
     getNotifyMetrics(),
     getUntrackedDemand(),
+    getLookupStats(),
     getUserCount(),
   ]);
 
@@ -49,6 +51,15 @@ export default async function AdminPage() {
         <KpiCard label="Grade requests" value={top.gradeRequests} sub={`${top.gradeQueued} queued`} />
         <KpiCard label="Notify requests" value={top.notify} sub={`${top.notifyUnfulfilled} unfulfilled`} />
         <KpiCard label="Untracked servers" value={top.untrackedServers} />
+        <KpiCard
+          label="CLI lookups"
+          value={lookups?.totalLookups ?? 0}
+          sub={
+            lookups && lookups.hitRate !== null
+              ? `${Math.round(lookups.hitRate * 100)}% hit rate`
+              : "no lookups yet"
+          }
+        />
         <KpiCard label="Attestations" value={top.attestations} sub={`${top.attestationsPending} pending · on-chain`} />
         <KpiCard label="Auth users" value={userCount.users} sub={`${userCount.activeMonitors} active monitors`} />
       </div>
@@ -152,6 +163,33 @@ export default async function AdminPage() {
             )
           ) : (
             <EmptyNote>No untracked-demand data (or Supabase not configured).</EmptyNote>
+          )}
+        </Panel>
+
+        {/* Lookup activity */}
+        <Panel
+          label="§5"
+          title="Lookup activity"
+          note="Every /api/cli/check — hits (a graded server) vs misses. Counter — no time-series."
+        >
+          {lookups && lookups.totalLookups > 0 ? (
+            <div className="space-y-5">
+              <p className="text-sm text-ink-muted tabular">
+                {lookups.totalLookups} lookups · {lookups.hits} hits · {lookups.misses} misses
+                {lookups.hitRate !== null
+                  ? ` · ${Math.round(lookups.hitRate * 100)}% hit rate`
+                  : ""}
+              </p>
+              <div>
+                <p className="section-label mb-2">Most-checked servers</p>
+                <BarList
+                  data={lookups.topServers.map((s) => ({ key: s.server_ref, count: s.total }))}
+                  empty="No lookups yet."
+                />
+              </div>
+            </div>
+          ) : (
+            <EmptyNote>No lookups recorded yet.</EmptyNote>
           )}
         </Panel>
       </div>
