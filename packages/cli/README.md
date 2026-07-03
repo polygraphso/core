@@ -23,6 +23,7 @@ polygraphso check pypi/mcp-server-git
 
 ```
 polygraphso check <registry>/<owner>/<name>
+polygraphso request <registry>/<owner>/<name>
 polygraphso list [--json]
 polygraphso --version
 polygraphso --help
@@ -58,15 +59,28 @@ grade for the version in play and notes the gap:
 → evidence → polygraph.so/mcp/npm/@modelcontextprotocol/server-filesystem
 ```
 
-Untracked / not-yet-graded server:
+Untracked / not-yet-graded server — with the actions you can take:
 
 ```
 → not available yet
+→ request a grade → polygraphso request npm/obscure-mcp-server
+→ grade it now → npx -y -p @polygraphso/litmus polygraphso-litmus litmus npm/obscure-mcp-server
 → notify me → polygraph.so/notify?for=npm/obscure-mcp-server
 ```
 
 Grades are read from the hosted runner's published results — this CLI never grades, it's a
 sub-second lookup. To grade a server yourself, run the open harness (`@polygraphso/litmus`).
+
+## Request a grade
+
+If `check` comes back "not available yet", add the server to polygraph's public grading queue:
+
+```
+polygraphso request npm/@some/ungraded-server
+```
+
+Free and best-effort — polygraph runs the litmus test and publishes the grade, which you then
+read with `polygraphso check`. It doesn't return a grade synchronously.
 
 ## Browse the tracked set
 
