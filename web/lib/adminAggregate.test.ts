@@ -1,5 +1,41 @@
 import { describe, it, expect } from "vitest";
-import { bucketByDay, tally, type DayBucket } from "@/lib/adminAggregate";
+import {
+  bucketByDay,
+  tally,
+  summarizeLookups,
+  type DayBucket,
+} from "@/lib/adminAggregate";
+
+describe("summarizeLookups", () => {
+  const rows = [
+    { server_ref: "npm/a", hit_count: 8, miss_count: 2 }, // total 10
+    { server_ref: "npm/b", hit_count: 1, miss_count: 4 }, // total 5
+    { server_ref: "npm/c", hit_count: 0, miss_count: 1 }, // total 1
+  ];
+
+  it("sums hits, misses, and the hit rate across servers", () => {
+    const s = summarizeLookups(rows);
+    expect(s.totalLookups).toBe(16);
+    expect(s.hits).toBe(9);
+    expect(s.misses).toBe(7);
+    expect(s.hitRate).toBeCloseTo(9 / 16);
+    expect(s.distinctServers).toBe(3);
+  });
+
+  it("ranks top servers by total lookups and honors the limit", () => {
+    const s = summarizeLookups(rows, 2);
+    expect(s.topServers.map((t) => t.server_ref)).toEqual(["npm/a", "npm/b"]);
+    expect(s.topServers[0]).toMatchObject({ total: 10, hits: 8, misses: 2 });
+  });
+
+  it("returns zeros and a null hit rate when there is no data", () => {
+    const s = summarizeLookups([]);
+    expect(s.totalLookups).toBe(0);
+    expect(s.hitRate).toBeNull();
+    expect(s.topServers).toEqual([]);
+    expect(s.distinctServers).toBe(0);
+  });
+});
 
 describe("bucketByDay", () => {
   // Reference "today" = 2026-06-18 (UTC).

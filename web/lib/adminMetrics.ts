@@ -1,6 +1,14 @@
 import "server-only";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { bucketByDay, tally, type DayBucket, type Bucket } from "@/lib/adminAggregate";
+import {
+  bucketByDay,
+  tally,
+  summarizeLookups,
+  type DayBucket,
+  type Bucket,
+  type LookupRow,
+  type LookupSummary,
+} from "@/lib/adminAggregate";
 
 const WINDOW_DAYS = 30;
 
@@ -170,4 +178,21 @@ export async function getUntrackedDemand(): Promise<UntrackedRow[] | null> {
     return null;
   }
   return (data ?? []) as UntrackedRow[];
+}
+
+export async function getLookupStats(): Promise<LookupSummary | null> {
+  const db = getSupabaseAdmin();
+  if (!db) return null;
+  // Busiest servers first, bounded. Headline totals are summed from these rows,
+  // which covers the whole set until distinct-checked servers exceed the cap.
+  const { data, error } = await db
+    .from("lookup_stats")
+    .select("server_ref, hit_count, miss_count")
+    .order("total_count", { ascending: false })
+    .limit(1000);
+  if (error) {
+    console.error("[admin] lookup_stats fetch failed:", error.message);
+    return null;
+  }
+  return summarizeLookups((data ?? []) as LookupRow[]);
 }
