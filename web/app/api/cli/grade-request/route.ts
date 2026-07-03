@@ -17,6 +17,8 @@
 
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { parseGradeTarget } from "@/lib/gradeTarget";
+import { verifyRunnable, checkRegistryExists } from "@/lib/verifyRunnable";
+import { gateKnownMcp, isCatalogedServer } from "@/lib/knownMcp";
 import { enforceRateLimit } from "@/lib/rateLimit";
 
 interface GradeRequestBody {
@@ -55,6 +57,26 @@ export async function POST(request: Request) {
     return Response.json({ error: parsed.error }, { status: 400 });
   }
 
+  // Same gate as the human funnel: only queue a target the harness could run
+  // (existing npm/pypi package or https:// endpoint)…
+  const runnable = await verifyRunnable(parsed, checkRegistryExists);
+  if (!runnable.ok) {
+    return Response.json({ error: runnable.reason }, { status: 422 });
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!supabase) {
+    console.error("[cli/grade-request] Supabase is not configured");
+    return Response.json({ error: "Request failed." }, { status: 500 });
+  }
+
+  // …and only if it's plausibly an MCP server (known catalog entry or an
+  // mcp/server-named ref), so agents can't fill the queue with unrelated packages.
+  const known = await gateKnownMcp(parsed, (ref) => isCatalogedServer(supabase, ref));
+  if (!known.ok) {
+    return Response.json({ error: known.reason }, { status: 422 });
+  }
+
   // Email is optional here. If present it must look like an email (the DB
   // enforces the same shape); a blank/absent value means "no notification".
   let email: string | null = null;
@@ -74,12 +96,6 @@ export async function POST(request: Request) {
   let agentId: string | null = null;
   if (typeof body.agent_id === "string" && body.agent_id.trim().length > 0) {
     agentId = body.agent_id.trim().slice(0, AGENT_ID_MAX_LEN);
-  }
-
-  const supabase = getSupabaseAdmin();
-  if (!supabase) {
-    console.error("[cli/grade-request] Supabase is not configured");
-    return Response.json({ error: "Request failed." }, { status: 500 });
   }
 
   const { data, error } = await supabase.rpc("record_grade_request", {

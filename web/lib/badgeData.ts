@@ -19,20 +19,11 @@ import {
   type LitmusGrade,
   type PolygraphDetail,
 } from "@/lib/hostedGrades";
+import { isRemoteKey, refToPath } from "@/lib/serverRef";
 
-/** A remote-endpoint key is the graded https:// URL itself (registry keys never are). */
-export function isRemoteKey(key: string): boolean {
-  return key.startsWith("https://") || key.startsWith("http://");
-}
-
-/**
- * Canonical key → URL-path-safe form for `/mcp/<…>` and `?server=<…>`. Registry
- * keys pass through; a remote URL's `://` collapses to `/` so it survives the
- * catch-all path (`https://mcp.x.io` → `https/mcp.x.io`). decodeRef reverses it.
- */
-export function refToPath(key: string): string {
-  return isRemoteKey(key) ? key.replace("://", "/") : key;
-}
+// The pure path helpers live in the client-safe `serverRef` module; re-exported
+// here so existing server-side importers keep their `@/lib/badgeData` import.
+export { isRemoteKey, refToPath };
 
 /**
  * Parse a server ref to its canonical key, or null if missing/too long/unparseable.
