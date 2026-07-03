@@ -10,7 +10,26 @@
  * a local Next.js dev server.
  */
 
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
 const DEFAULT_BASE = "https://polygraph.so";
+
+/** This CLI's own identity for polygraph.so's aggregate per-agent usage
+ *  counters — "polygraphso-cli/<version>". Software metadata only. */
+export function cliAgentId(): string {
+  try {
+    const here = dirname(fileURLToPath(import.meta.url));
+    // dist/api.js (or src/api.ts under vitest) → ../package.json
+    const pkg = JSON.parse(readFileSync(resolve(here, "..", "package.json"), "utf-8")) as {
+      version?: string;
+    };
+    return `polygraphso-cli/${pkg.version ?? "0.0.0"}`;
+  } catch {
+    return "polygraphso-cli/unknown";
+  }
+}
 
 export function apiBaseUrl(): string {
   const override = process.env.POLYGRAPH_API_URL;
@@ -32,7 +51,8 @@ export function requestUrl(): string {
 }
 
 export function listUrl(): string {
-  return `${apiBaseUrl()}/api/cli/list`;
+  const params = new URLSearchParams({ source: "cli", agent_id: cliAgentId() });
+  return `${apiBaseUrl()}/api/cli/list?${params.toString()}`;
 }
 
 export const NETWORK_FAILURE_LINE =

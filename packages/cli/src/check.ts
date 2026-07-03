@@ -9,7 +9,7 @@
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { NETWORK_FAILURE_LINE, checkUrl } from "./api.js";
+import { NETWORK_FAILURE_LINE, checkUrl, cliAgentId } from "./api.js";
 import { RefParseError, canonicalRef, parseRef, type ParsedRef } from "./identity.js";
 
 type ApiResponse =
@@ -118,7 +118,7 @@ export async function runCheck(args: readonly string[]): Promise<number> {
     res = await fetch(checkUrl(), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ server_ref: serverRef }),
+      body: JSON.stringify({ server_ref: serverRef, source: "cli", agent_id: cliAgentId() }),
     });
   } catch {
     process.stderr.write(NETWORK_FAILURE_LINE + "\n");
