@@ -15,6 +15,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { parseGradeTarget } from "@/lib/gradeTarget";
+import { verifyRunnable, checkRegistryExists } from "@/lib/verifyRunnable";
 import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
 import { getSession } from "@/lib/session";
 
@@ -66,6 +67,17 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { ok: false, message: parsed.error },
       { status: 400 },
+    );
+  }
+
+  // Only queue targets the harness could actually run: an https:// endpoint,
+  // or an npm/pypi package that exists. A bare github repo (or a typo) isn't a
+  // runnable target — reject it here rather than parking dead rows in the queue.
+  const runnable = await verifyRunnable(parsed, checkRegistryExists);
+  if (!runnable.ok) {
+    return NextResponse.json(
+      { ok: false, message: runnable.reason },
+      { status: 422 },
     );
   }
 
