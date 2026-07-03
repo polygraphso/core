@@ -4,11 +4,15 @@ import {
   bucketByDay,
   tally,
   summarizeLookups,
+  summarizeAgentActivity,
   type DayBucket,
   type Bucket,
   type LookupRow,
   type LookupSummary,
+  type AgentActivityRow,
+  type AgentActivitySummary,
 } from "@/lib/adminAggregate";
+import type { AgentMeta } from "@/lib/agentIdentity";
 
 const WINDOW_DAYS = 30;
 
@@ -195,4 +199,66 @@ export async function getLookupStats(): Promise<LookupSummary | null> {
     return null;
   }
   return summarizeLookups((data ?? []) as LookupRow[]);
+}
+
+export interface AgentRow {
+  agent_id: string;
+  name: string;
+  version: string | null;
+  source: string;
+  meta: AgentMeta | null;
+  first_seen_at: string;
+  last_seen_at: string;
+  call_count: number;
+}
+
+export interface AgentMetrics {
+  /** Most recently active agent builds (registry rows). */
+  agents: AgentRow[];
+  /** Total distinct agent builds ever seen. */
+  totalAgents: number;
+  /** Day-bucketed activity over the last WINDOW_DAYS. */
+  activity: AgentActivitySummary;
+}
+
+export async function getAgentMetrics(): Promise<AgentMetrics | null> {
+  const db = getSupabaseAdmin();
+  if (!db) return null;
+
+  const since = new Date();
+  since.setUTCDate(since.getUTCDate() - (WINDOW_DAYS - 1));
+  const sinceDay = since.toISOString().slice(0, 10);
+
+  const [agentsRes, activityRes] = await Promise.all([
+    db
+      .from("agents")
+      .select("agent_id, name, version, source, meta, first_seen_at, last_seen_at, call_count", {
+        count: "exact",
+      })
+      .order("last_seen_at", { ascending: false })
+      .limit(20),
+    db
+      .from("agent_activity")
+      .select("day, agent_name, endpoint, hit_count, miss_count, call_count")
+      .gte("day", sinceDay),
+  ]);
+
+  if (agentsRes.error) {
+    console.error("[admin] agents fetch failed:", agentsRes.error.message);
+    return null;
+  }
+  if (activityRes.error) {
+    console.error("[admin] agent_activity fetch failed:", activityRes.error.message);
+    return null;
+  }
+
+  return {
+    agents: (agentsRes.data ?? []) as AgentRow[],
+    totalAgents: agentsRes.count ?? 0,
+    activity: summarizeAgentActivity(
+      (activityRes.data ?? []) as AgentActivityRow[],
+      WINDOW_DAYS,
+      new Date(),
+    ),
+  };
 }

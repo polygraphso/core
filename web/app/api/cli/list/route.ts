@@ -12,6 +12,7 @@
 
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { fetchPublishedGradeMap, type LitmusGrade } from "@/lib/hostedGrades";
+import { recordAgentCall, resolveAgentIdentity } from "@/lib/agentIdentity";
 
 interface ListEntry {
   server_ref: string;
@@ -31,12 +32,25 @@ const GRADE_RANK: Record<LitmusGrade, number> = {
   F: 4,
 };
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = getSupabaseAdmin();
   if (!supabase) {
     console.error("[cli/list] Supabase is not configured");
     return Response.json({ error: "Lookup failed." }, { status: 500 });
   }
+
+  // Per-agent observability. GET → identity rides on query params (our
+  // clients send ?source=…&agent_id=…); raw callers fall back to User-Agent.
+  const params = new URL(request.url).searchParams;
+  await recordAgentCall(
+    supabase,
+    resolveAgentIdentity({
+      agentId: params.get("agent_id") ?? undefined,
+      source: params.get("source") ?? undefined,
+      userAgent: request.headers.get("user-agent"),
+    }),
+    "list",
+  );
 
   // Every published grade, keyed by server_ref (the versionless target).
   const gradeByRef = await fetchPublishedGradeMap(supabase);
