@@ -6,7 +6,7 @@
  * The binary is `polygraphso` (the npm name; `polygraph` was already taken).
  * The product noun is still "polygraph" in all human-facing copy.
  *
- * v0: only `check` is implemented. `login`, `watch`, `notify` land with the
+ * Commands: `check`, `list`, `request`. `login`, `watch` land with the
  * onboarding session.
  */
 
@@ -16,23 +16,26 @@ import { fileURLToPath } from "node:url";
 
 import { runCheck } from "./check.js";
 import { runList } from "./list.js";
+import { runRequest } from "./request.js";
 
 const HELP = [
   "polygraph — independent, lab-evaluated trust grades for AI agents.",
   "",
   "usage:",
   "  polygraphso check <registry>/<owner>/<name>",
+  "  polygraphso request <registry>/<owner>/<name>",
   "  polygraphso list [--json]",
   "  polygraphso --version",
   "  polygraphso --help",
   "",
   "examples:",
   "  polygraphso check npm/@modelcontextprotocol/server-filesystem",
-  "  polygraphso check pypi/mcp-server-git",
+  "  polygraphso request pypi/mcp-server-git",
   "  polygraphso check github/owner/repo",
   "  polygraphso list",
   "  polygraphso list --json",
   "",
+  "`request` adds an ungraded server to the public grading queue (free).",
   "More at https://polygraph.so",
 ].join("\n");
 
@@ -57,6 +60,10 @@ async function main(argv: readonly string[]): Promise<number> {
 
   if (argv[0] === "check") {
     return runCheck(argv.slice(1));
+  }
+
+  if (argv[0] === "request") {
+    return runRequest(argv.slice(1));
   }
 
   if (argv[0] === "list") {

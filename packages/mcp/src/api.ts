@@ -6,8 +6,9 @@
  *   2. Default — https://polygraph.so
  *
  * Endpoints (already shipped; see web/app/api/cli/):
- *   POST /api/cli/check  → { server_ref } → graded | not_available
- *   GET  /api/cli/list   → { servers, total }
+ *   POST /api/cli/check          → { server_ref } → graded | not_available
+ *   GET  /api/cli/list           → { servers, total }
+ *   POST /api/cli/grade-request  → { server_ref, source, agent_id? } → queued
  *
  * Network failures throw `PolygraphApiError` with a stable `kind` so the
  * tool handler can map it to a clean MCP error rather than a transport crash.
@@ -47,6 +48,9 @@ export interface CheckResponseGraded {
 export interface CheckResponseNotAvailable {
   status: "not_available";
   notify_url: string;
+  // Present on current servers; optional so an older deployment still parses.
+  message?: string;
+  self_grade?: string;
 }
 
 export type CheckResponse = CheckResponseGraded | CheckResponseNotAvailable;
@@ -59,6 +63,14 @@ export interface ListEntry {
 export interface ListResponse {
   servers: ListEntry[];
   total: number;
+}
+
+export interface GradeRequestResponse {
+  status: "queued";
+  // false when this target was already queued (idempotent re-request).
+  created: boolean;
+  // How many requests stand behind this target — the demand signal.
+  demand: number;
 }
 
 async function readJson<T>(res: Response): Promise<T> {
@@ -108,6 +120,55 @@ export async function postCheck(serverRef: string): Promise<CheckResponse> {
   }
 
   return readJson<CheckResponse>(res);
+}
+
+export async function postGradeRequest(
+  serverRef: string,
+  agentId?: string,
+): Promise<GradeRequestResponse> {
+  const url = `${apiBaseUrl()}/api/cli/grade-request`;
+  const body: { server_ref: string; source: "mcp"; agent_id?: string } = {
+    server_ref: serverRef,
+    source: "mcp",
+  };
+  if (agentId) body.agent_id = agentId;
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    throw new PolygraphApiError("network", `couldn't reach polygraph.so (${msg}).`);
+  }
+
+  // 400 → the ref was rejected; propagate the server's message.
+  if (res.status === 400) {
+    let errBody: { error?: string };
+    try {
+      errBody = (await res.json()) as { error?: string };
+    } catch {
+      errBody = {};
+    }
+    throw new PolygraphApiError(
+      "http",
+      errBody.error ?? "polygraph.so rejected the server_ref as malformed.",
+      400,
+    );
+  }
+
+  if (!res.ok) {
+    throw new PolygraphApiError(
+      "http",
+      `polygraph.so returned ${res.status}.`,
+      res.status,
+    );
+  }
+
+  return readJson<GradeRequestResponse>(res);
 }
 
 export async function getList(): Promise<ListResponse> {

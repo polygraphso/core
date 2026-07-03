@@ -27,6 +27,10 @@ export function checkUrl(): string {
   return `${apiBaseUrl()}/api/cli/check`;
 }
 
+export function requestUrl(): string {
+  return `${apiBaseUrl()}/api/cli/grade-request`;
+}
+
 export function listUrl(): string {
   return `${apiBaseUrl()}/api/cli/list`;
 }
