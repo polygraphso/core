@@ -6,6 +6,7 @@ import {
   parseGlamaConfigTarget,
   parseReadmeRunCommands,
   matchesServerName,
+  isBorrowedOfficialTarget,
 } from "./resolve.js";
 
 describe("stripVersion", () => {
@@ -192,6 +193,31 @@ describe("parseReadmeRunCommands", () => {
   it("ignores framework/build CLIs that appear in setup lines (never the server pkg)", () => {
     // `expo-mcp`'s README shows `npx expo start`; `expo` is the framework, not the server.
     expect(parseReadmeRunCommands("npx expo start ; npx next dev ; npx serve build")).toEqual([]);
+  });
+});
+
+// The official @modelcontextprotocol/server-* packages appear as example config
+// in countless unrelated Glama pages; tier 2 trusts the page config without a
+// backlink, so it can borrow one as a bogus target. This guard rejects that.
+describe("isBorrowedOfficialTarget", () => {
+  it("flags an official server-* target claimed by an unrelated repo", () => {
+    expect(isBorrowedOfficialTarget("npm/@modelcontextprotocol/server-memory", "fillout/mcp")).toBe(true);
+    expect(isBorrowedOfficialTarget("npm/@modelcontextprotocol/server-filesystem", "someorg/some-mcp")).toBe(true);
+  });
+
+  it("allows the official scope for the official servers repo itself (case-insensitive)", () => {
+    expect(isBorrowedOfficialTarget("npm/@modelcontextprotocol/server-memory", "modelcontextprotocol/servers")).toBe(false);
+    expect(isBorrowedOfficialTarget("npm/@modelcontextprotocol/server-github", "ModelContextProtocol/Servers")).toBe(false);
+  });
+
+  it("rejects the official scope when the repo is unknown (can't confirm ownership)", () => {
+    expect(isBorrowedOfficialTarget("npm/@modelcontextprotocol/server-memory", null)).toBe(true);
+  });
+
+  it("ignores non-official targets — they are never borrowed", () => {
+    expect(isBorrowedOfficialTarget("npm/tavily-mcp", "fillout/mcp")).toBe(false);
+    expect(isBorrowedOfficialTarget("npm/@upstash/context7-mcp", null)).toBe(false);
+    expect(isBorrowedOfficialTarget("pypi/mcp-server-git", "x/y")).toBe(false);
   });
 });
 

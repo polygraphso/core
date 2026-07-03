@@ -384,6 +384,23 @@ async function resolveViaReadmeCommand(
   return null;
 }
 
+/** github owner/repo of the official MCP reference servers. */
+const OFFICIAL_SERVERS_OWNER_REPO = "modelcontextprotocol/servers";
+
+/**
+ * Tier 2 trusts a Glama page's structured config without a repo backlink (unlike
+ * tiers 1 and 3), so an example `@modelcontextprotocol/server-*` block — ubiquitous
+ * boilerplate copied into unrelated servers' pages — gets borrowed as a bogus
+ * target ("Fillout.io MCP Server" → npm/@modelcontextprotocol/server-fillout, or a
+ * real official grade mislabelled onto an unrelated row). That scope is published
+ * only from the official servers repo, so accept it there and reject it everywhere
+ * else, including rows with no known repo (ownership unconfirmable).
+ */
+export function isBorrowedOfficialTarget(target: string, ownerRepo: string | null): boolean {
+  if (!/^npm\/@modelcontextprotocol\/server-/.test(target)) return false;
+  return ownerRepo?.toLowerCase() !== OFFICIAL_SERVERS_OWNER_REPO;
+}
+
 export interface ResolveInput {
   repositoryUrl: string | null;
   namespace: string | null;
@@ -418,7 +435,11 @@ export async function resolveServer(input: ResolveInput): Promise<ResolveOutcome
       const html = await fetchGlamaHtml(input.namespace, input.slug);
       if (html) {
         const structured = parseGlamaConfigTarget(html);
-        if (structured) return { status: "resolved", target: structured };
+        // Tier 2 has no backlink check, so drop a borrowed official target and
+        // fall through to tier 3 (which does verify) rather than resolve a mislabel.
+        if (structured && !isBorrowedOfficialTarget(structured.target, ownerRepo)) {
+          return { status: "resolved", target: structured };
+        }
         const readme = await resolveViaReadmeCommand(html, input.slug, repoName, ownerRepo);
         if (readme) return { status: "resolved", target: readme };
       }
