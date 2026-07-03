@@ -49,6 +49,64 @@ export function bucketByDay(
   return buckets;
 }
 
+export interface LookupRow {
+  server_ref: string;
+  hit_count: number;
+  miss_count: number;
+}
+
+export interface LookupServerTotal {
+  server_ref: string;
+  total: number;
+  hits: number;
+  misses: number;
+}
+
+export interface LookupSummary {
+  totalLookups: number;
+  hits: number;
+  misses: number;
+  /** hits / total; null when there have been no lookups. */
+  hitRate: number | null;
+  distinctServers: number;
+  topServers: LookupServerTotal[];
+}
+
+/**
+ * Roll per-server lookup counters into headline totals plus the busiest
+ * servers. A "hit" is a lookup that found a published grade; a "miss" is one
+ * that didn't. `topN` bounds the ranked list.
+ */
+export function summarizeLookups(
+  rows: ReadonlyArray<LookupRow>,
+  topN = 10,
+): LookupSummary {
+  let hits = 0;
+  let misses = 0;
+  for (const r of rows) {
+    hits += r.hit_count;
+    misses += r.miss_count;
+  }
+  const totalLookups = hits + misses;
+  const topServers = rows
+    .map((r) => ({
+      server_ref: r.server_ref,
+      total: r.hit_count + r.miss_count,
+      hits: r.hit_count,
+      misses: r.miss_count,
+    }))
+    .sort((a, b) => b.total - a.total)
+    .slice(0, topN);
+  return {
+    totalLookups,
+    hits,
+    misses,
+    hitRate: totalLookups > 0 ? hits / totalLookups : null,
+    distinctServers: rows.length,
+    topServers,
+  };
+}
+
 /**
  * Count occurrences of each value, sorted descending by count. Null/empty
  * values fold into `nullLabel`. Optional `limit` truncates to the top N.
