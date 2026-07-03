@@ -7,7 +7,7 @@
  * Voice: brand-foundation.md — plain English, arrow-prefixed output lines.
  */
 
-import { NETWORK_FAILURE_LINE, requestUrl } from "./api.js";
+import { NETWORK_FAILURE_LINE, cliAgentId, requestUrl } from "./api.js";
 import { RefParseError, canonicalRef, parseRef } from "./identity.js";
 
 interface QueuedResponse {
@@ -63,7 +63,7 @@ export async function runRequest(args: readonly string[]): Promise<number> {
     res = await fetch(requestUrl(), {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ server_ref: canonical, source: "cli" }),
+      body: JSON.stringify({ server_ref: canonical, source: "cli", agent_id: cliAgentId() }),
     });
   } catch {
     process.stderr.write(NETWORK_FAILURE_LINE + "\n");
