@@ -60,6 +60,73 @@ export interface ServerIdentityRow {
 }
 
 /**
+ * Directory providers feeding the thin discovery catalog (catalog_listings).
+ * A subset of `IdentitySource` — only the aggregators we enumerate wholesale to
+ * discover servers, not the primary package registries. Extensible: adding a
+ * provider is a new string here plus a `ProviderAdapter` in scoring.
+ */
+export type CatalogProvider = "glama" | "smithery" | "mcp_registry";
+
+/**
+ * A canonical MCP server in the discovery catalog — one row per real server,
+ * deduped across providers. Mirrors the `catalog_servers` table. This is the
+ * coverage map (what exists / have we graded it), decoupled from the curated,
+ * enriched `servers` table.
+ */
+export interface CatalogServerRow {
+  id: string;
+  /** Normalized repo URL, else '<provider>:<provider_uid>'. Unique. */
+  canonical_key: string;
+  name: string | null;
+  repository_url: string | null;
+  /**
+   * Three-state, set by resolution (not the old coarse heuristic):
+   * null = not yet attempted · true = resolved to a runnable target · false =
+   * attempted, nothing runnable found.
+   */
+  gradeable: boolean | null;
+  /** Runnable ref once resolved: 'npm/<pkg>' | 'pypi/<pkg>' | 'https://…'. */
+  grading_target: string | null;
+  grading_kind: CatalogGradingKind | null;
+  resolution_status: CatalogResolutionStatus | null;
+  resolution_checked_at: string | null;
+  resolution_attempts: number;
+  first_seen_at: string;
+  last_seen_at: string;
+}
+
+/** How a resolved server is launched/reached by the harness. */
+export type CatalogGradingKind = "npm" | "pypi" | "url";
+
+/**
+ * Outcome of a resolution attempt. null = never attempted · 'resolved' = a
+ * grading_target was found · 'unresolved' = checked, nothing runnable ·
+ * 'error' = the check itself failed (retried next run).
+ */
+export type CatalogResolutionStatus = "resolved" | "unresolved" | "error";
+
+/**
+ * One per-provider listing of a catalog server. Mirrors the `catalog_listings`
+ * table. Many listings → one `catalog_servers` row (same MCP on Glama and
+ * Smithery). Keyed on `(provider, provider_uid)`.
+ */
+export interface CatalogListingRow {
+  id: string;
+  catalog_server_id: string;
+  provider: CatalogProvider;
+  provider_uid: string;
+  namespace: string | null;
+  slug: string | null;
+  name: string | null;
+  url: string | null;
+  attributes: string[];
+  /** Provider creation time; page-granular for Glama (see migration). */
+  provider_created_at: string | null;
+  first_synced_at: string;
+  last_synced_at: string;
+}
+
+/**
  * Component breakdown captured alongside the score. Each property is optional;
  * shape evolves as adapters land. Numbers are pre-normalization signal values
  * so debugging stays grounded ("npm dropped from 1M → 200k weekly downloads").

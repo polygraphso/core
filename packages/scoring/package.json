@@ -16,6 +16,11 @@
     "score": "node --env-file=../../.env --import tsx ./src/scripts/score.ts",
     "score:ci": "node --import tsx ./src/scripts/score.ts",
     "top": "node --env-file=../../.env --import tsx ./src/scripts/top.ts",
+    "catalog:sync": "node --env-file=../../.env --import tsx ./src/scripts/catalog-sync.ts",
+    "catalog:backfill": "node --env-file=../../.env --import tsx ./src/scripts/catalog-sync.ts --backfill",
+    "catalog:sync:ci": "node --import tsx ./src/scripts/catalog-sync.ts",
+    "catalog:resolve": "node --env-file=../../.env --import tsx ./src/scripts/catalog-resolve.ts",
+    "catalog:resolve:ci": "node --import tsx ./src/scripts/catalog-resolve.ts",
     "poll": "node --env-file=../../.env --import tsx ./src/scripts/poll.ts",
     "alerts": "node --env-file=../../.env --import tsx ./src/scripts/alerts.ts",
     "alerts:ci": "node --import tsx ./src/scripts/alerts.ts"
