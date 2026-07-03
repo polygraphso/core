@@ -10,7 +10,10 @@
  *   2. RECONCILE — for each active monitor, compare the latest published grade's
  *      row id to the monitor's watermark (last_notified_run_id). On a new id, claim
  *      a delivery (the alert_deliveries unique constraint dedups across overlapping
- *      runs), send the email best-effort, and advance the watermark.
+ *      runs). Claimed changes are grouped by recipient, then sent as ONE digest
+ *      email per recipient (a watcher with several changed servers gets a single
+ *      email, not one per monitor). On a successful send, mark each delivery and
+ *      advance each monitor's watermark.
  *
  * Scoped to monitored targets only — this is what keeps the free regrade affordable.
  * Run hourly by .github/workflows/alerts.yml; the ~1h enqueue→grade→notify latency
@@ -20,9 +23,9 @@
 import { parseServerRef, type ParsedServerRef } from "@polygraph/core";
 import { fetchNpm } from "../adapters/npm.js";
 import { fetchPypi } from "../adapters/pypi.js";
-import { buildAlertEmail, type EmailSender } from "./email.js";
+import { buildDigestEmail, type AlertChange, type EmailSender } from "./email.js";
 import { gradeMeetsThreshold } from "./grades.js";
-import type { AlertStore } from "./store.js";
+import type { AlertStore, MonitorRecord, PublishedGrade } from "./store.js";
 
 /** Default per-run enqueue cap — a cheap circuit breaker against a runaway pass. */
 const DEFAULT_MAX_ENQUEUE = 50;
@@ -114,7 +117,12 @@ export async function runAlerts(store: AlertStore, deps: AlertsDeps = {}): Promi
     }
   }
 
-  // ── Pass 2: notify monitors whose latest published grade is newer than seen ──
+  // ── Pass 2a: reconcile + claim, grouping claimed changes by recipient ────────
+  // Per-monitor semantics (watermark, threshold gate, unique delivery claim) are
+  // unchanged; we just collect what each recipient owes into one bucket so 2b can
+  // send a single digest instead of one email per monitor.
+  const pendingByEmail = new Map<string, PendingChange[]>();
+
   for (const monitor of monitors) {
     try {
       if (!monitor.email) {
@@ -150,35 +158,10 @@ export async function runAlerts(store: AlertStore, deps: AlertsDeps = {}): Promi
 
       if (deliveryId) {
         result.notified += 1;
-        const email = buildAlertEmail({
-          target: monitor.target,
-          version: latest.resolved_version,
-          grade: latest.grade ?? "?",
-          priorGrade: monitor.last_notified_grade,
-          unsubscribeToken: monitor.unsubscribe_token,
-          siteUrl: deps.siteUrl,
-        });
-        if (!deps.sender) {
-          throw new Error("no email sender configured");
-        }
-        let sendOk = false;
-        try {
-          const sent = await deps.sender.send(monitor.email, email);
-          await store.markDelivery(deliveryId, "sent", { resendMessageId: sent.id });
-          result.sent += 1;
-          sendOk = true;
-          log(`[alerts] sent ${monitor.target} → ${monitor.email} (${latest.grade})`);
-        } catch (sendErr) {
-          const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
-          await store.markDelivery(deliveryId, "failed", { error: msg });
-          result.failed += 1;
-          log(`[alerts] send failed ${monitor.target} → ${monitor.email}: ${msg}`);
-        }
-        // Only advance the watermark on success. A failed send leaves the
-        // delivery row as 'failed'; the next cron pass will see the watermark
-        // unchanged, re-enter, and claim_or_retry_delivery will reset the row
-        // to 'pending' so the send is retried.
-        if (sendOk) await store.advanceWatermark(monitor.id, latest);
+        const bucket = pendingByEmail.get(monitor.email);
+        const change: PendingChange = { monitor, latest, deliveryId };
+        if (bucket) bucket.push(change);
+        else pendingByEmail.set(monitor.email, [change]);
       } else {
         // deliveryId null = the unique constraint found an existing 'sent' row
         // (a concurrent run already delivered). Advance so we don't loop forever.
@@ -192,5 +175,54 @@ export async function runAlerts(store: AlertStore, deps: AlertsDeps = {}): Promi
     }
   }
 
+  // ── Pass 2b: one digest email per recipient ─────────────────────────────────
+  const sender = deps.sender;
+  for (const [email, changes] of pendingByEmail) {
+    if (!sender) {
+      throw new Error("no email sender configured");
+    }
+    const composed = buildDigestEmail({
+      changes: changes.map((c) => toAlertChange(c)),
+      siteUrl: deps.siteUrl,
+    });
+    try {
+      const sent = await sender.send(email, composed);
+      // On success, mark every delivery sent and advance every watermark.
+      for (const c of changes) {
+        await store.markDelivery(c.deliveryId, "sent", { resendMessageId: sent.id });
+        await store.advanceWatermark(c.monitor.id, c.latest);
+        result.sent += 1;
+      }
+      log(`[alerts] sent digest → ${email} (${changes.length} change${changes.length === 1 ? "" : "s"})`);
+    } catch (sendErr) {
+      const msg = sendErr instanceof Error ? sendErr.message : String(sendErr);
+      // A failed send leaves each delivery row 'failed' and the watermarks put;
+      // the next cron pass re-enters and claim_or_retry_delivery resets the rows
+      // to 'pending' so the digest is retried.
+      for (const c of changes) {
+        await store.markDelivery(c.deliveryId, "failed", { error: msg });
+        result.failed += 1;
+      }
+      log(`[alerts] send failed → ${email}: ${msg}`);
+    }
+  }
+
   return result;
+}
+
+/** A claimed, notifiable change awaiting a digest send. */
+interface PendingChange {
+  monitor: MonitorRecord;
+  latest: PublishedGrade;
+  deliveryId: string;
+}
+
+function toAlertChange(c: PendingChange): AlertChange {
+  return {
+    target: c.monitor.target,
+    version: c.latest.resolved_version,
+    grade: c.latest.grade ?? "?",
+    priorGrade: c.monitor.last_notified_grade,
+    unsubscribeToken: c.monitor.unsubscribe_token,
+  };
 }
