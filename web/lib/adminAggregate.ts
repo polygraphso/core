@@ -107,6 +107,60 @@ export function summarizeLookups(
   };
 }
 
+export interface AgentActivityRow {
+  day: string; // YYYY-MM-DD
+  agent_name: string;
+  endpoint: string;
+  hit_count: number;
+  miss_count: number;
+  call_count: number;
+}
+
+export interface AgentActivitySummary {
+  /** Calls per day over the window, zero-filled, ascending. */
+  perDay: DayBucket[];
+  /** Total calls per agent name, descending. */
+  byAgent: Bucket[];
+  /** Total calls per endpoint, descending. */
+  byEndpoint: Bucket[];
+}
+
+/**
+ * Roll pre-bucketed agent_activity rows (one per day × agent × endpoint) into
+ * the admin panel's shapes. Rows outside the `days`-long window ending on
+ * `today` (UTC) are ignored.
+ */
+export function summarizeAgentActivity(
+  rows: ReadonlyArray<AgentActivityRow>,
+  days: number,
+  today: Date,
+): AgentActivitySummary {
+  const perDay: DayBucket[] = [];
+  const dayIndex = new Map<string, number>();
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(today);
+    d.setUTCDate(d.getUTCDate() - i);
+    const key = utcDayKey(d);
+    dayIndex.set(key, perDay.length);
+    perDay.push({ date: key, count: 0 });
+  }
+
+  const byAgent = new Map<string, number>();
+  const byEndpoint = new Map<string, number>();
+  for (const r of rows) {
+    const slot = dayIndex.get(r.day);
+    if (slot === undefined) continue; // outside the window
+    perDay[slot].count += r.call_count;
+    byAgent.set(r.agent_name, (byAgent.get(r.agent_name) ?? 0) + r.call_count);
+    byEndpoint.set(r.endpoint, (byEndpoint.get(r.endpoint) ?? 0) + r.call_count);
+  }
+
+  const toBuckets = (m: Map<string, number>): Bucket[] =>
+    Array.from(m, ([key, count]) => ({ key, count })).sort((a, b) => b.count - a.count);
+
+  return { perDay, byAgent: toBuckets(byAgent), byEndpoint: toBuckets(byEndpoint) };
+}
+
 /**
  * Count occurrences of each value, sorted descending by count. Null/empty
  * values fold into `nullLabel`. Optional `limit` truncates to the top N.

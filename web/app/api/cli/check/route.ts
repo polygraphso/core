@@ -14,6 +14,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { ServerRefParseError, parseServerRef, serverKey } from "@/lib/identity";
 import { enforceRateLimit } from "@/lib/rateLimit";
 import { resolveLatestVersion } from "@/lib/registryVersion";
+import { recordAgentCall, resolveAgentIdentity } from "@/lib/agentIdentity";
 import {
   fetchPublishedGrade,
   type LitmusGrade,
@@ -22,6 +23,11 @@ import {
 
 interface CheckRequest {
   server_ref?: unknown;
+  /** Optional caller identity — sent by the polygraph MCP tools ('mcp') and
+   *  the polygraphso CLI ('cli'); raw callers fall back to their User-Agent. */
+  source?: unknown;
+  agent_id?: unknown;
+  agent_meta?: unknown;
 }
 
 interface GradedResponse {
@@ -126,16 +132,23 @@ export async function POST(request: Request) {
     }
   }
 
-  // Usage counter: record every lookup — a hit (published grade returned) or a
-  // miss — so we can see total volume and the hit/miss ratio, not just misses.
-  // Best-effort: never fail the lookup on a counter error.
-  const { error: lookupErr } = await supabase.rpc("bump_lookup", {
-    p_server_ref: refKey,
-    p_hit: published !== null,
+  // Usage counters: per-server hit/miss (bump_lookup) and per-agent activity
+  // (record_agent_call). Both best-effort — never fail the lookup on a counter
+  // error — and independent, so run them concurrently.
+  const identity = resolveAgentIdentity({
+    agentId: body.agent_id,
+    source: body.source,
+    agentMeta: body.agent_meta,
+    userAgent: request.headers.get("user-agent"),
   });
-  if (lookupErr) {
-    console.error("[cli/check] bump_lookup failed:", lookupErr.message);
-  }
+  await Promise.all([
+    supabase
+      .rpc("bump_lookup", { p_server_ref: refKey, p_hit: published !== null })
+      .then(({ error }) => {
+        if (error) console.error("[cli/check] bump_lookup failed:", error.message);
+      }),
+    recordAgentCall(supabase, identity, "check", published !== null),
+  ]);
 
   if (!published) {
     // No grade for any version — bump demand, return the notify outlet.

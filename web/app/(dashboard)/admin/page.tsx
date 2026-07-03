@@ -6,6 +6,7 @@ import {
   getNotifyMetrics,
   getUntrackedDemand,
   getLookupStats,
+  getAgentMetrics,
 } from "@/lib/adminMetrics";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { Panel, KpiCard, MiniBars, BarList, EmptyNote, RecentList } from "./_components/ui";
@@ -28,15 +29,17 @@ export const revalidate = 0;
 export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 
 export default async function AdminPage() {
-  const [top, waitlist, grades, notify, untracked, lookups, userCount] = await Promise.all([
-    getTopline(),
-    getWaitlistMetrics(),
-    getGradeRequestMetrics(),
-    getNotifyMetrics(),
-    getUntrackedDemand(),
-    getLookupStats(),
-    getUserCount(),
-  ]);
+  const [top, waitlist, grades, notify, untracked, lookups, agents, userCount] =
+    await Promise.all([
+      getTopline(),
+      getWaitlistMetrics(),
+      getGradeRequestMetrics(),
+      getNotifyMetrics(),
+      getUntrackedDemand(),
+      getLookupStats(),
+      getAgentMetrics(),
+      getUserCount(),
+    ]);
 
   return (
     <main className="w-full px-8 py-12">
@@ -60,6 +63,7 @@ export default async function AdminPage() {
               : "no lookups yet"
           }
         />
+        <KpiCard label="Agents seen" value={agents?.totalAgents ?? 0} sub="distinct client builds" />
         <KpiCard label="Attestations" value={top.attestations} sub={`${top.attestationsPending} pending · on-chain`} />
         <KpiCard label="Auth users" value={userCount.users} sub={`${userCount.activeMonitors} active monitors`} />
       </div>
@@ -190,6 +194,41 @@ export default async function AdminPage() {
             </div>
           ) : (
             <EmptyNote>No lookups recorded yet.</EmptyNote>
+          )}
+        </Panel>
+
+        {/* Agents */}
+        <Panel
+          label="§6"
+          title="Agents"
+          note="Who calls /api/cli — MCP clients by handshake identity, CLI, and raw callers by User-Agent. Calls per day (last 30d)."
+        >
+          {agents && agents.totalAgents > 0 ? (
+            <div className="space-y-5">
+              <MiniBars data={agents.activity.perDay} />
+              <div>
+                <p className="section-label mb-2">By agent</p>
+                <BarList data={agents.activity.byAgent} empty="No agent activity yet." />
+              </div>
+              <div>
+                <p className="section-label mb-2">By endpoint</p>
+                <BarList data={agents.activity.byEndpoint} empty="No agent activity yet." />
+              </div>
+              <div>
+                <p className="section-label mb-2">Recently seen</p>
+                <RecentList
+                  rows={agents.agents.map((a) => ({
+                    primary: a.version ? `${a.name} ${a.version}` : a.name,
+                    secondary:
+                      a.meta?.capabilities?.join(" · ") ?? a.meta?.title ?? a.source,
+                    meta: a.last_seen_at.slice(0, 10),
+                  }))}
+                  empty="No agents seen yet."
+                />
+              </div>
+            </div>
+          ) : (
+            <EmptyNote>No agents recorded yet.</EmptyNote>
           )}
         </Panel>
       </div>
