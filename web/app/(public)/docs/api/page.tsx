@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "API",
   description:
-    "Public HTTP endpoints behind the polygraphso CLI. POST /api/cli/check looks up a server's polygraph grade; GET /api/cli/list returns every graded server.",
+    "Public HTTP endpoints behind the polygraphso CLI. POST /api/cli/check looks up a server's polygraph grade; GET /api/cli/list returns every graded server; POST /api/cli/grade-request queues an ungraded server.",
   alternates: { canonical: "/docs/api" },
 };
 
@@ -72,17 +72,18 @@ export default function ApiDocsPage() {
             HTTP API
           </h1>
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
-            Two public endpoints behind the <Inline>polygraphso</Inline> CLI.
-            Same data, same shape — pick whichever you prefer to integrate
-            against.
+            Three public endpoints behind the <Inline>polygraphso</Inline>{" "}
+            CLI and the polygraph MCP tools. Same data, same shape — pick
+            whichever you prefer to integrate against.
           </p>
         </header>
 
         <Section num="01" label="Overview" id="overview">
           <p>
-            The API exposes two endpoints: a lookup for a single server and a
-            full list of everything we track. Both are read-only, anonymous,
-            and serve the same data the CLI displays.
+            The API exposes three endpoints: a lookup for a single server, a
+            full list of everything graded, and a request queue for servers we
+            haven&rsquo;t graded yet. All are anonymous and serve the same data
+            the CLI displays; the first two are read-only.
           </p>
           <ul className="list-none space-y-1 mt-2">
             <li>
@@ -94,8 +95,10 @@ export default function ApiDocsPage() {
               endpoints; subscriber endpoints land later under a separate path.
             </li>
             <li>
-              <span className="text-ink-faint">Rate limit · </span>none
-              currently. We'll publish a budget here if we add one.
+              <span className="text-ink-faint">Rate limit · </span>per-IP:{" "}
+              <Inline>check</Inline> 60/min, <Inline>grade-request</Inline>{" "}
+              20/min. Over-budget calls get a <Inline>429</Inline> with{" "}
+              <Inline>Retry-After</Inline>.
             </li>
             <li>
               <span className="text-ink-faint">Content type · </span>
@@ -104,9 +107,13 @@ export default function ApiDocsPage() {
           </ul>
           <p>
             Prefer the CLI for ergonomics:{" "}
-            <Inline>npx polygraphso check &lt;ref&gt;</Inline> and{" "}
-            <Inline>npx polygraphso list</Inline>. The CLI hits these same
-            routes.
+            <Inline>npx polygraphso check &lt;ref&gt;</Inline>,{" "}
+            <Inline>npx polygraphso list</Inline>, and{" "}
+            <Inline>npx polygraphso request &lt;ref&gt;</Inline>. The CLI hits
+            these same routes, and so do the polygraph MCP tools
+            (<Inline>check_server</Inline> / <Inline>list_servers</Inline> /{" "}
+            <Inline>request_grade</Inline>, shipped with{" "}
+            <Inline>@polygraphso/litmus</Inline>).
           </p>
         </Section>
 
@@ -164,7 +171,7 @@ pypi/mcp-server-fetch`}
     "c02": "pass",
     "c03": "pass",
     "tool_defs_fingerprint": "0x256a…66db6",
-    "methodology_version": "litmus-v11",
+    "methodology_version": "litmus-v12",
     "resolved_version": "1.4.0",
     "rationale": "All three categories passed.",
     "computed_at": "2026-06-11T14:14:04Z"
@@ -198,11 +205,22 @@ pypi/mcp-server-fetch`}
           <Code>
 {`{
   "status": "not_available",
-  "notify_url": "https://polygraph.so/notify?for=npm/some-owner/some-package"
+  "notify_url": "https://polygraph.so/notify?for=npm/some-owner/some-package",
+  "message": "No published polygraph for npm/some-owner/some-package yet — treat it as unevaluated (neither safe nor unsafe). To get it graded, call request_grade to add it to the public queue (free), or grade it yourself now with the self_grade command.",
+  "self_grade": "npx -y -p @polygraphso/litmus polygraphso-litmus litmus npm/some-owner/some-package"
 }`}
           </Code>
           <p className="text-sm">
-            A miss bumps an anonymous demand counter so we can see which
+            <Inline>message</Inline> spells out the next steps for an agent;{" "}
+            <Inline>self_grade</Inline> is a one-shot command to run the open
+            litmus yourself; to queue it instead, see{" "}
+            <a
+              href="#grade-request"
+              className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
+            >
+              request a grade
+            </a>
+            . A miss bumps an anonymous demand counter so we can see which
             ungraded servers are most in demand. No request body is logged
             beyond the ref itself.
           </p>
@@ -276,7 +294,65 @@ pypi/mcp-server-fetch`}
           <Code>{`curl https://polygraph.so/api/cli/list`}</Code>
         </Section>
 
-        <Section num="05" label="Versioning" id="versioning">
+        <Section num="05" label="Request a grade" id="grade-request">
+          <Method verb="POST" path="/api/cli/grade-request" />
+          <p>
+            Adds an ungraded server to the public grading queue — the write
+            counterpart to <Inline>check</Inline>. Free and best-effort: we run
+            the litmus and publish the grade, which you then read with{" "}
+            <Inline>/api/cli/check</Inline>. Nothing is returned synchronously.
+          </p>
+
+          <h3 className="font-serif text-lg text-ink mt-6 mb-2">Request</h3>
+          <Code>
+{`{
+  "server_ref": "npm/some-owner/some-package",
+  "source": "cli",              // optional: "cli" (default) or "mcp"
+  "agent_id": "claude-code/2.1" // optional: calling client, name/version
+  // "email": "you@example.com" // optional: get notified when the grade lands
+}`}
+          </Code>
+          <p className="text-sm">
+            No contact details required — agents have no inbox, so the queue
+            records who asked (<Inline>agent_id</Inline>) instead. Requesting
+            the same server twice is a no-op, not a duplicate.
+          </p>
+
+          <h3 className="font-serif text-lg text-ink mt-6 mb-2">Response</h3>
+          <Code>
+{`{
+  "status": "queued",
+  "created": true,   // false when the target was already queued
+  "demand": 3        // requests standing behind this target
+}`}
+          </Code>
+
+          <h3 className="font-serif text-lg text-ink mt-6 mb-2">curl</h3>
+          <Code>
+{`curl -X POST https://polygraph.so/api/cli/grade-request \\
+  -H 'content-type: application/json' \\
+  -d '{"server_ref":"npm/some-owner/some-package"}'`}
+          </Code>
+
+          <h3 className="font-serif text-lg text-ink mt-6 mb-2">Errors</h3>
+          <ul className="list-none space-y-1 text-sm">
+            <li>
+              <Inline>400</Inline> — missing or malformed{" "}
+              <Inline>server_ref</Inline> (or an invalid{" "}
+              <Inline>email</Inline>).
+            </li>
+            <li>
+              <Inline>429</Inline> — rate limited (per-IP). Back off and retry
+              after the <Inline>Retry-After</Inline> interval.
+            </li>
+            <li>
+              <Inline>500</Inline> — the write failed server-side. Safe to
+              retry (idempotent per target).
+            </li>
+          </ul>
+        </Section>
+
+        <Section num="06" label="Versioning" id="versioning">
           <p>
             v0 changes are additive. We add fields; we don't remove or rename
             them. A breaking change — a removed field, a renamed key, a changed
@@ -291,7 +367,7 @@ pypi/mcp-server-fetch`}
           </p>
         </Section>
 
-        <Section num="06" label="Stability" id="stability">
+        <Section num="07" label="Stability" id="stability">
           <p>
             These endpoints are the contract the CLI is built against, so the
             URLs and field names are stable. The notify URL pattern (
@@ -312,7 +388,7 @@ pypi/mcp-server-fetch`}
           </p>
         </Section>
 
-        <Section num="07" label="Embeddable badge" id="badge">
+        <Section num="08" label="Embeddable badge" id="badge">
           <p>
             A live grade badge any server can embed — in a README, on npm, or on a
             docs site. Three artifacts, all keyed by the same server ref, all
@@ -349,7 +425,7 @@ pypi/mcp-server-fetch`}
           </p>
         </Section>
 
-        <Section num="08" label="See also" id="see-also">
+        <Section num="09" label="See also" id="see-also">
           <ul className="list-none space-y-1">
             <li>
               <a
