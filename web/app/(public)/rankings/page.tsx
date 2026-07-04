@@ -23,8 +23,9 @@ export const metadata: Metadata = {
 // Re-render at most every 10 min; a fresh score run or regrade surfaces within the window.
 export const revalidate = 600;
 
-// Upper bound on the adoption universe we pull; we then keep only graded servers.
-// Comfortably covers the full scored set (~78 today).
+// Upper bound on the adoption universe we pull. We keep the whole set — graded
+// servers show their grade, ungraded ones a "request" CTA in their adoption slot.
+// Comfortably covers the full scored set (~91 today).
 const ADOPTION_UNIVERSE = 200;
 
 export default async function RankingsPage() {
@@ -34,8 +35,8 @@ export default async function RankingsPage() {
   let lastRefreshed = "";
   if (db) {
     const [ranked, grades, remote, skills] = await Promise.all([
-      // Pull the full scored set so every graded server is covered, then keep
-      // only graded servers (below) — the index shows graded MCPs, ranked by adoption.
+      // Pull the full scored set — the index shows every adoption-ranked server,
+      // graded or not (ungraded rows become a "request a grade" CTA in place).
       fetchTopRanked(db, ADOPTION_UNIVERSE),
       fetchPublishedGradeDetailMap(db),
       fetchPublishedRemoteGrades(db),
@@ -44,9 +45,11 @@ export default async function RankingsPage() {
     skillRows = skills;
     // Newest score timestamp across the ranked set — ISO strings compare lexically.
     lastRefreshed = ranked.reduce((max, r) => (r.computedAt > max ? r.computedAt : max), "");
-    const registryRows = mergeRankings(ranked, grades)
-      .filter((r) => r.grade !== null)
-      .map((r, i) => ({ ...r, rank: i + 1 }));
+    // Keep EVERY adoption-ranked server. mergeRankings already carries the true
+    // adoption rank, so an ungraded #3 stays #3 (rendered as a "request" CTA)
+    // rather than hidden — the most-adopted ungraded servers are exactly the
+    // ones worth surfacing, not dropping.
+    const registryRows = mergeRankings(ranked, grades);
     // Remote/hosted endpoints carry no adoption rank — append them after the
     // adoption-ranked registry servers (the table shows "—" for their rank + adoption).
     const remoteRows = remote.map((r, i) => ({ ...r, rank: registryRows.length + i + 1 }));
@@ -54,14 +57,16 @@ export default async function RankingsPage() {
   }
   const refreshedDate = lastRefreshed ? lastRefreshed.slice(0, 10) : null;
   const liveCount = rows.filter((r) => r.remote).length;
-  const registryCount = rows.length - liveCount;
+  const gradedCount = rows.filter((r) => !r.remote && r.grade !== null).length;
+  const ungradedCount = rows.filter((r) => !r.remote && r.grade === null).length;
+  const registryCount = gradedCount + ungradedCount;
   const skillCount = skillRows.length;
   const empty = rows.length === 0 && skillCount === 0;
 
   return (
       <article>
         <header className="mb-12">
-          <p className="section-label mb-4">Index · litmus-v11</p>
+          <p className="section-label mb-4">Index · litmus-v12</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             The Polygraph Index
           </h1>
@@ -75,10 +80,19 @@ export default async function RankingsPage() {
             ) : (
               <>
                 {registryCount > 0 ? (
-                  <>
-                    {registryCount} MCP {registryCount === 1 ? "server" : "servers"} graded, ranked
-                    by adoption
-                  </>
+                  ungradedCount > 0 ? (
+                    <>
+                      {gradedCount} of {registryCount} adoption-ranked MCP servers carry a published
+                      grade. The rest aren&rsquo;t graded from a public reference yet — some need
+                      authenticated access, others are still queued; request one and we&rsquo;ll run
+                      it
+                    </>
+                  ) : (
+                    <>
+                      {registryCount} MCP {registryCount === 1 ? "server" : "servers"} graded, ranked
+                      by adoption
+                    </>
+                  )
                 ) : null}
                 {liveCount > 0 ? (
                   <>
