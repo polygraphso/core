@@ -21,6 +21,7 @@ import { verifyRunnable, checkRegistryExists } from "@/lib/verifyRunnable";
 import { gateKnownMcp, isCatalogedServer } from "@/lib/knownMcp";
 import { enforceRateLimit } from "@/lib/rateLimit";
 import { recordAgentCall, resolveAgentIdentity } from "@/lib/agentIdentity";
+import { fetchLatestRunOutcome, isBlockedByRecentFailure } from "@/lib/gradeability";
 
 interface GradeRequestBody {
   server_ref?: unknown;
@@ -77,6 +78,14 @@ export async function POST(request: Request) {
   const known = await gateKnownMcp(parsed, (ref) => isCatalogedServer(supabase, ref));
   if (!known.ok) {
     return Response.json({ error: known.reason }, { status: 422 });
+  }
+
+  // Known-recent failure: the harness already tried this target and it didn't
+  // launch from its published form. Say so now instead of queueing a request
+  // that would be declined an hour later.
+  const verdict = isBlockedByRecentFailure(await fetchLatestRunOutcome(supabase, parsed.target));
+  if (verdict.blocked) {
+    return Response.json({ error: verdict.reason }, { status: 422 });
   }
 
   // Email is optional here. If present it must look like an email (the DB
