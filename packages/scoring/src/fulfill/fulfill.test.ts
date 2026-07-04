@@ -11,6 +11,7 @@ class FakeStore implements FulfillStore {
   publishedVersions: Set<string>; // `${target}@${version}`
   latestPublished: Map<string, { id: string; resolved_version: string | null; grade: string | null }>;
   inFlight: Map<string, string>; // target -> run id
+  outcomes: Map<string, { status: string; completed_at: string | null; failure_reason: string | null }>;
 
   enqueued: Array<{ target: string; kind: string }> = [];
   linked: Array<{ requestId: string; runId: string }> = [];
@@ -25,6 +26,7 @@ class FakeStore implements FulfillStore {
     publishedVersions?: string[];
     latestPublished?: Record<string, { id: string; resolved_version: string | null; grade: string | null }>;
     inFlight?: Record<string, string>;
+    outcomes?: Record<string, { status: string; completed_at: string | null; failure_reason: string | null }>;
   }) {
     this.queued = opts.queued ?? [];
     this.inProgress = opts.inProgress ?? [];
@@ -32,6 +34,7 @@ class FakeStore implements FulfillStore {
     this.publishedVersions = new Set(opts.publishedVersions ?? []);
     this.latestPublished = new Map(Object.entries(opts.latestPublished ?? {}));
     this.inFlight = new Map(Object.entries(opts.inFlight ?? {}));
+    this.outcomes = new Map(Object.entries(opts.outcomes ?? {}));
   }
 
   async queuedRequests(limit: number) {
@@ -45,6 +48,9 @@ class FakeStore implements FulfillStore {
   }
   async latestPublishedGrade(target: string) {
     return this.latestPublished.get(target) ?? null;
+  }
+  async latestRunOutcome(target: string) {
+    return this.outcomes.get(target) ?? null;
   }
   async hasPublishedGradeForVersion(target: string, version: string) {
     return this.publishedVersions.has(`${target}@${version}`);
@@ -151,6 +157,30 @@ describe("runFulfillment — enqueue pass", () => {
     await runFulfillment(store, { fetchLatestVersion: latestNpm });
     expect(store.completed).toEqual(["r1"]);
     expect(store.enqueued).toEqual([{ target: "https://mcp.b.com/sse", kind: "remote_url" }]);
+  });
+
+  it("declines instead of enqueueing when the target failed recently", async () => {
+    const store = new FakeStore({
+      queued: [req()],
+      outcomes: {
+        "npm/foo-mcp": { status: "failed", completed_at: new Date(Date.now() - 3600_000).toISOString(), failure_reason: "harness child failed" },
+      },
+    });
+    await runFulfillment(store, { fetchLatestVersion: latestNpm });
+    expect(store.enqueued).toEqual([]);
+    expect(store.declined).toEqual(["r1"]);
+  });
+
+  it("re-enqueues when the last failure is older than the cooldown", async () => {
+    const store = new FakeStore({
+      queued: [req()],
+      outcomes: {
+        "npm/foo-mcp": { status: "failed", completed_at: new Date(Date.now() - 30 * 86400_000).toISOString(), failure_reason: "old" },
+      },
+    });
+    await runFulfillment(store, { fetchLatestVersion: latestNpm });
+    expect(store.enqueued).toHaveLength(1);
+    expect(store.declined).toEqual([]);
   });
 
   it("respects the per-run enqueue cap", async () => {

@@ -19,6 +19,7 @@ import { verifyRunnable, checkRegistryExists } from "@/lib/verifyRunnable";
 import { gateKnownMcp, isCatalogedServer } from "@/lib/knownMcp";
 import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
 import { getSession } from "@/lib/session";
+import { fetchLatestRunOutcome, isBlockedByRecentFailure } from "@/lib/gradeability";
 
 const TARGET_MAX_LEN = 512;
 const NOTE_MAX_LEN = 2000;
@@ -102,6 +103,14 @@ export async function POST(request: Request) {
   const known = await gateKnownMcp(parsed, (ref) => isCatalogedServer(supabase, ref));
   if (!known.ok) {
     return NextResponse.json({ ok: false, message: known.reason }, { status: 422 });
+  }
+
+  // Known-recent failure: the harness already tried this target and it didn't
+  // launch from its published form. Say so now instead of queueing a request
+  // that would be declined an hour later.
+  const verdict = isBlockedByRecentFailure(await fetchLatestRunOutcome(supabase, parsed.target));
+  if (verdict.blocked) {
+    return NextResponse.json({ ok: false, message: verdict.reason }, { status: 422 });
   }
 
   // Proxy guarantees a session for this route; use it server-authoritatively.
