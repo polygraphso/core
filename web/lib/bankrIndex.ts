@@ -1,12 +1,7 @@
 import "server-only";
 
 import { getSupabaseAdmin } from "@/lib/supabase";
-import {
-  detailFromRow,
-  HOSTED_GRADE_COLUMNS,
-  type HostedGradeRow,
-  type PolygraphDetail,
-} from "@/lib/hostedGrades";
+import { latestForTarget } from "@/lib/hostedGrades";
 
 /** Static skill-safety grade (litmus-skill-v2): A = clean static scan; D/F flagged. */
 export type SkillGrade = "A" | "B" | "D" | "F";
@@ -255,37 +250,15 @@ export const BANKR_AGENTS_META: BankrAgentMeta[] = [
   { project: "VIGIL", handle: "vigilcodes", mcpRef: "https://mcp.vigil.codes", target: null, note: "ships an MCP server, but a non-standard transport (no MCP initialize handshake) — not gradeable as-is" },
 ];
 
-/** Latest grade for one `target`, ANY publish state, newest completion first.
- *  Mirrors /base's latestForTarget: an unlisted page reads grade-only rows directly,
- *  so we never hardcode a letter and never need to publish a third-party grade. */
-async function latestForTarget(
-  db: ReturnType<typeof getSupabaseAdmin>,
-  target: string,
-): Promise<PolygraphDetail | null> {
-  if (!db) return null;
-  // Tolerate a trailing-slash normalization difference in the stored target.
-  const variants = Array.from(
-    new Set([target, target.replace(/\/+$/, ""), target.endsWith("/") ? target : `${target}/`]),
-  );
-  const { data, error } = await db
-    .from("hosted_runs")
-    .select(HOSTED_GRADE_COLUMNS)
-    .in("target", variants)
-    .eq("status", "complete")
-    .order("completed_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error || !data) return null;
-  return detailFromRow(data as HostedGradeRow)?.detail ?? null;
-}
-
 /** The agent rows joined to their LIVE grades from hosted_runs (any publish state),
- *  so the page stays in lockstep with the grader instead of hardcoding a letter. */
+ *  so the page stays in lockstep with the grader instead of hardcoding a letter.
+ *  Uses the shared grade-only lookup (lib/hostedGrades) — same rows /base reads. */
 export async function loadBankrAgents(): Promise<BankrAgent[]> {
   const db = getSupabaseAdmin();
   const out: BankrAgent[] = [];
   for (const m of BANKR_AGENTS_META) {
-    const d = m.target ? await latestForTarget(db, m.target) : null;
+    const g = m.target ? await latestForTarget(db, m.target) : null;
+    const d = g?.detail ?? null;
     out.push({ ...m, grade: d?.grade ?? null, c01: d?.c01 ?? null, c02: d?.c02 ?? null, c03: d?.c03 ?? null });
   }
   return out;
