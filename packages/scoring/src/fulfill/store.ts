@@ -34,6 +34,13 @@ export interface PublishedGrade {
   grade: string | null;
 }
 
+/** The latest terminal run for a target — input to the recent-failure gate. */
+export interface LatestRunOutcome {
+  status: string; // 'complete' | 'failed'
+  completed_at: string | null;
+  failure_reason: string | null;
+}
+
 export interface FulfillStore {
   /** Oldest queued requests, up to `limit`. */
   queuedRequests(limit: number): Promise<GradeRequestRecord[]>;
@@ -43,6 +50,8 @@ export interface FulfillStore {
   runById(id: string): Promise<HostedRunRecord | null>;
   /** Latest published (live) grade row for a target, or null if ungraded. */
   latestPublishedGrade(target: string): Promise<PublishedGrade | null>;
+  /** Latest terminal (complete/failed) run for a target, or null if never run. */
+  latestRunOutcome(target: string): Promise<LatestRunOutcome | null>;
   /** Is there already a published grade at this exact (target, version)? */
   hasPublishedGradeForVersion(target: string, version: string): Promise<boolean>;
   /** Id of an already queued/running free regrade for this target, if any —
@@ -100,6 +109,19 @@ export function supabaseFulfillStore(supabase: SupabaseClient): FulfillStore {
         .maybeSingle();
       if (error) throw new Error(`latestPublishedGrade(${target}): ${error.message}`);
       return (data as PublishedGrade | null) ?? null;
+    },
+
+    async latestRunOutcome(target) {
+      const { data, error } = await supabase
+        .from("hosted_runs")
+        .select("status, completed_at, failure_reason")
+        .eq("target", target)
+        .in("status", ["complete", "failed"])
+        .order("completed_at", { ascending: false, nullsFirst: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw new Error(`latestRunOutcome(${target}): ${error.message}`);
+      return (data as LatestRunOutcome | null) ?? null;
     },
 
     async hasPublishedGradeForVersion(target, version) {

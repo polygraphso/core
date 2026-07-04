@@ -27,11 +27,23 @@ import { fetchNpm } from "../adapters/npm.js";
 import { fetchPypi } from "../adapters/pypi.js";
 import type { EmailSender } from "../alerts/email.js";
 import { buildDeclinedEmail, buildFulfilledEmail } from "./email.js";
-import type { FulfillStore, GradeRequestRecord } from "./store.js";
+import type { FulfillStore, GradeRequestRecord, LatestRunOutcome } from "./store.js";
 
 /** Default per-run enqueue cap. The box grades serially (~15-min worst case per
  *  run), and monitor-alert regrades share the same lane — 5/hour leaves headroom. */
 const DEFAULT_MAX_ENQUEUE = 5;
+
+/** A failure younger than this blocks re-enqueueing the same target — the
+ *  worker doesn't retry failed grades, so re-running a known-unlaunchable
+ *  package just burns a slot. Old failures get another chance (fixes ship). */
+const FAILURE_COOLDOWN_DAYS = 14;
+
+/** Same decision the intake gate applies (web/lib/gradeability.ts). */
+function isRecentFailure(latest: LatestRunOutcome | null, now: Date): boolean {
+  if (!latest || latest.status !== "failed" || !latest.completed_at) return false;
+  const ageMs = now.getTime() - new Date(latest.completed_at).getTime();
+  return ageMs <= FAILURE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+}
 
 export interface FulfillDeps {
   /** Resolve a registry ref's latest version. Default hits npm/pypi adapters. */
@@ -204,6 +216,16 @@ export async function runFulfillment(
           await completeAndNotify(request, published.grade ?? "?", published.resolved_version);
           continue;
         }
+      }
+
+      // Known-recent failure: the harness already tried and couldn't launch
+      // it; enqueueing again would repeat a known outcome. Decline (the email
+      // explains it's "couldn't test", with the re-request path).
+      const outcome = await store.latestRunOutcome(request.target);
+      if (isRecentFailure(outcome, new Date())) {
+        await declineAndNotify(request);
+        log(`[fulfill] declined ${request.target} — failed recently (${outcome?.failure_reason ?? "unknown"})`);
+        continue;
       }
 
       const inFlight = await store.inFlightRegradeId(request.target);
