@@ -181,6 +181,36 @@ export function detailFromRow(
 }
 
 /**
+ * Latest grade for one `target`, ANY publish state, newest completion first — the
+ * grade-only lookup the unlisted ecosystem indices (/base, /bankr, /virtuals) share.
+ * Unlike the published-only helpers above, this reads rows regardless of
+ * `published_at`, so an ecosystem page surfaces a grade the moment it is graded and
+ * nowhere public until someone publishes it. Tolerates a trailing-slash difference in
+ * the stored ref. Returns the grade, the flattened detail, and the completion date.
+ */
+export async function latestForTarget(
+  db: SupabaseClient | null,
+  target: string,
+): Promise<{ grade: LitmusGrade; detail: PolygraphDetail; completedAt: string | null } | null> {
+  if (!db) return null;
+  const variants = Array.from(
+    new Set([target, target.replace(/\/+$/, ""), target.endsWith("/") ? target : `${target}/`]),
+  );
+  const { data, error } = await db
+    .from("hosted_runs")
+    .select(`${HOSTED_GRADE_COLUMNS}, completed_at`)
+    .in("target", variants)
+    .eq("status", "complete")
+    .order("completed_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  const res = detailFromRow(data as HostedGradeRow);
+  if (!res) return null;
+  return { ...res, completedAt: (data as { completed_at?: string | null }).completed_at ?? null };
+}
+
+/**
  * Latest published registry grade for a versionless server_key. With `version`,
  * only a grade run against that EXACT version matches (a different version → null,
  * i.e. "not graded for this version"); without it, the latest published grade for
