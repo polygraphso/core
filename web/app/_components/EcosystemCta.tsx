@@ -17,10 +17,11 @@ import Link from "next/link";
  * automation already running for everyone. See core/CLAUDE.md.
  */
 
-// A booking link (Cal.com / Calendly) renders beside the mailto when set. Left
-// null until a scheduling URL exists — flip this one constant to turn it on
-// across every ecosystem surface. The mailto is always the primary path.
-const BOOKING_URL: string | null = null;
+// A booking link (Cal.com / Calendly) renders beside the mailto when set. Set
+// the BOOKING_URL env var in the deployment environment to turn it on across
+// every ecosystem surface — no code change needed. The mailto is always the
+// primary path.
+const BOOKING_URL: string | null = process.env.BOOKING_URL ?? null;
 
 const CONTACT_EMAIL = "hello@polygraph.so";
 
