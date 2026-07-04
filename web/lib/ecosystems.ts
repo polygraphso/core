@@ -15,6 +15,7 @@ import { loadBankrSkills, loadBankrAgents } from "@/lib/bankrIndex";
 import { loadUniswapSkills } from "@/lib/uniswapIndex";
 import { loadVirtualsIndex } from "@/lib/virtualsIndex";
 import { loadSkillsShSkills } from "@/lib/skillsShIndex";
+import { loadClawhubSkills } from "@/lib/clawhubIndex";
 import type { LitmusGrade } from "@/lib/hostedGrades";
 
 /** A trust index for one ecosystem. */
@@ -110,11 +111,22 @@ export const ECOSYSTEMS: Ecosystem[] = [
       };
     },
   },
-  // NOTE: the /clawhub ecosystem (lib/clawhubIndex + app/(public)/clawhub) is built but
-  // intentionally NOT registered here yet. Its whole point is the malicious-skill cohort,
-  // which litmus-skill-v2 grades A (it missed base64-obfuscated `curl|bash` in the SKILL.md
-  // body). Register it once the litmus-skill-v3 S-04 fix is released, the runner redeployed,
-  // and that cohort regraded to D/F — otherwise the hub would surface malware as an "A".
+  {
+    slug: "clawhub",
+    href: "/clawhub",
+    name: "ClawHub registry",
+    blurb:
+      "Static safety grades for skills distributed through ClawHub — the malicious skills Snyk flagged (graded D under litmus-skill-v3) next to the popular ones an agent would install.",
+    async loadStats() {
+      const skills = await loadClawhubSkills();
+      const grades = skills.map((s) => s.grade);
+      return {
+        counts: distribution(grades),
+        graded: grades.filter(Boolean).length,
+        summary: `${skills.length} skills`,
+      };
+    },
+  },
   {
     slug: "skills-sh",
     href: "/skills-sh",

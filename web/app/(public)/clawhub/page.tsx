@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 const CONFIG: SkillEcosystemConfig = {
-  methodologyLabel: "litmus-skill-v2",
+  methodologyLabel: "litmus-skill-v3",
   title: "ClawHub skills index",
   blurb:
     "Static safety grades for skills distributed through ClawHub — including the malicious skills Snyk documented, graded next to the popular ones an agent would actually install.",
@@ -40,9 +40,16 @@ const CONFIG: SkillEcosystemConfig = {
         <strong className="text-ink-muted">13.4%</strong> critical, and{" "}
         <strong className="text-ink-muted">76</strong> confirmed malicious payloads — several still live at
         publication. The flagged cohort here each ships a fake &ldquo;prerequisites&rdquo; step that runs a
-        base64-decoded <code className="font-mono">curl | bash</code>; the litmus grades them{" "}
-        <strong className="text-ink-muted">D/F</strong> on the static text alone. Grades are read live from
-        hosted_runs and none are published onchain.
+        base64-decoded <code className="font-mono">curl | bash</code> written into the SKILL.md; the litmus
+        grades them <strong className="text-ink-muted">D</strong> on the static text alone.
+      </p>
+      <p className="mt-2 text-ink-faint">
+        Static scanning has a disclosed edge: a sibling of these skills that instead tells the agent to
+        &ldquo;visit this link and run the command it shows&rdquo;, or hides the payload in a bundled archive,
+        keeps its dangerous command out of the scanned bytes and grades clean. That gap — a command fetched
+        or assembled at runtime — is precisely why a static grade is a floor, not a guarantee, and why the
+        behavioral harness and continuous re-grading matter. Grades are read live from hosted_runs and none
+        are published onchain.
       </p>
     </>
   ),
