@@ -6,31 +6,13 @@
  * published_at set) — the same source the website reads. Sorted by grade
  * (A first), then by server_ref.
  *
- * Grade-only: this is the published-grades list, not a catalog of tracked
- * servers. Adoption tier is no longer part of this surface.
+ * Thin transport wrapper over `runList` (lib/lookup), which the hosted MCP
+ * list_servers tool also calls so the two surfaces can't drift.
  */
 
 import { getSupabaseAdmin } from "@/lib/supabase";
-import { fetchPublishedGradeMap, type LitmusGrade } from "@/lib/hostedGrades";
-import { recordAgentCall, resolveAgentIdentity } from "@/lib/agentIdentity";
-
-interface ListEntry {
-  server_ref: string;
-  polygraph: LitmusGrade;
-}
-
-interface ListResponse {
-  servers: ListEntry[];
-  total: number;
-}
-
-const GRADE_RANK: Record<LitmusGrade, number> = {
-  A: 0,
-  B: 1,
-  C: 2,
-  D: 3,
-  F: 4,
-};
+import { resolveAgentIdentity } from "@/lib/agentIdentity";
+import { runList } from "@/lib/lookup";
 
 export async function GET(request: Request) {
   const supabase = getSupabaseAdmin();
@@ -39,32 +21,15 @@ export async function GET(request: Request) {
     return Response.json({ error: "Lookup failed." }, { status: 500 });
   }
 
-  // Per-agent observability. GET → identity rides on query params (our
-  // clients send ?source=…&agent_id=…); raw callers fall back to User-Agent.
+  // GET → identity rides on query params (our clients send ?source=…&agent_id=…);
+  // raw callers fall back to User-Agent.
   const params = new URL(request.url).searchParams;
-  await recordAgentCall(
-    supabase,
-    resolveAgentIdentity({
-      agentId: params.get("agent_id") ?? undefined,
-      source: params.get("source") ?? undefined,
-      userAgent: request.headers.get("user-agent"),
-    }),
-    "list",
-  );
-
-  // Every published grade, keyed by server_ref (the versionless target).
-  const gradeByRef = await fetchPublishedGradeMap(supabase);
-
-  const entries: ListEntry[] = [...gradeByRef.entries()].map(
-    ([server_ref, polygraph]) => ({ server_ref, polygraph }),
-  );
-
-  entries.sort((a, b) => {
-    const r = GRADE_RANK[a.polygraph] - GRADE_RANK[b.polygraph];
-    if (r !== 0) return r;
-    return a.server_ref.localeCompare(b.server_ref);
+  const identity = resolveAgentIdentity({
+    agentId: params.get("agent_id") ?? undefined,
+    source: params.get("source") ?? undefined,
+    userAgent: request.headers.get("user-agent"),
   });
 
-  const body: ListResponse = { servers: entries, total: entries.length };
+  const body = await runList({ supabase, identity });
   return Response.json(body);
 }

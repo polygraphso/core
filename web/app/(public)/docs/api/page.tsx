@@ -438,7 +438,50 @@ pypi/mcp-server-fetch`}
           </p>
         </Section>
 
-        <Section num="09" label="See also" id="see-also">
+        <Section num="09" label="MCP endpoint (hosted)" id="mcp-endpoint">
+          <p>
+            The same three lookups are also exposed as a hosted MCP server over
+            Streamable HTTP, so any MCP-capable client — an agent, an IDE, a
+            connector directory — can read grades without installing anything.
+          </p>
+          <Method verb="POST" path="/api/mcp" />
+          <p>
+            Point an MCP client at{" "}
+            <Inline>https://polygraph.so/api/mcp</Inline>. It serves exactly three
+            tools — <Inline>check_server</Inline>, <Inline>list_servers</Inline>,
+            and <Inline>request_grade</Inline> — the read/queue surface, and
+            nothing that runs a server&rsquo;s code. Grading is deliberately not
+            offered here: it executes the target, which has no place on a hosted,
+            anonymous endpoint. To grade a server yourself, run the open harness
+            (<Inline>npx @polygraphso/litmus</Inline>) locally.
+          </p>
+          <h3 className="font-serif text-lg text-ink mt-6 mb-2">
+            Add it to a client
+          </h3>
+          <Code>
+{`{
+  "mcpServers": {
+    "polygraph": { "url": "https://polygraph.so/api/mcp" }
+  }
+}`}
+          </Code>
+          <p className="text-sm">
+            <span className="text-ink-faint">Note · </span>the tools return the
+            same grades as the HTTP endpoints above; a{" "}
+            <Inline>not_available</Inline> result means unevaluated (neither safe
+            nor unsafe), not a failing grade. For local, one-command grading and
+            the CLI, install the{" "}
+            <a
+              href="https://github.com/polygraphso/litmus"
+              className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
+            >
+              polygraph plugin
+            </a>
+            .
+          </p>
+        </Section>
+
+        <Section num="10" label="See also" id="see-also">
           <ul className="list-none space-y-1">
             <li>
               <a
