@@ -12,6 +12,10 @@ import "server-only";
 
 import { loadBaseIndex } from "@/lib/baseIndex";
 import { loadBankrSkills, loadBankrAgents } from "@/lib/bankrIndex";
+import { loadUniswapSkills } from "@/lib/uniswapIndex";
+import { loadVirtualsIndex } from "@/lib/virtualsIndex";
+import { loadSkillsShSkills } from "@/lib/skillsShIndex";
+import { loadClawhubSkills } from "@/lib/clawhubIndex";
 import type { LitmusGrade } from "@/lib/hostedGrades";
 
 /** A trust index for one ecosystem. */
@@ -72,6 +76,70 @@ export const ECOSYSTEMS: Ecosystem[] = [
         counts: distribution(grades),
         graded: grades.filter(Boolean).length,
         summary: `${skills.length} skills · ${agents.length} agents`,
+      };
+    },
+  },
+  {
+    slug: "virtuals",
+    href: "/virtuals",
+    name: "Virtuals Protocol",
+    blurb:
+      "Behavioral grades for the MCP surface of the Virtuals agent launchpad on Base — the protocol's own commerce and framework infrastructure, and the agents launched on it.",
+    async loadStats() {
+      const entries = await loadVirtualsIndex();
+      const graded = entries.filter((e) => e.grade);
+      return {
+        counts: distribution(graded.map((e) => e.grade)),
+        graded: graded.length,
+        summary: `${graded.length} graded · ${entries.length} tracked`,
+      };
+    },
+  },
+  {
+    slug: "uniswap",
+    href: "/uniswap",
+    name: "Uniswap builder skills",
+    blurb:
+      "Static safety grades for the community “build on Uniswap” skills carried in the Bankr library — v4 hooks, trading, and client-integration helpers.",
+    async loadStats() {
+      const skills = await loadUniswapSkills();
+      const grades = skills.map((s) => s.grade);
+      return {
+        counts: distribution(grades),
+        graded: grades.filter(Boolean).length,
+        summary: `${skills.length} skills`,
+      };
+    },
+  },
+  {
+    slug: "clawhub",
+    href: "/clawhub",
+    name: "ClawHub registry",
+    blurb:
+      "Static safety grades for skills distributed through ClawHub — the malicious skills Snyk flagged (graded D under litmus-skill-v3) next to the popular ones an agent would install.",
+    async loadStats() {
+      const skills = await loadClawhubSkills();
+      const grades = skills.map((s) => s.grade);
+      return {
+        counts: distribution(grades),
+        graded: grades.filter(Boolean).length,
+        summary: `${skills.length} skills`,
+      };
+    },
+  },
+  {
+    slug: "skills-sh",
+    href: "/skills-sh",
+    name: "skills.sh directory",
+    blurb:
+      "Static safety grades for the most-installed skills on skills.sh — Vercel’s open Agent Skills directory — a behavioral A–F verdict alongside its dependency alerts.",
+    async loadStats() {
+      const skills = await loadSkillsShSkills();
+      const grades = skills.map((s) => s.grade);
+      return {
+        counts: distribution(grades),
+        graded: grades.filter(Boolean).length,
+        summary: `${skills.length} skills`,
       };
     },
   },

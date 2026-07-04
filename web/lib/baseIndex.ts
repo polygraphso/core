@@ -18,9 +18,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { decodeRef, refToPath } from "@/lib/badgeData";
 import { fetchAdoptionForServer } from "@/lib/rankings";
 import {
-  HOSTED_GRADE_COLUMNS,
-  detailFromRow,
-  type HostedGradeRow,
+  latestForTarget,
   type LitmusGrade,
   type PolygraphDetail,
 } from "@/lib/hostedGrades";
@@ -112,30 +110,6 @@ export interface GradedEntry extends BaseEntry {
   adoptionScore: number | null;
   /** Human-readable reach proxy (e.g. "23.2M npm/mo"); null when untracked, "—" when no signal. */
   adoptionSignal: string | null;
-}
-
-/** Latest grade for one `target`, any publish state, ordered by completion. */
-async function latestForTarget(
-  db: ReturnType<typeof getSupabaseAdmin>,
-  target: string,
-): Promise<{ grade: LitmusGrade; detail: PolygraphDetail; completedAt: string | null } | null> {
-  if (!db) return null;
-  // Tolerate a trailing-slash normalization difference in the stored serverRef.
-  const variants = Array.from(
-    new Set([target, target.replace(/\/+$/, ""), target.endsWith("/") ? target : `${target}/`]),
-  );
-  const { data, error } = await db
-    .from("hosted_runs")
-    .select(`${HOSTED_GRADE_COLUMNS}, completed_at`)
-    .in("target", variants)
-    .eq("status", "complete")
-    .order("completed_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error || !data) return null;
-  const res = detailFromRow(data as HostedGradeRow);
-  if (!res) return null;
-  return { ...res, completedAt: (data as { completed_at?: string | null }).completed_at ?? null };
 }
 
 /** Load every entry with its live grade (null when unconfigured/ungraded). */
