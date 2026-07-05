@@ -1,0 +1,49 @@
+{
+  "serverInfo": {
+    "name": "polygraph",
+    "version": "1.0.0"
+  },
+  "authentication": {
+    "required": false
+  },
+  "tools": [
+    {
+      "name": "check_server",
+      "description": "Read a server's published behavioral grade (A–F) from polygraph.so in under a second — no execution. The pre-flight check before recommending or installing an MCP server. On a miss it returns not_available (unevaluated — neither safe nor unsafe) with next steps.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_ref": {
+            "type": "string",
+            "description": "Registry-prefixed server ref: npm/<name>, npm/@scope/<name>, pypi/<name>, or github/<owner>/<repo>, with an optional @version. Example: npm/@modelcontextprotocol/server-filesystem"
+          }
+        },
+        "required": ["server_ref"]
+      }
+    },
+    {
+      "name": "list_servers",
+      "description": "Every MCP server that carries a published polygraph grade, sorted A-first.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "request_grade",
+      "description": "Add an ungraded MCP server to polygraph.so's public grading queue (free, best-effort). Read the result later with check_server. Only real, plausibly-MCP targets are accepted.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "server_ref": {
+            "type": "string",
+            "description": "Registry-prefixed server ref: npm/<name>, npm/@scope/<name>, pypi/<name>, or github/<owner>/<repo>, with an optional @version. Example: npm/@modelcontextprotocol/server-filesystem"
+          }
+        },
+        "required": ["server_ref"]
+      }
+    }
+  ],
+  "resources": [],
+  "prompts": []
+}
