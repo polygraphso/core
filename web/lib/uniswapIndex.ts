@@ -17,21 +17,41 @@ import "server-only";
 import { loadSkillCohort, type GradedSkill, type SkillMeta } from "@/lib/skillEcosystem";
 
 const BANKR_SKILLS_REPO = "github/BankrBot/skills";
+const UNISWAP_AI = "github/Uniswap/uniswap-ai"; // Uniswap Labs' official agent-skills monorepo
 
-/** Curated Uniswap-builder skills, split into a light trading / v4 / integration cut. */
+/** Uniswap builder skills: the official Uniswap/uniswap-ai set, community skills, and
+ *  the community "build on Uniswap" skills carried in the Bankr library. */
 const UNISWAP_SKILLS: SkillMeta[] = [
-  { name: "uniswap-trading", target: `${BANKR_SKILLS_REPO}#uniswap-trading`, cohort: "trading", featured: true },
-  { name: "uniswap-cca", target: `${BANKR_SKILLS_REPO}#uniswap-cca`, cohort: "trading" },
-  { name: "uniswap-hooks", target: `${BANKR_SKILLS_REPO}#uniswap-hooks`, cohort: "v4" },
-  { name: "uniswap-viem", target: `${BANKR_SKILLS_REPO}#uniswap-viem`, cohort: "integration" },
-  { name: "uniswap-driver", target: `${BANKR_SKILLS_REPO}#uniswap-driver`, cohort: "integration" },
+  // Official — Uniswap Labs' uniswap-ai plugins.
+  { name: "v4-hook-generator", target: `${UNISWAP_AI}#packages/plugins/uniswap-hooks/skills/v4-hook-generator`, cohort: "official", featured: true },
+  { name: "v4-security-foundations", target: `${UNISWAP_AI}#packages/plugins/uniswap-hooks/skills/v4-security-foundations`, cohort: "official" },
+  { name: "swap-planner", target: `${UNISWAP_AI}#packages/plugins/uniswap-driver/skills/swap-planner`, cohort: "official" },
+  { name: "liquidity-planner", target: `${UNISWAP_AI}#packages/plugins/uniswap-driver/skills/liquidity-planner`, cohort: "official" },
+  { name: "configurator", target: `${UNISWAP_AI}#packages/plugins/uniswap-cca/skills/configurator`, cohort: "official" },
+  { name: "deployer", target: `${UNISWAP_AI}#packages/plugins/uniswap-cca/skills/deployer`, cohort: "official" },
+  { name: "copy-trade", target: `${UNISWAP_AI}#packages/plugins/uniswap-trading-tools/skills/copy-trade`, cohort: "official" },
+  { name: "dca-bot", target: `${UNISWAP_AI}#packages/plugins/uniswap-trading-tools/skills/dca-bot`, cohort: "official" },
+  { name: "swap-integration", target: `${UNISWAP_AI}#packages/plugins/uniswap-trading/skills/swap-integration`, cohort: "official" },
+  { name: "viem-integration", target: `${UNISWAP_AI}#packages/plugins/uniswap-viem/skills/viem-integration`, cohort: "official" },
+  // Community — standalone repos.
+  { name: "uniswapV4-hooks", target: "github/igoryuzo/uniswapV4-hooks-skill", cohort: "community", note: "secure V4 hook dev" },
+  { name: "uniswap-api", target: "github/worldofhacks/uniswap-api-skill", cohort: "community", note: "Uniswap Trading API (REST)" },
+  { name: "uniswap-v4-expert", target: "github/ccashwell/evm-cortex#skills/uniswap-v4-expert", cohort: "community" },
+  { name: "ape-uniswap", target: "github/ApeWorX/skills#protocols/uniswap", cohort: "community", note: "Uniswap via ApeWorX (Python)" },
+  { name: "uniswap-v4-hooks", target: "github/cyotee/uniswap-V4-skill#skills/uniswap-v4-hooks", cohort: "community" },
+  // Bankr library — community "build on Uniswap" skills.
+  { name: "uniswap-trading", target: `${BANKR_SKILLS_REPO}#uniswap-trading`, cohort: "bankr", featured: true },
+  { name: "uniswap-cca", target: `${BANKR_SKILLS_REPO}#uniswap-cca`, cohort: "bankr" },
+  { name: "uniswap-hooks", target: `${BANKR_SKILLS_REPO}#uniswap-hooks`, cohort: "bankr" },
+  { name: "uniswap-viem", target: `${BANKR_SKILLS_REPO}#uniswap-viem`, cohort: "bankr" },
+  { name: "uniswap-driver", target: `${BANKR_SKILLS_REPO}#uniswap-driver`, cohort: "bankr" },
 ];
 
-export const UNISWAP_COHORT_ORDER = ["trading", "v4", "integration"];
+export const UNISWAP_COHORT_ORDER = ["official", "community", "bankr"];
 export const UNISWAP_COHORT_LABEL: Record<string, string> = {
-  trading: "Trading & routing",
-  v4: "v4 hooks",
-  integration: "Client integration",
+  official: "Official (Uniswap/uniswap-ai)",
+  community: "Community skills",
+  bankr: "Bankr library",
 };
 
 export async function loadUniswapSkills(): Promise<GradedSkill[]> {
