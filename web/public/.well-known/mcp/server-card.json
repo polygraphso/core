@@ -10,6 +10,10 @@
     {
       "name": "check_server",
       "description": "Read a server's published behavioral grade (A–F) from polygraph.so in under a second — no execution. The pre-flight check before recommending or installing an MCP server. On a miss it returns not_available (unevaluated — neither safe nor unsafe) with next steps.",
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -19,19 +23,68 @@
           }
         },
         "required": ["server_ref"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string", "enum": ["graded", "not_available"], "description": "Whether a published grade exists." },
+          "server_ref": { "type": "string" },
+          "grade": { "type": "string", "description": "A–F, present when status is graded." },
+          "categories": {
+            "type": "object",
+            "properties": {
+              "c01": { "type": "string" },
+              "c02": { "type": "string" },
+              "c03": { "type": "string" }
+            },
+            "description": "Per-category pass/fail, present when graded."
+          },
+          "current_version": { "type": ["string", "null"] },
+          "version_match": { "type": ["boolean", "null"] },
+          "report_url": { "type": "string" },
+          "self_grade": { "type": "string", "description": "One-command reproduce/grade, present on a miss." }
+        },
+        "required": ["status", "server_ref"]
       }
     },
     {
       "name": "list_servers",
       "description": "Every MCP server that carries a published polygraph grade, sorted A-first.",
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": true
+      },
       "inputSchema": {
         "type": "object",
         "properties": {}
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "total": { "type": "number" },
+          "servers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "server_ref": { "type": "string" },
+                "polygraph": { "type": "string" }
+              }
+            }
+          }
+        },
+        "required": ["total", "servers"]
       }
     },
     {
       "name": "request_grade",
       "description": "Add an ungraded MCP server to polygraph.so's public grading queue (free, best-effort). Read the result later with check_server. Only real, plausibly-MCP targets are accepted.",
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -41,6 +94,16 @@
           }
         },
         "required": ["server_ref"]
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "status": { "type": "string" },
+          "server_ref": { "type": "string" },
+          "created": { "type": "boolean", "description": "false if the server was already in the queue." },
+          "demand": { "type": "number", "description": "How many times this server has been requested." }
+        },
+        "required": ["status", "created", "demand"]
       }
     }
   ],

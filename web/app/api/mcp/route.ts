@@ -87,11 +87,44 @@ async function toolContext(
   return { ctx: { supabase, identity }, allowed };
 }
 
-function textResult(text: string, isError = false) {
-  return { content: [{ type: "text" as const, text }], isError };
+/** A tool error (isError) — no structuredContent; the SDK doesn't validate it. */
+function errResult(text: string) {
+  return { content: [{ type: "text" as const, text }], isError: true as const };
+}
+
+/** A successful tool result carrying both human text and schema-validated
+ *  structuredContent (declared via each tool's outputSchema). */
+function dataResult(text: string, structuredContent: Record<string, unknown>) {
+  return { content: [{ type: "text" as const, text }], structuredContent };
 }
 
 const TOO_MANY = "Too many requests. Please slow down and try again shortly.";
+
+// Output schemas — declared so clients (and directories) get typed results, not
+// just prose. Kept permissive where a tool has more than one success shape.
+const CHECK_OUTPUT = {
+  status: z.enum(["graded", "not_available"]).describe("Whether a published grade exists."),
+  server_ref: z.string(),
+  grade: z.string().optional().describe("A–F, present when status is graded."),
+  categories: z
+    .object({ c01: z.string(), c02: z.string(), c03: z.string() })
+    .optional()
+    .describe("Per-category pass/fail, present when graded."),
+  current_version: z.string().nullable().optional(),
+  version_match: z.boolean().nullable().optional(),
+  report_url: z.string().optional(),
+  self_grade: z.string().optional().describe("One-command reproduce/grade, present on a miss."),
+};
+const LIST_OUTPUT = {
+  total: z.number(),
+  servers: z.array(z.object({ server_ref: z.string(), polygraph: z.string() })),
+};
+const REQUEST_OUTPUT = {
+  status: z.literal("queued"),
+  server_ref: z.string(),
+  created: z.boolean().describe("false if the server was already in the queue."),
+  demand: z.number().describe("How many times this server has been requested."),
+};
 
 function registerTools(server: McpServer): void {
   server.registerTool(
@@ -103,25 +136,37 @@ function registerTools(server: McpServer): void {
         "no execution. The pre-flight check before recommending or installing an MCP server. On a " +
         "miss it returns not_available (unevaluated — neither safe nor unsafe) with next steps.",
       inputSchema: { server_ref: z.string().min(1).max(512).describe(SERVER_REF_DESC) },
+      outputSchema: CHECK_OUTPUT,
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ server_ref }) => {
       const c = await toolContext(server, "mcp-check", { max: 60, windowSeconds: 60 });
-      if ("error" in c) return textResult(c.error, true);
-      if (!c.allowed) return textResult(TOO_MANY, true);
+      if ("error" in c) return errResult(c.error);
+      if (!c.allowed) return errResult(TOO_MANY);
       const r = await runCheck(server_ref, c.ctx);
-      if (r.status === "error") return textResult(r.error, true);
+      if (r.status === "error") return errResult(r.error);
       if (r.status === "not_available") {
-        return textResult(
+        return dataResult(
           `${server_ref}: not_available — unevaluated (neither safe nor unsafe). ` +
             `Add it to the public queue with request_grade, or grade it yourself: ${r.self_grade}`,
+          { status: "not_available", server_ref, report_url: r.notify_url, self_grade: r.self_grade },
         );
       }
       const d = r.polygraph_detail;
       const cats = `C-01 ${d.c01} · C-02 ${d.c02} · C-03 ${d.c03}`;
       const ver = r.version_match === false ? ` (graded ${d.resolved_version}, not the current version)` : "";
-      return textResult(
+      return dataResult(
         `${server_ref}: grade ${r.polygraph}${ver}. ${cats}. ` +
           `Report: https://polygraph.so/mcp/${server_ref}. A grade is a measurement, not a guarantee — reproduce it with the open harness.`,
+        {
+          status: "graded",
+          server_ref,
+          grade: r.polygraph,
+          categories: { c01: d.c01, c02: d.c02, c03: d.c03 },
+          current_version: r.current_version,
+          version_match: r.version_match,
+          report_url: `https://polygraph.so/mcp/${server_ref}`,
+        },
       );
     },
   );
@@ -131,15 +176,20 @@ function registerTools(server: McpServer): void {
     {
       title: "List servers with a published grade",
       description: "Every MCP server that carries a published polygraph grade, sorted A-first.",
+      outputSchema: LIST_OUTPUT,
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async () => {
       const c = await toolContext(server, "mcp-list", { max: 60, windowSeconds: 60 });
-      if ("error" in c) return textResult(c.error, true);
-      if (!c.allowed) return textResult(TOO_MANY, true);
+      if ("error" in c) return errResult(c.error);
+      if (!c.allowed) return errResult(TOO_MANY);
       const r = await runList(c.ctx);
-      if (r.total === 0) return textResult("No servers have a published grade yet.");
-      const lines = r.servers.map((s) => `${s.polygraph}  ${s.server_ref}`).join("\n");
-      return textResult(`${r.total} graded server${r.total === 1 ? "" : "s"}:\n${lines}`);
+      const text =
+        r.total === 0
+          ? "No servers have a published grade yet."
+          : `${r.total} graded server${r.total === 1 ? "" : "s"}:\n` +
+            r.servers.map((s) => `${s.polygraph}  ${s.server_ref}`).join("\n");
+      return dataResult(text, { total: r.total, servers: r.servers });
     },
   );
 
@@ -151,17 +201,20 @@ function registerTools(server: McpServer): void {
         "Add an ungraded MCP server to polygraph.so's public grading queue (free, best-effort). " +
         "Read the result later with check_server. Only real, plausibly-MCP targets are accepted.",
       inputSchema: { server_ref: z.string().min(1).max(512).describe(SERVER_REF_DESC) },
+      outputSchema: REQUEST_OUTPUT,
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     },
     async ({ server_ref }) => {
       const c = await toolContext(server, "mcp-grade-request", { max: 20, windowSeconds: 60 });
-      if ("error" in c) return textResult(c.error, true);
-      if (!c.allowed) return textResult(TOO_MANY, true);
+      if ("error" in c) return errResult(c.error);
+      if (!c.allowed) return errResult(TOO_MANY);
       const r = await runGradeRequest({ serverRef: server_ref }, c.ctx);
-      if (r.status === "error") return textResult(r.error, true);
+      if (r.status === "error") return errResult(r.error);
       const lead = r.created ? "Queued" : "Already queued";
-      return textResult(
+      return dataResult(
         `${lead}: ${server_ref} (${r.demand} request${r.demand === 1 ? "" : "s"} so far). ` +
           `Check back with check_server.`,
+        { status: "queued", server_ref, created: r.created, demand: r.demand },
       );
     },
   );
