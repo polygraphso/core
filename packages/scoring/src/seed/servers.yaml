@@ -168,3 +168,60 @@ servers:
   - { registry: npm, owner: "@sanity", name: mcp-server }
   - { registry: npm, owner: "@elastic", name: mcp-server-elasticsearch }
   - { registry: npm,                               name: mcp-server-kubernetes }
+
+  # ── High-adoption servers from the Glama catalog, ranked by npm downloads,
+  #    added 2026-07-06 to widen the graded index toward 100 (many are
+  #    credential-gated and will show as ungradeable) ──────────────────────
+  - { registry: npm, owner: "@gongrzhe", name: server-gmail-autoauth-mcp }
+  - { registry: npm, owner: "@benborla29", name: mcp-server-mysql }
+  - { registry: npm, owner: "@bytebase", name: dbhub }
+  - { registry: npm, owner: "@apify", name: actors-mcp-server }
+  - { registry: npm, owner: "@negokaz", name: excel-mcp-server }
+  - { registry: npm, owner: "@browserbasehq", name: mcp }
+  - { registry: npm, owner: "@brave", name: brave-search-mcp-server }
+  - { registry: npm, owner: "@hubspot", name: mcp-server }
+  - { registry: npm, owner: "@cocal", name: google-calendar-mcp }
+  - { registry: npm, owner: "@automattic", name: mcp-wordpress-remote }
+  - { registry: npm, owner: "@netlify", name: mcp }
+  - { registry: npm, owner: "@coingecko", name: coingecko-typescript }
+  - { registry: npm, owner: "@dynatrace-oss", name: dynatrace-mcp-server }
+  - { registry: npm, owner: "@alchemy", name: mcp-server }
+  - { registry: npm, owner: "@mastergo", name: magic-mcp }
+  - { registry: npm, owner: "@juspay", name: neurolink }
+  - { registry: npm, owner: "@microsoft", name: clarity-mcp-server }
+  - { registry: npm, owner: "@mondaydotcomorg", name: monday-api-mcp }
+  - { registry: npm, owner: "@midscene", name: mcp }
+  - { registry: npm, owner: "@jpisnice", name: shadcn-ui-mcp-server }
+  - { registry: npm, owner: "@digitalocean", name: mcp }
+  - { registry: npm, owner: "@doist", name: todoist-mcp }
+  - { registry: npm, owner: "@coding-solo", name: godot-mcp }
+  - { registry: npm, owner: "@kazuph", name: mcp-fetch }
+  - { registry: npm, owner: "@mzxrai", name: mcp-webresearch }
+  - { registry: npm, owner: "@masonator", name: coolify-mcp }
+  - { registry: npm, owner: "@gannonh", name: firebase-mcp }
+  - { registry: npm, owner: "@merill", name: lokka }
+  - { registry: npm, owner: "@aindreyway", name: mcp-codex-keeper }
+  - { registry: npm, owner: "@jetbrains", name: mcp-proxy }
+  - { registry: npm, owner: "@dollhousemcp", name: mcp-server }
+  - { registry: npm, owner: "@ergut", name: mcp-bigquery-server }
+  - { registry: npm, owner: "@kimtaeyoon83", name: mcp-server-youtube-transcript }
+  - { registry: npm, owner: "@insforge", name: mcp }
+  - { registry: npm, owner: "@aaronsb", name: google-workspace-mcp }
+  - { registry: npm, owner: "@angiejones", name: mcp-selenium }
+  - { registry: npm, owner: "@jango-blockchained", name: homeassistant-mcp }
+  - { registry: npm, owner: "@enescinar", name: twitter-mcp }
+  - { registry: npm, owner: "@coingecko", name: coingecko-mcp }
+  - { registry: npm, owner: "@abhiz123", name: todoist-mcp-server }
+  - { registry: npm, owner: "@activecampaign", name: postmark-mcp }
+  - { registry: npm, owner: "@kazuph", name: mcp-taskmanager }
+  - { registry: npm, owner: "@goplausible", name: algorand-mcp }
+  - { registry: npm, owner: "@f4ww4z", name: mcp-mysql-server }
+  - { registry: npm, owner: "@adenot", name: mcp-google-search }
+  - { registry: npm, owner: "@1mcp", name: agent }
+  - { registry: npm, owner: "@glifxyz", name: glif-mcp-server }
+  - { registry: npm, owner: "@automatalabs", name: mcp-server-playwright }
+  - { registry: npm, owner: "@h1deya", name: mcp-server-weather }
+  - { registry: npm, name: ollama-mcp }
+  - { registry: npm, name: repomix }
+  - { registry: npm, name: n8n-mcp }
+  - { registry: npm, name: coda-mcp }
