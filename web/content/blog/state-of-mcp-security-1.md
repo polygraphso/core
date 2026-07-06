@@ -43,6 +43,8 @@ It does not mean "safe." A server can detect a test context and behave (the disc
 
 ## What's next
 
-The corpus grows in adoption order, and re-grades follow version changes. If you maintain a graded server, the report page has your badge and your full findings — free, no account. If you run an ecosystem whose users install these things — a registry, a marketplace, an agent platform — continuous monitoring of your surface is the service we sell; the index you are reading is the free, public layer.
+The corpus grows in adoption order, and re-grades follow version changes. If you maintain a graded server, the report page has your badge and your full findings — free, no account.
+
+**Run an ecosystem whose users install these things** — a registry, a marketplace, an agent platform, a wallet? The public index you're reading is the free, point-in-time layer. Continuous monitoring of *your* surface — every listed server and skill re-graded on a schedule, tool-surface drift caught the day it happens, a private dashboard, an alert channel — is what we operate for networks. [See how ecosystem monitoring works →](/ecosystems)
 
 The data: [the index](/mcp-index) · [the methodology](/methodology) · [the open harness](https://github.com/polygraphso/litmus).
