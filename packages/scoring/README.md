@@ -7,7 +7,7 @@ Daily adoption-signal pipeline for MCP servers. Lifts behaviors from the proven 
 Live. All adapters (npm, pypi, github, OpenSSF, Glama, Smithery, deps.dev) ship, the
 compute/rank/tier pass and the `LISTEN/NOTIFY` emit are wired, and the daily ranking runs on a
 **GitHub Actions cron** (`.github/workflows/score.yml`, 06:17 UTC; `workflow_dispatch` for
-manual runs). The public **MCP Security Index** (`/rankings` on polygraph.so) reads the latest
+manual runs). The public **MCP Security Index** (`/index` on polygraph.so) reads the latest
 `adoption_scores` for its ordering; adoption is the ordering/coverage axis, not a published grade.
 
 ## Setup

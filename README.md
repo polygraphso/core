@@ -7,7 +7,7 @@ Source-of-truth code repo for **polygraph.so** — independent, lab-evaluated tr
 ```
 core/
 ├── web/              # the polygraph.so site (Next.js 16, App Router): landing, the MCP
-│                     #   Security Index (/rankings), per-server (/mcp) & per-skill (/skill)
+│                     #   Security Index (/index), per-server (/mcp) & per-skill (/skill)
 │                     #   grade reports, ecosystem indices (/bankr, /base), blog, brand kit,
 │                     #   API docs, and the embeddable grade badge/card (/api/badge)
 ├── packages/

@@ -1,4 +1,4 @@
-// web/app/rankings/page.tsx
+// web/app/(public)/index/page.tsx
 import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import {
@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: "The MCP Security Index",
   description:
     "MCP servers and Agent Skills graded with the open litmus harness — servers for behavior (ranked by adoption), skills for static safety. A grade is a measurement, not a guarantee; re-run it yourself.",
-  alternates: { canonical: "/rankings" },
+  alternates: { canonical: "/index" },
 };
 
 // Re-render at most every 10 min; a fresh score run or regrade surfaces within the window.

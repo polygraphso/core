@@ -222,7 +222,7 @@ export default async function BankrIndexPage() {
             heading="Monitor the Bankr skill marketplace."
             body="This index is a snapshot. We re-grade Bankr's skills and agent MCP servers on a cadence and flag regressions — a dropped grade, a newly failing check, a changed tool surface — as the marketplace ships. Set up per network."
             mailtoSubject="Monitor the Bankr ecosystem with polygraph"
-            secondaryHref="/rankings"
+            secondaryHref="/index"
             secondaryLabel="See the full index"
           />
         </section>
