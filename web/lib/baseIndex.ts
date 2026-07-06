@@ -95,6 +95,12 @@ export const BASE_ENTRIES: BaseEntry[] = [
   { project: "Blockscout", handle: "blockscoutcom", category: "block explorer", group: "data-infra", party: "first", ownMcp: true, mcpRef: "https://mcp.blockscout.com/mcp", target: "https://mcp.blockscout.com/mcp", pending: null },
   { project: "Pyth", handle: "PythNetwork", category: "price oracle", group: "data-infra", party: "first", ownMcp: true, mcpRef: "https://mcp.pyth.network/mcp", target: "https://mcp.pyth.network/mcp", pending: null },
   { project: "evm-mcp-server", handle: "", category: "generic EVM (reads)", group: "data-infra", party: "third", ownMcp: true, mcpRef: "npm/@mcpdotdirect/evm-mcp-server", target: "npm/@mcpdotdirect/evm-mcp-server", pending: null },
+  // github-only servers (no npm/pypi), graded from source now that github grading is live.
+  { project: "Honeypot Detector", handle: "", category: "honeypot token scanner", group: "data-infra", party: "third", ownMcp: true, mcpRef: "github/kukapay/honeypot-detector-mcp", target: "github/kukapay/honeypot-detector-mcp", pending: null, note: "github-only; honeypot.is (Base + EVM)" },
+  { project: "Liquidity Pools", handle: "", category: "DEX pool data", group: "data-infra", party: "third", ownMcp: true, mcpRef: "github/kukapay/liquidity-pools-mcp", target: "github/kukapay/liquidity-pools-mcp", pending: null, note: "github-only; DexScreener" },
+  { project: "Chainlist", handle: "", category: "EVM chain metadata", group: "data-infra", party: "third", ownMcp: true, mcpRef: "github/kukapay/chainlist-mcp", target: "github/kukapay/chainlist-mcp", pending: null, note: "github-only; chainlist.org" },
+  { project: "Bridge Metrics", handle: "", category: "cross-chain bridge metrics", group: "data-infra", party: "third", ownMcp: true, mcpRef: "github/kukapay/bridge-metrics-mcp", target: "github/kukapay/bridge-metrics-mcp", pending: null, note: "github-only; DefiLlama" },
+  { project: "DAO Proposals", handle: "", category: "DAO governance feed", group: "data-infra", party: "third", ownMcp: true, mcpRef: "github/kukapay/dao-proposals-mcp", target: "github/kukapay/dao-proposals-mcp", pending: null, note: "github-only; Snapshot" },
 
   // ---------------- Coinbase / Base first-party ----------------
   { project: "CDP Docs", handle: "CoinbaseDev", category: "developer-docs search", group: "coinbase", party: "first", ownMcp: true, mcpRef: "https://docs.cdp.coinbase.com/mcp", target: "https://docs.cdp.coinbase.com/mcp", pending: null },
