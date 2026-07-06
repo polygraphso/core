@@ -11,7 +11,7 @@
  * app/mcp/[...ref]/page.tsx) — and the operational/private routes (admin,
  * dashboard, the ecosystem sales decks), which carry their own `noindex`.
  *
- * ISR-cached like /rankings: a freshly published grade surfaces within 10 min.
+ * ISR-cached like /mcp-index: a freshly published grade surfaces within 10 min.
  */
 import type { MetadataRoute } from "next";
 import { getSupabaseAdmin } from "@/lib/supabase";
@@ -22,13 +22,13 @@ import { getAllPosts } from "@/lib/blog";
 
 const ORIGIN = "https://polygraph.so";
 
-// Match /rankings: a newly published grade or skill should appear within 10 min.
+// Match /mcp-index: a newly published grade or skill should appear within 10 min.
 export const revalidate = 600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = [
     { url: `${ORIGIN}/`, changeFrequency: "daily", priority: 1 },
-    { url: `${ORIGIN}/rankings`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${ORIGIN}/mcp-index`, changeFrequency: "daily", priority: 0.9 },
     { url: `${ORIGIN}/methodology`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${ORIGIN}/docs/api`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${ORIGIN}/request`, changeFrequency: "monthly", priority: 0.5 },

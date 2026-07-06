@@ -146,3 +146,25 @@ servers:
   - { registry: npm,                               name: defillama-mcp }
   - { registry: npm, owner: "@mcpdotdirect", name: evm-mcp-server }
   - { registry: github, owner: "KyberNetwork", name: kyberswap-mcp }
+  # github-only kukapay data servers (graded on /base) — adoption from repo stars.
+  - { registry: github, owner: "kukapay", name: honeypot-detector-mcp }
+  - { registry: github, owner: "kukapay", name: liquidity-pools-mcp }
+  - { registry: github, owner: "kukapay", name: chainlist-mcp }
+  - { registry: github, owner: "kukapay", name: dao-proposals-mcp }
+  - { registry: github, owner: "kukapay", name: bridge-metrics-mcp }
+
+  # ── High-adoption third-party servers added 2026-07-06 to widen the tracked
+  #    universe past 100 (verified live on npm at add time) ──────────────────
+  - { registry: npm,                               name: firecrawl-mcp }
+  - { registry: npm,                               name: tavily-mcp }
+  - { registry: npm, owner: "@wonderwhy-er", name: desktop-commander }
+  - { registry: npm, owner: "@modelcontextprotocol", name: server-sequential-thinking }
+  - { registry: npm,                               name: figma-developer-mcp }
+  - { registry: npm, owner: "@browserbasehq", name: mcp-server-browserbase }
+  - { registry: npm, owner: "@21st-dev", name: magic }
+  - { registry: npm, owner: "@antv", name: mcp-server-chart }
+  - { registry: npm,                               name: exa-mcp-server }
+  - { registry: npm, owner: "@executeautomation", name: playwright-mcp-server }
+  - { registry: npm, owner: "@sanity", name: mcp-server }
+  - { registry: npm, owner: "@elastic", name: mcp-server-elasticsearch }
+  - { registry: npm,                               name: mcp-server-kubernetes }

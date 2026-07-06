@@ -140,7 +140,7 @@ export default async function DashboardPage() {
           </div>
           <div className="shrink-0 flex flex-col items-end gap-2">
             <a
-              href="/rankings"
+              href="/mcp-index"
               className="font-mono text-[11px] uppercase tracking-widest text-ink-muted hover:text-ink transition-colors border-b hairline border-dotted"
             >
               Browse grades →

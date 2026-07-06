@@ -1,4 +1,4 @@
-// web/app/rankings/page.tsx
+// web/app/(public)/mcp-index/page.tsx
 import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import {
@@ -17,15 +17,15 @@ export const metadata: Metadata = {
   title: "The MCP Security Index",
   description:
     "MCP servers and Agent Skills graded with the open litmus harness — servers for behavior (ranked by adoption), skills for static safety. A grade is a measurement, not a guarantee; re-run it yourself.",
-  alternates: { canonical: "/rankings" },
+  alternates: { canonical: "/mcp-index" },
 };
 
 // Re-render at most every 10 min; a fresh score run or regrade surfaces within the window.
 export const revalidate = 600;
 
-// Upper bound on the adoption universe we pull. We keep the whole set — graded
-// servers show their grade, ungraded ones a "request" CTA in their adoption slot.
-// Comfortably covers the full scored set (~91 today).
+// Upper bound on the adoption universe we pull. We pull the whole scored set and
+// then keep only the servers that carry a published grade (see below), so this
+// just needs to comfortably cover the full set (~120 today).
 const ADOPTION_UNIVERSE = 200;
 
 export default async function RankingsPage() {
@@ -45,11 +45,16 @@ export default async function RankingsPage() {
     skillRows = skills;
     // Newest score timestamp across the ranked set — ISO strings compare lexically.
     lastRefreshed = ranked.reduce((max, r) => (r.computedAt > max ? r.computedAt : max), "");
-    // Keep EVERY adoption-ranked server. mergeRankings already carries the true
-    // adoption rank, so an ungraded #3 stays #3 (rendered as a "request" CTA)
-    // rather than hidden — the most-adopted ungraded servers are exactly the
-    // ones worth surfacing, not dropping.
-    const registryRows = mergeRankings(ranked, grades);
+    // Show only servers that carry a published grade. Most of the adoption
+    // universe can't be graded from a public reference — servers that need an
+    // API key or a local runtime just to boot (slack, postgres, figma, …) would
+    // otherwise fill the table with dead "request" rows. The top-of-page
+    // "Request a grade" CTA still covers anything ungraded. Ordered by adoption —
+    // filter, don't re-sort — then renumber the survivors 1..N so the rank column
+    // reads cleanly.
+    const registryRows = mergeRankings(ranked, grades)
+      .filter((r) => r.grade !== null)
+      .map((r, i) => ({ ...r, rank: i + 1 }));
     // Remote/hosted endpoints carry no adoption rank — append them after the
     // adoption-ranked registry servers (the table shows "—" for their rank + adoption).
     const remoteRows = remote.map((r, i) => ({ ...r, rank: registryRows.length + i + 1 }));

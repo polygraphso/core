@@ -190,7 +190,12 @@ async function scrapeGithubServer(server: ServerRow): Promise<ServerScrape> {
     registry: "github",
     owner: server.owner,
     name: server.name,
-    latest_version: null, // version detection for github-only refs is a future concern
+    // github-only servers have no package version, so use the repo's last-push date
+    // as a synthetic version — enough to give them a `versions` row and an
+    // adoption_scores row (adoption is repo-level: github stars/forks). Without this
+    // they're skipped ("no version detected") and their adoption column stays "—".
+    // Falls back to a "HEAD" sentinel if the github fetch degraded to null.
+    latest_version: github?.last_push_at ?? "HEAD",
     snapshot: {
       server_id: server.id,
       github_repo_key: `${server.owner.toLowerCase()}/${server.name.toLowerCase()}`,

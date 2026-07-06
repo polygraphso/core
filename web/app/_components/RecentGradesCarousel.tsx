@@ -100,7 +100,7 @@ export function RecentGradesCarousel({ runs }: { runs: Run[] }) {
 
       <div className="mb-5 flex items-center justify-between gap-4">
         <a
-          href="/rankings"
+          href="/mcp-index"
           className="font-mono text-[12px] text-ink border-b hairline border-dotted hover:text-oxblood transition-colors"
         >
           See all grades →
