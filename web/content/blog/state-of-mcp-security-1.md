@@ -8,14 +8,14 @@ excerpt: "As of July 2026, we ran an open behavioral harness across the most-ado
 
 ## The corpus
 
-We track the most-adopted MCP servers — 235 today — and grade every one we can actually launch. How we assemble that ranking is the next section. As of this edition the index carries **105 published grades**:
+We track the most-adopted MCP servers — 235 today — and grade every one we can actually launch. How we assemble that ranking is the next section. As of this edition the index carries **119 published grades**:
 
-- **92 servers graded for behavior: 90 A, 2 D.** Of the top 50 by adoption, 25 carry a grade; of the top 100, 46 do.
+- **106 servers graded for behavior: 104 A, 2 D.** Of the top 50 by adoption, 25 carry a grade; of the top 100, 50 do.
 - **13 remote (`https://`) MCP endpoints, all B.** That is a ceiling, not a score: a remote server's code can change server-side at any moment after grading, so the methodology caps what a point-in-time run can honestly claim. The published tool-surface fingerprint is the tripwire — if the server's tools change after grading, the recheck fails and the grade no longer applies.
 
 ### The limitation worth stating plainly: the most-adopted servers are the hardest to grade
 
-The harness launches a server exactly the way an agent's config would — from a bare package reference — and the biggest names refuse to boot without credentials. Supabase, GitHub, Slack, Notion, Stripe, the database and cloud connectors: each needs an API key, an OAuth token, or a connection string just to start. We won't fabricate those, so these servers show as **ungraded** — a disclosed state, explicitly *not* graded-and-safe. That is why only 46 of the top 100 carry a grade: the ceiling on coverage is authentication, not effort. The published set therefore skews toward servers that run without secrets — a real and growing sample, not a census of the ecosystem. Grading credential-gated servers, with test credentials supplied by their maintainers, is on the roadmap and is the single biggest lever on coverage.
+The harness launches a server exactly the way an agent's config would — from a bare package reference — and the biggest names refuse to boot without credentials. Supabase, GitHub, Slack, Notion, Stripe, the database and cloud connectors: each needs an API key, an OAuth token, or a connection string just to start. We won't fabricate those, so these servers show as **ungraded** — a disclosed state, explicitly *not* graded-and-safe. That is why only 50 of the top 100 carry a grade: the ceiling on coverage is authentication, not effort. The published set therefore skews toward servers that run without secrets — a real and growing sample, not a census of the ecosystem. Grading credential-gated servers, with test credentials supplied by their maintainers, is on the roadmap and is the single biggest lever on coverage.
 
 ## Where the list comes from
 
@@ -25,7 +25,7 @@ That tracked set is a curated seed we grow deliberately, not a scrape of every p
 
 The gap between the *tracked* count and the *graded* count is the credential wall described above: the servers we can't boot from a bare ref stay ungraded until we can. That is the honest coverage line — a floor we report openly, not a ceiling we hide behind. This is edition #1; the number climbs from here.
 
-## Reading "90 A · 2 D" honestly
+## Reading "104 A · 2 D" honestly
 
 Two things should make a reader suspicious of a distribution that is almost all A's, and both deserve daylight.
 
