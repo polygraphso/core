@@ -45,4 +45,4 @@ It does not mean "safe." A server can detect a test context and behave (the disc
 
 The corpus grows in adoption order, and re-grades follow version changes. If you maintain a graded server, the report page has your badge and your full findings — free, no account. If you run an ecosystem whose users install these things — a registry, a marketplace, an agent platform — continuous monitoring of your surface is the service we sell; the index you are reading is the free, public layer.
 
-The data: [the index](/rankings) · [the methodology](/methodology) · [the open harness](https://github.com/polygraphso/litmus).
+The data: [the index](/mcp-index) · [the methodology](/methodology) · [the open harness](https://github.com/polygraphso/litmus).
