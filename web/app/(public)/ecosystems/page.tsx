@@ -285,7 +285,7 @@ export default async function EcosystemsPage() {
         <p className="mt-12 font-mono text-[11px] text-ink-faint leading-relaxed border-t hairline pt-5">
           Every grade is behavioral and reproducible — re-run the open harness against the same ref
           to check it. See the full{" "}
-          <Link href="/rankings" className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">
+          <Link href="/index" className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">
             MCP Security Index
           </Link>
           .

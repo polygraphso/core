@@ -348,7 +348,7 @@ function NoTarget() {
         <span className="font-mono text-[13px] text-ink">How to fix this</span> link on any non-A
         server or skill report — for example a{" "}
         <Link
-          href="/rankings"
+          href="/index"
           className="text-ink border-b hairline border-dotted hover:text-oxblood transition-colors"
         >
           ranked server
