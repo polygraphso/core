@@ -286,3 +286,20 @@ servers:
   - { registry: npm, owner: "@jwalsh", name: mcp-server-qrcode }
   - { registry: npm, owner: "@rtuin", name: mcp-mermaid-validator }
   - { registry: npm, owner: "@peng-shawn", name: mermaid-mcp-server }
+
+  # ── Bootable simple servers (verified npm bin) seeded 2026-07-06 for index coverage ──
+  - { registry: npm, name: mcp-server-commands }
+  - { registry: npm, name: time-mcp }
+  - { registry: npm, name: mcp-datetime }
+  - { registry: npm, name: chess-mcp }
+  - { registry: npm, name: mcp-graphql }
+  - { registry: npm, name: duckduckgo-mcp-server }
+  - { registry: npm, name: open-meteo-mcp-weather-server }
+  - { registry: npm, name: yahoo-finance-mcp-server }
+  - { registry: npm, name: coincap-mcp }
+  - { registry: npm, name: dexpaprika-mcp }
+  - { registry: npm, name: mcp-server-fear-greed }
+  - { registry: npm, name: open-websearch }
+  - { registry: npm, name: one-search-mcp }
+  - { registry: npm, owner: "@bujaayjaay", name: mcp-coincap-jj }
+  - { registry: npm, owner: "@shinzolabs", name: coinmarketcap-mcp }
