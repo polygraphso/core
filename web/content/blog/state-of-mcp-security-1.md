@@ -1,37 +1,39 @@
 ---
 title: "State of MCP Security #1: what running the top 100 MCP servers actually shows"
 date: "2026-07-06"
-excerpt: "As of July 2026, we ran an open behavioral harness against every one of the 100 most-adopted MCP servers. Here's what came back — including the servers we couldn't grade and the grades we got wrong along the way."
+excerpt: "As of July 2026, we ran an open behavioral harness across the most-adopted MCP servers. Here's what came back — including the servers we couldn't grade, and why the biggest names are the hardest to reach."
 ---
 
-**As of early July 2026.** We ran an open behavioral harness against every one of the 100 most-adopted MCP servers. Here is what came back — including the servers we couldn't grade, the grades we got wrong along the way, and what an "A" does and doesn't mean.
+**As of early July 2026.** We ran an open behavioral harness across the most-adopted MCP servers we track. Here is what came back — including the servers we couldn't grade, the grades we got wrong along the way, and what an "A" does and doesn't mean.
 
 ## The corpus
 
-The universe is the 110 most-adopted MCP servers we track; how we assemble that list is the next section. This edition reports on the top 100 of them, all run against the harness. The outcomes:
+We track the most-adopted MCP servers — 235 today — and grade every one we can actually launch. How we assemble that ranking is the next section. As of this edition the index carries **105 published grades**:
 
-- **58 of the top 100 carry a published grade: 57 A, 1 D.** Of the top 50 by adoption, 36 are graded.
-- **The other ~42 mostly cannot be graded from a bare package ref** — the harness launches a server exactly the way an agent's config would, and these fail to boot without credentials or extra arguments (a Supabase access token, a Slack bot token, a database connection string), or turn out not to be standalone MCP servers at all. Their rows say so; "ungradeable" is a disclosed state, not a blank, and the set shrinks as we learn to boot more of them.
+- **92 servers graded for behavior: 90 A, 2 D.** Of the top 50 by adoption, 25 carry a grade; of the top 100, 46 do.
+- **13 remote (`https://`) MCP endpoints, all B.** That is a ceiling, not a score: a remote server's code can change server-side at any moment after grading, so the methodology caps what a point-in-time run can honestly claim. The published tool-surface fingerprint is the tripwire — if the server's tools change after grading, the recheck fails and the grade no longer applies.
 
-Separately from the registry corpus: **13 remote (`https://`) MCP endpoints carry published grades — all B.** That is a ceiling, not a score: a remote server's code can change server-side at any moment after grading, so the methodology caps what a point-in-time run can honestly claim. The tool-surface fingerprint published with each grade is the tripwire — if the server's tools change after grading, the recheck fails and the grade no longer applies.
+### The limitation worth stating plainly: the most-adopted servers are the hardest to grade
+
+The harness launches a server exactly the way an agent's config would — from a bare package reference — and the biggest names refuse to boot without credentials. Supabase, GitHub, Slack, Notion, Stripe, the database and cloud connectors: each needs an API key, an OAuth token, or a connection string just to start. We won't fabricate those, so these servers show as **ungraded** — a disclosed state, explicitly *not* graded-and-safe. That is why only 46 of the top 100 carry a grade: the ceiling on coverage is authentication, not effort. The published set therefore skews toward servers that run without secrets — a real and growing sample, not a census of the ecosystem. Grading credential-gated servers, with test credentials supplied by their maintainers, is on the roadmap and is the single biggest lever on coverage.
 
 ## Where the list comes from
 
 MCP has no central download counter, so there is no off-the-shelf "top 100" to pull down and grade. We assemble the ranking ourselves: a daily pipeline scores every server we track on the signals that actually exist — npm and PyPI download counts, GitHub activity, OpenSSF scorecards, and presence in the Glama and Smithery registries — and orders them by adoption. Adoption decides only *what we test and in what order*; it is never part of a grade.
 
-That tracked set is a curated seed we grow deliberately, not a scrape of every package with "mcp" in its name (there are tens of thousands of those, most of them empty shells, forks, or abandoned experiments). It stands at 110 today and climbs every week. So read "top 100 most-adopted" as a working sample of what people actually install, not a census of the ecosystem.
+That tracked set is a curated seed we grow deliberately, not a scrape of every package with "mcp" in its name (there are tens of thousands of those, most of them empty shells, forks, or abandoned experiments). It stands at 235 today and climbs every week. So read the ranking as a working sample of what people actually install, not a census of the ecosystem.
 
-One thing then holds the *graded* count below the *tracked* count: roughly 42 of the top 100 will not boot from a bare ref (below), mostly the big credential-gated names. That is the honest coverage line — a floor we report openly, not a ceiling we hide behind. This is edition #1; the number climbs from here.
+The gap between the *tracked* count and the *graded* count is the credential wall described above: the servers we can't boot from a bare ref stay ungraded until we can. That is the honest coverage line — a floor we report openly, not a ceiling we hide behind. This is edition #1; the number climbs from here.
 
-## Reading "57 A · 1 D" honestly
+## Reading "90 A · 2 D" honestly
 
-Two things should make a reader suspicious of a clean distribution, and both deserve daylight.
+Two things should make a reader suspicious of a distribution that is almost all A's, and both deserve daylight.
 
-First, survivorship: the ~42% that wouldn't boot includes most of the big credential-gated names. The published distribution describes the servers that *can* be exercised from a bare ref — a real and growing set, but not the whole ecosystem.
+First, survivorship — the credential wall again. The servers that won't boot from a bare ref include most of the big names, so the graded set skews toward servers that run without secrets: focused, self-contained tools that are simply easier to get an A on than a sprawling cloud connector would be. A clean distribution over *this* sample is not a clean bill of health for the ecosystem.
 
 Second, and more telling, our own error rate — because the most interesting thing that happened while assembling this edition was catching one of our own false positives. Re-running the whole set on the current methodology, two well-known servers came back D on a check they should have passed: `@mcpdotdirect/evm-mcp-server` and `@adeu/mcp-server`. Both were doing the *right* thing — safely rejecting a jailbreak we fed their tools, then quoting the rejected input back in an error message — and the harness mis-read that echo as the server *amplifying* the attack. So we stopped, fixed the adversarial-input check so a rejection-frame echo no longer trips it, shipped it as **litmus-v14**, and both servers moved D→A. It's the fifth such fix in the series: Playwright's MCP server and raven-mcp moved F→A under v7 when it stopped mis-reading instruction-like documentation; `mcp-server-fetch` and `armor-mcp` moved D→A under v12. We publish these corrections rather than quietly replacing rows — a rating whose failure modes are hidden is not a measurement.
 
-The fix cut the false positive without touching the real findings. The one published D, `@wildcard-ai/deepcontext`, survived the re-run: it genuinely crashes on malformed input (a different adversarial-input failure, not an echo), and it has graded D consistently from v7 through v14. We also held a grade back rather than publish it: the official `@modelcontextprotocol/server-everything` reference server trips the data-leak check because its demo `get-env` tool returns the environment by design — a debatable case on a server built to showcase features, not one we're comfortable publishing as an F.
+The fix cut the false positives without touching the real findings. Both published D's survived every re-run: `@wildcard-ai/deepcontext` and `@jpisnice/shadcn-ui-mcp-server` each genuinely crash on malformed input (a real robustness failure, not an echo the mask should have caught), and deepcontext has graded D consistently from v7 through v14. And we held two grades *back* rather than publish a likely false positive: the official `@modelcontextprotocol/server-everything` reference server trips the data-leak check because its demo `get-env` tool returns the environment by design, and `it-tools-mcp` tripped the injection check only because its word-frequency counter faithfully counted the hostile words we fed it. Neither is a real finding, so neither is published — the same discipline that clears wrong D's applies to wrong F's.
 
 Skills are a separate, static corpus (a byte-scan, not behavioral proof): of the 107 skills in the BankrBot library, 106 grade A and one grades D for a real finding — a bundled `curl | sh` installer.
 
