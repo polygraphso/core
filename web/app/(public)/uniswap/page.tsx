@@ -18,10 +18,10 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 const CONFIG: SkillEcosystemConfig = {
-  methodologyLabel: "litmus-skill-v2",
+  methodologyLabel: "litmus-skill-v3",
   title: "Uniswap builder skills",
   blurb:
-    "Static safety grades for the community “build on Uniswap” skills carried in the Bankr library — v4 hooks, trading, and client integration helpers an agent can load.",
+    "Static safety grades for the skills an agent loads to build on Uniswap — Uniswap Labs’ own uniswap-ai plugins, standalone community skills, and the Bankr library’s set: v4 hooks, trading, and integration helpers.",
   cohortOrder: UNISWAP_COHORT_ORDER,
   cohortLabel: UNISWAP_COHORT_LABEL,
   methodologyNote: (
@@ -35,10 +35,10 @@ const CONFIG: SkillEcosystemConfig = {
         behavioral proof — a skill&rsquo;s instructions are interpreted by an agent at runtime.
       </p>
       <p className="mt-2 text-ink-faint">
-        These are <strong className="text-ink-muted">community</strong> skills for building on Uniswap, shipped
-        in the Bankr skill library — not skills published or endorsed by Uniswap Labs. A grade scans the skill
-        text; it is not an audit of Uniswap&rsquo;s contracts. Every grade here is read live from its hosted_runs
-        row — reproduce any of them with{" "}
+        Skills come from three sources: Uniswap Labs&rsquo; official{" "}
+        <code className="font-mono text-[12px]">uniswap-ai</code> monorepo, standalone community repos, and the
+        Bankr skill library. A grade scans the skill text; it is not an audit of Uniswap&rsquo;s contracts.
+        Every grade here is read live from its hosted_runs row — reproduce any of them with{" "}
         <code className="font-mono">npx -p @polygraphso/litmus polygraphso-litmus-skill</code> — and none are
         published onchain.
       </p>
@@ -53,7 +53,14 @@ const CONFIG: SkillEcosystemConfig = {
     <>
       Skills: S-01 prompt-injection · S-03 exfil instructions · S-04 dangerous bundled commands (static,
       content-hash anchored). Reproduce a skill grade with{" "}
-      <code className="font-mono">npx -p @polygraphso/litmus polygraphso-litmus-skill &lt;dir&gt;</code>. Source:{" "}
+      <code className="font-mono">npx -p @polygraphso/litmus polygraphso-litmus-skill &lt;dir&gt;</code>. Sources:{" "}
+      <Link
+        href="https://github.com/Uniswap/uniswap-ai"
+        className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
+      >
+        Uniswap/uniswap-ai
+      </Link>{" "}
+      ·{" "}
       <Link
         href="https://github.com/BankrBot/skills"
         className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 const CONFIG: SkillEcosystemConfig = {
-  methodologyLabel: "litmus-skill-v2",
+  methodologyLabel: "litmus-skill-v3",
   title: "skills.sh index",
   blurb:
     "Static safety grades for the most-installed skills on skills.sh — Vercel’s open Agent Skills directory. A behavioral A–F verdict alongside the directory’s existing dependency alerts.",
