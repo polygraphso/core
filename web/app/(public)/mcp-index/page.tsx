@@ -25,8 +25,9 @@ export const revalidate = 600;
 
 // Upper bound on the adoption universe we pull. We pull the whole scored set and
 // then keep only the servers that carry a published grade (see below), so this
-// just needs to comfortably cover the full set (~120 today).
-const ADOPTION_UNIVERSE = 200;
+// just needs to comfortably cover the full tracked set (which now exceeds 200 as
+// we widen coverage — keep this well above it so no graded server is hidden).
+const ADOPTION_UNIVERSE = 1000;
 
 export default async function RankingsPage() {
   const db = getSupabaseAdmin();
@@ -71,7 +72,7 @@ export default async function RankingsPage() {
   return (
       <article>
         <header className="mb-12">
-          <p className="section-label mb-4">Index · litmus-v13</p>
+          <p className="section-label mb-4">Index · litmus-v14</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             The Polygraph Index
           </h1>
