@@ -305,7 +305,7 @@ export default async function VirtualsIndexPage() {
           heading="Monitor the Virtuals agent ecosystem."
           body="This index is a snapshot. As agents launch on Virtuals, we re-grade the ecosystem's MCP surface on a cadence and flag regressions — a dropped grade, a newly failing probe, a changed tool surface — before they reach your users. Set up per ecosystem."
           mailtoSubject="Monitor the Virtuals ecosystem with polygraph"
-          secondaryHref="/rankings"
+          secondaryHref="/index"
           secondaryLabel="See the full index"
         />
       </section>
@@ -315,7 +315,7 @@ export default async function VirtualsIndexPage() {
         C-04 adversarial input (off-table; caps the letter at D). Adoption is reach (0–100), not safety —
         the grade is the verdict. Reproduce any grade by re-running the open harness against the same ref.
         Each server links to its polygraph report; see the full{" "}
-        <Link href="/rankings" className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">
+        <Link href="/index" className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">
           MCP Security Index
         </Link>
         .

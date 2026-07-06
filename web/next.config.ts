@@ -28,6 +28,12 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
+  // The MCP Security Index moved from /rankings to /index (matching the
+  // "The Polygraph Index" brand). Permanent redirect so existing inbound links
+  // — the litmus README, embeddable badges, search-engine equity — keep resolving.
+  async redirects() {
+    return [{ source: "/rankings", destination: "/index", permanent: true }];
+  },
 };
 
 export default nextConfig;
