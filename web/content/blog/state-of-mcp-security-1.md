@@ -8,12 +8,20 @@ We ran an open behavioral harness against every one of the 91 most-adopted MCP s
 
 ## The corpus
 
-The universe is the 91 most-adopted MCP servers, ordered by a daily adoption pipeline (npm and PyPI downloads, GitHub signals). Adoption decides only *what we test and in what order* — it is never part of a grade. As of this edition, all 91 have been run against the harness. The outcomes:
+The universe is the 91 most-adopted MCP servers we track (how we assemble that list — and why it is 91, not a round 100 — is the next section). As of this edition, all 91 have been run against the harness. The outcomes:
 
 - **51 of the 91 (56%) carry a published grade: 50 A, 1 D.** Of the top 50 by adoption, 36 are graded.
 - **The other 40 (44%) mostly cannot be graded from a bare package ref** — the harness launches a server exactly the way an agent's config would, and these fail to boot without credentials or extra arguments (a Supabase access token, a Slack bot token, a database connection string), or turn out not to be standalone MCP servers at all. Their rows say so; "ungradeable" is a disclosed state, not a blank, and the set shrinks as we learn to boot more of them.
 
 Separately from the registry corpus: **13 remote (`https://`) MCP endpoints carry published grades — all B.** That is a ceiling, not a score: a remote server's code can change server-side at any moment after grading, so the methodology caps what a point-in-time run can honestly claim. The tool-surface fingerprint published with each grade is the tripwire — if the server's tools change after grading, the recheck fails and the grade no longer applies.
+
+## Where the list comes from — and why it's 91, not 100
+
+MCP has no central download counter, so there is no off-the-shelf "top 100" to pull down and grade. We assemble the ranking ourselves: a daily pipeline scores every server we track on the signals that actually exist — npm and PyPI download counts, GitHub activity, OpenSSF scorecards, and presence in the Glama and Smithery registries — and orders them by adoption. Adoption decides only *what we test and in what order*; it is never part of a grade.
+
+That tracked set is a curated seed we grow deliberately, not a scrape of every package with "mcp" in its name (there are tens of thousands of those, most of them empty shells, forks, or abandoned experiments). It stands at 91 today and climbs as we add servers. So read "91 most-adopted" as a working sample of what people actually install, not a census of the ecosystem — and the number is not a round 100 because we would rather track servers we can name, resolve, and re-score every day than pad a list to hit a milestone.
+
+Two things then hold the *graded* count below the *tracked* count, and both are the point of an honest coverage line rather than a headline number. First, the 44% that will not boot from a bare ref (below). Second, the tracked universe itself is still climbing toward — and past — 100; every week adds entrants and re-grades. This is edition #1: the coverage line is a floor we report openly, not a ceiling we are hiding behind.
 
 ## Reading "50 A · 1 D" honestly
 
