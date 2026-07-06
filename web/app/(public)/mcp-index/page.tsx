@@ -72,7 +72,7 @@ export default async function RankingsPage() {
   return (
       <article>
         <header className="mb-12">
-          <p className="section-label mb-4">Index · litmus-v13</p>
+          <p className="section-label mb-4">Index · litmus-v14</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             The Polygraph Index
           </h1>
