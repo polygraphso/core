@@ -192,7 +192,7 @@ export function SkillEcosystemTable({ config, skills }: { config: SkillEcosystem
           heading={config.cta.heading}
           body={config.cta.body}
           mailtoSubject={config.cta.mailtoSubject}
-          secondaryHref="/index"
+          secondaryHref="/mcp-index"
           secondaryLabel="See the full index"
         />
       </section>

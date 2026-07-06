@@ -2,7 +2,7 @@ import { MobileNav } from "./MobileNav";
 import { AuthSlot } from "./AuthSlot";
 
 const NAV: Array<{ href: string; label: string }> = [
-  { href: "/index", label: "Index" },
+  { href: "/mcp-index", label: "Index" },
   { href: "/#install", label: "Install" },
   { href: "/#badge", label: "Get a badge" },
   { href: "/methodology", label: "Methodology" },
