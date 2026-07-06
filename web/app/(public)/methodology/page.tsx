@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Methodology — litmus-v12",
+  title: "Methodology — litmus-v13",
   description:
-    "The litmus test, v12: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence. Plus litmus-skill-v2: a static safety scan of Agent Skills, graded A/B/D/F.",
+    "The litmus test, v13: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence. Plus litmus-skill-v2: a static safety scan of Agent Skills, graded A/B/D/F.",
   alternates: { canonical: "/methodology" },
 };
 
 // Faithful rendering of litmus-test.md (polygraphso/hosted-service repo) — the
-// authoritative methodologyVersion: "litmus-v12" spec. Content edits belong
+// authoritative methodologyVersion: "litmus-v13" spec. Content edits belong
 // in the spec first; this page mirrors it.
 
 function Section({
@@ -58,7 +58,7 @@ export default function MethodologyPage() {
       <article className="mx-auto max-w-3xl">
         <header className="mb-14">
           <p className="section-label mb-4">
-            Methodology · litmus-v12 · specification
+            Methodology · litmus-v13 · specification
           </p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             The litmus test
@@ -67,7 +67,7 @@ export default function MethodologyPage() {
             A behavioral evaluation of an MCP server — what it{" "}
             <em>does</em> when exercised the way an agent would, not what its
             README says. The string{" "}
-            <Inline>methodologyVersion: &quot;litmus-v12&quot;</Inline> travels
+            <Inline>methodologyVersion: &quot;litmus-v13&quot;</Inline> travels
             with every grade this spec produces. The same lab also grades{" "}
             <strong className="text-ink not-italic">Agent Skills</strong> under a
             separate static methodology, <Inline>litmus-skill-v2</Inline> —{" "}
@@ -101,7 +101,7 @@ export default function MethodologyPage() {
           <SubHead>What a passing grade does — and does not — claim</SubHead>
           <p>
             It <strong className="text-ink">does</strong> claim: against{" "}
-            <Inline>litmus-v12</Inline>, on the exact tool surface identified by
+            <Inline>litmus-v13</Inline>, on the exact tool surface identified by
             the fingerprint, the server did not exhibit the failure modes
             below, and the evidence is published and re-runnable.
           </p>
@@ -289,7 +289,7 @@ export default function MethodologyPage() {
           </p>
           <figure className="border hairline bg-parchment-50 mt-2">
             <figcaption className="px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-              Grade rubric · litmus-v12 §5
+              Grade rubric · litmus-v13 §5
             </figcaption>
             <table className="w-full text-left text-sm">
               <thead>
@@ -314,7 +314,7 @@ export default function MethodologyPage() {
                 <tr className="border-b hairline align-top opacity-60">
                   <td className="px-4 py-3 font-serif text-xl text-grade-c">C</td>
                   <td className="px-4 py-3">
-                    Reserved — no litmus-v12 condition maps to it. Future probe
+                    Reserved — no litmus-v13 condition maps to it. Future probe
                     categories may claim it.
                   </td>
                 </tr>
@@ -354,7 +354,7 @@ export default function MethodologyPage() {
           <ul className="list-none space-y-3">
             <li>
               <strong className="text-ink">Deterministic harness.</strong>{" "}
-              Same server version + same <Inline>litmus-v12</Inline> harness →
+              Same server version + same <Inline>litmus-v13</Inline> harness →
               same findings. The bait, jailbreak, and malformed batteries are
               varied but fixed — no randomness in probe verdicts; timestamps
               and environment are recorded, not baked in.
@@ -376,7 +376,7 @@ export default function MethodologyPage() {
             <li>
               <strong className="text-ink">Re-runnable.</strong> Anyone — a
               skeptic, a counterparty, a future independent verifier — can
-              re-run <Inline>litmus-v12</Inline> against the same server and
+              re-run <Inline>litmus-v13</Inline> against the same server and
               compare fingerprint and grade. A false grade is falsifiable, not
               merely disputable.
             </li>
@@ -444,18 +444,27 @@ export default function MethodologyPage() {
 
         <Section num="07" label="Versioning" id="versioning">
           <p>
-            This page documents <Inline>litmus-v12</Inline>. Probes evolve as
+            This page documents <Inline>litmus-v13</Inline>. Probes evolve as
             agents do; new failure modes get new probe IDs within their
             family. A change that alters pass/fail semantics bumps the
             methodology version. Every evidence bundle and every attestation
             embeds the methodology version that produced it, so a grade is
             always tied to the spec it was measured against — earlier{" "}
-            <Inline>litmus-v1</Inline>…<Inline>v11</Inline>{" "}
+            <Inline>litmus-v1</Inline>…<Inline>v12</Inline>{" "}
             grades stay valid as
             their own version&rsquo;s results.
           </p>
           <p className="text-sm">
             <span className="text-ink-faint">Changelog · </span>
+            <Inline>litmus-v13</Inline>{" "}
+            narrows C-01 tool-output-injection false positives so honest
+            documentation is no longer graded as a hijack: angle-bracket
+            placeholders (<Inline>&lt;tool&gt;</Inline>),{" "}
+            <Inline>data:</Inline>/format examples, and a zero-width
+            doc artifact no longer floor a server to F — the scanners strip
+            invisible characters before scanning, so a hidden keyword is still
+            caught while the benign artifact is not; each only turns a wrong F
+            into a correct pass.{" "}
             <Inline>litmus-v12</Inline>{" "}
             fixes two false positives so a server&rsquo;s correct, defensive
             behavior is no longer graded as a fault: a validation error that
