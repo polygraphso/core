@@ -225,3 +225,64 @@ servers:
   - { registry: npm, name: repomix }
   - { registry: npm, name: n8n-mcp }
   - { registry: npm, name: coda-mcp }
+
+  # ── Reliably-bootable utility servers (no creds) seeded 2026-07-06 to reach
+  #    100 graded on the public index; @pipeworx deterministic tools + others ──
+  - { registry: npm, owner: "@pipeworx", name: mcp-uuid }
+  - { registry: npm, owner: "@pipeworx", name: mcp-base64 }
+  - { registry: npm, owner: "@pipeworx", name: mcp-hash }
+  - { registry: npm, owner: "@pipeworx", name: mcp-color }
+  - { registry: npm, owner: "@pipeworx", name: mcp-crc }
+  - { registry: npm, owner: "@pipeworx", name: mcp-datecalc }
+  - { registry: npm, owner: "@pipeworx", name: mcp-imei }
+  - { registry: npm, owner: "@pipeworx", name: mcp-mime }
+  - { registry: npm, owner: "@pipeworx", name: mcp-semver }
+  - { registry: npm, owner: "@pipeworx", name: mcp-httpstatus }
+  - { registry: npm, owner: "@pipeworx", name: mcp-textcase }
+  - { registry: npm, owner: "@pipeworx", name: mcp-htmlentities }
+  - { registry: npm, owner: "@pipeworx", name: mcp-crontab }
+  - { registry: npm, owner: "@pipeworx", name: mcp-json }
+  - { registry: npm, owner: "@pipeworx", name: mcp-url }
+  - { registry: npm, owner: "@pipeworx", name: mcp-csv }
+  - { registry: npm, owner: "@pipeworx", name: mcp-numbers }
+  - { registry: npm, owner: "@pipeworx", name: mcp-ulid }
+  - { registry: npm, owner: "@pipeworx", name: mcp-textstats }
+  - { registry: npm, owner: "@pipeworx", name: mcp-isbn }
+  - { registry: npm, owner: "@pipeworx", name: mcp-isin }
+  - { registry: npm, owner: "@pipeworx", name: mcp-vat }
+  - { registry: npm, owner: "@pipeworx", name: mcp-gtin }
+  - { registry: npm, owner: "@pipeworx", name: mcp-geodistance }
+  - { registry: npm, owner: "@pipeworx", name: mcp-phone }
+  - { registry: npm, owner: "@pipeworx", name: mcp-creditcard }
+  - { registry: npm, owner: "@pipeworx", name: mcp-geohash }
+  - { registry: npm, owner: "@pipeworx", name: mcp-diff }
+  - { registry: npm, owner: "@pipeworx", name: mcp-unicode }
+  - { registry: npm, owner: "@pipeworx", name: mcp-wikipedia }
+  - { registry: npm, owner: "@pipeworx", name: mcp-hackernews }
+  - { registry: npm, owner: "@pipeworx", name: mcp-countries }
+  - { registry: npm, owner: "@pipeworx", name: mcp-jsonplaceholder }
+  - { registry: npm, owner: "@pipeworx", name: mcp-quotes }
+  - { registry: npm, owner: "@pipeworx", name: mcp-jokes }
+  - { registry: npm, owner: "@pipeworx", name: mcp-poetry }
+  - { registry: npm, owner: "@pipeworx", name: mcp-cocktails }
+  - { registry: npm, owner: "@pipeworx", name: mcp-rick-and-morty }
+  - { registry: npm, owner: "@pipeworx", name: mcp-dbpedia }
+  - { registry: npm, owner: "@pipeworx", name: mcp-frankfurter }
+  - { registry: npm, owner: "@pipeworx", name: mcp-randomuser }
+  - { registry: npm, name: it-tools-mcp }
+  - { registry: npm, name: uuid-mcp }
+  - { registry: npm, name: mcp-wordcounter }
+  - { registry: npm, name: mcp-ascii-charts }
+  - { registry: npm, name: datetime-mcp }
+  - { registry: npm, name: mcp-color-convert }
+  - { registry: npm, name: color-engine-mcp }
+  - { registry: npm, name: mermaid-validator-mcp }
+  - { registry: npm, name: mermaid-lint-mcp }
+  - { registry: npm, name: mermaid-svg-mcp }
+  - { registry: npm, owner: "@executeautomation", name: calculator-mcp }
+  - { registry: npm, owner: "@wrtnlabs", name: calculator-mcp }
+  - { registry: npm, owner: "@takanarishimbo", name: datetime-mcp-server }
+  - { registry: npm, owner: "@odgrim", name: mcp-datetime }
+  - { registry: npm, owner: "@jwalsh", name: mcp-server-qrcode }
+  - { registry: npm, owner: "@rtuin", name: mcp-mermaid-validator }
+  - { registry: npm, owner: "@peng-shawn", name: mermaid-mcp-server }
