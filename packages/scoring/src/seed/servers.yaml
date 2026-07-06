@@ -146,3 +146,9 @@ servers:
   - { registry: npm,                               name: defillama-mcp }
   - { registry: npm, owner: "@mcpdotdirect", name: evm-mcp-server }
   - { registry: github, owner: "KyberNetwork", name: kyberswap-mcp }
+  # github-only kukapay data servers (graded on /base) — adoption from repo stars.
+  - { registry: github, owner: "kukapay", name: honeypot-detector-mcp }
+  - { registry: github, owner: "kukapay", name: liquidity-pools-mcp }
+  - { registry: github, owner: "kukapay", name: chainlist-mcp }
+  - { registry: github, owner: "kukapay", name: dao-proposals-mcp }
+  - { registry: github, owner: "kukapay", name: bridge-metrics-mcp }
