@@ -2,7 +2,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { rowToRun, type HostedRunRow } from "./checksMapper";
 import { RecentGradesCarousel } from "./RecentGradesCarousel";
 
-// How many recent grades the homepage carousel shows; the rest live at /index.
+// How many recent grades the homepage carousel shows; the rest live at /mcp-index.
 const LIMIT = 10;
 
 async function fetchRecentGrades() {
