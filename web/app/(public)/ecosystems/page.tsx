@@ -19,7 +19,7 @@ import { EcosystemCard, NotListedTile, ECOSYSTEM_MAILTO } from "@/app/_component
  * claims live automation or invents metrics. See core/CLAUDE.md.
  */
 export const metadata: Metadata = {
-  title: "Ecosystems — polygraph",
+  title: "Ecosystems",
   description:
     "Independent, continuously re-graded trust indexes for the MCP servers, agents, and skills a network ships. Live example indexes, and how per-network monitoring works.",
 };
@@ -40,12 +40,12 @@ const STEPS = [
   {
     n: "01",
     title: "Re-grade",
-    body: "We re-run the harness against every server and skill in a network's index on a set schedule — the same behavioral test, repeated. Not a one-time snapshot.",
+    body: "We re-run the harness against every server and skill in a network's index on a set schedule: the same behavioral test, repeated. Not a one-time snapshot.",
   },
   {
     n: "02",
     title: "Detect",
-    body: "Each run is compared against the prior grade. A drop, a newly failing probe, or a changed tool surface — a sha256 fingerprint mismatch, the signature of a rug pull — is flagged against what graded before.",
+    body: "Each run is compared against the prior grade. A drop, a newly failing probe, or a changed tool surface (a sha256 fingerprint mismatch, the signature of a rug pull) is flagged against what graded before.",
   },
   {
     n: "03",
@@ -58,15 +58,15 @@ const STEPS = [
 const HOLDS = [
   {
     label: "Reproducible",
-    body: "The harness is open and deterministic. Re-run it against the same ref and you get the same grade — a drop is something you can check, not take on faith.",
+    body: "The harness is open and deterministic. Re-run it against the same ref and you get the same grade, so a drop is something you can check, not take on faith.",
   },
   {
     label: "Independent",
-    body: "Nobody can pay for a grade. A monitoring engagement changes what we re-grade and how often — never the letter we publish.",
+    body: "Nobody can pay for a grade. A monitoring engagement changes what we re-grade and how often, never the letter we publish.",
   },
   {
     label: "Rug-pull-aware",
-    body: "Every grade is pinned to a sha256 fingerprint of the tool surface. Change the surface and the grade goes stale on its own — that recheck is what makes “monitored” mean something.",
+    body: "Every grade is pinned to a sha256 fingerprint of the tool surface. Change the surface and the grade goes stale on its own. That recheck is what makes “monitored” mean something.",
   },
 ];
 
@@ -90,7 +90,7 @@ export default async function EcosystemsPage() {
             Grades are snapshots. Tools keep shipping.
           </h1>
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
-            Your network ships MCP servers and skills you don&rsquo;t fully control — a new release, a
+            Your network ships MCP servers and skills you don&rsquo;t fully control: a new release, a
             quiet regression, a swapped tool surface. We keep an independent, reproducible trust index
             for the network and re-grade it on a cadence, so the grade you shipped on doesn&rsquo;t go
             stale on you.
@@ -125,7 +125,7 @@ export default async function EcosystemsPage() {
         {/* § 01 — Proof first: the live indexes. */}
         <section id="live-indexes" className="mb-16 scroll-mt-24">
           <SectionHeader number="§ 01" label="Live indexes" title="What a trust index looks like.">
-            Every grade below is read live from the same evidence the per-network pages show —
+            Every grade below is read live from the same evidence the per-network pages show:
             current, reproducible, and yours to re-run against the open harness.
           </SectionHeader>
 
@@ -148,7 +148,7 @@ export default async function EcosystemsPage() {
             label="Why continuous"
             title="An index is only as good as its last run."
           >
-            A behavioral grade describes a tool on the day it ran. Then the tool changes — and a
+            A behavioral grade describes a tool on the day it ran. Then the tool changes, and a
             stale A is worse than no grade, because someone is trusting it.
           </SectionHeader>
 
@@ -159,7 +159,7 @@ export default async function EcosystemsPage() {
             </blockquote>
             <figcaption className="mt-3 text-[13px] leading-relaxed text-ink-muted max-w-2xl">
               Third-party servers and skills get new releases and new owners, and a tool surface can
-              change after grading — which is exactly how a rug pull works. None of that shows up in a
+              change after grading, which is exactly how a rug pull works. None of that shows up in a
               grade you ran once. Re-running the same test, again and again, is the only thing that
               keeps an index honest.
             </figcaption>
@@ -173,7 +173,7 @@ export default async function EcosystemsPage() {
             label="How monitoring works"
             title="Re-grade, detect, alert."
           >
-            The same open harness, on a clock — set up per network when an ecosystem signs on.
+            The same open harness, on a clock, set up per network when an ecosystem signs on.
           </SectionHeader>
 
           <ol className="border-t hairline">
@@ -201,7 +201,7 @@ export default async function EcosystemsPage() {
             label="What holds"
             title="What a monitoring client can't change."
           >
-            Subscribing changes what we watch — never what we report.
+            Subscribing changes what we watch, never what we report.
           </SectionHeader>
 
           <div className="grid gap-4 md:grid-cols-3">
@@ -238,7 +238,7 @@ export default async function EcosystemsPage() {
         </section>
 
         <p className="mt-12 font-mono text-[11px] text-ink-faint leading-relaxed border-t hairline pt-5">
-          Every grade is behavioral and reproducible — re-run the open harness against the same ref
+          Every grade is behavioral and reproducible. Re-run the open harness against the same ref
           to check it. See the full{" "}
           <Link href="/mcp-index" className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">
             MCP Security Index

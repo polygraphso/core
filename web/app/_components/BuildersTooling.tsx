@@ -79,9 +79,9 @@ export function BuildersTooling() {
         <SectionHeader
           number="§ 01"
           label="Install & run"
-          title="Run polygraph in your agent &mdash; or grade a server from your terminal."
+          title="Run polygraph in your agent, or grade a server from your terminal."
         >
-          The open litmus harness grades a server A&ndash;F with reproducible,
+          The open litmus harness grades a server A to F with reproducible,
           content-addressed evidence. Add it to your agent, run it yourself, or
           gate your CI on it.
         </SectionHeader>
@@ -97,7 +97,7 @@ export function BuildersTooling() {
               Add to Cursor <span aria-hidden>&rarr;</span>
             </a>
             <p className="mt-3 font-mono text-[11px] text-ink-faint leading-relaxed">
-              One click &mdash; installs the MCP server (
+              One click: installs the MCP server (
               <span className="text-ink-muted">run_litmus</span>,{" "}
               <span className="text-ink-muted">verify_attestation</span>). Prefer to
               edit <span className="text-ink-muted">~/.cursor/mcp.json</span>? Use the
@@ -147,8 +147,8 @@ export function BuildersTooling() {
           label="Gate your CI"
           title="Fail a build when a tool grades D/F."
         >
-          The composite GitHub Action stops a merge when an MCP server &mdash; or
-          a skill it ships &mdash; grades{" "}
+          The composite GitHub Action stops a merge when an MCP server (or a
+          skill it ships) grades{" "}
           <span className="font-mono text-[0.9em] text-ink">D/F</span>. On the{" "}
           <a
             href={MARKETPLACE_URL}
@@ -180,8 +180,8 @@ export function BuildersTooling() {
           title="Show your grade where developers look."
         >
           Maintain a server we&rsquo;ve graded? Put its live polygraph on your
-          README, npm page, or docs. The badge reads the current grade &mdash; it
-          updates itself &mdash; and links back to the reproducible report.
+          README, npm page, or docs. The badge reads the current grade, updates
+          itself, and links back to the reproducible report.
         </SectionHeader>
 
         <div className="grid md:grid-cols-2 gap-4 items-start">
@@ -253,7 +253,7 @@ export function BuildersTooling() {
           label="Manual setup"
           title="One config, every MCP client."
         >
-          Same config everywhere &mdash; paste into{" "}
+          Same config everywhere: paste into{" "}
           <span className="font-mono text-[0.9em] text-ink">~/.cursor/mcp.json</span>{" "}
           (Cursor),{" "}
           <span className="font-mono text-[0.9em] text-ink">claude_desktop_config.json</span>{" "}

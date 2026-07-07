@@ -5,7 +5,7 @@ import { BuildersTooling } from "@/app/_components/BuildersTooling";
 export const metadata: Metadata = {
   title: "Builders",
   description:
-    "Grade an MCP server A–F with the open litmus harness: install it in your agent, run it from your terminal, gate CI with the GitHub Action, or embed a live README badge. All self-serve, all free.",
+    "Grade an MCP server A to F with the open litmus harness: install it in your agent, run it from your terminal, gate CI with the GitHub Action, or embed a live README badge. All self-serve, all free.",
 };
 
 // The builders surface: everything a maintainer of an MCP server or skill needs,
@@ -23,9 +23,9 @@ export default function BuildersPage() {
           Grade a server. Gate your CI. Ship a badge.
         </h1>
         <p className="mt-6 max-w-2xl text-ink-muted text-lg leading-relaxed">
-          The open litmus harness grades an MCP server A&ndash;F with reproducible,
+          The open litmus harness grades an MCP server A to F with reproducible,
           content-addressed evidence. Add it to your agent, run it from your terminal, gate a build
-          on it, or embed a live badge &mdash; all self-serve, all free.
+          on it, or embed a live badge. All self-serve, all free.
         </p>
 
         {/* Cross-sell up to the revenue motion: builders who run a whole network. */}
@@ -46,7 +46,7 @@ export default function BuildersPage() {
 
       <div className="mx-auto max-w-6xl px-6 pb-20 md:pb-28">
         <p className="font-mono text-[11px] text-ink-faint leading-relaxed border-t hairline pt-5">
-          Every grade is behavioral and reproducible &mdash; re-run the open harness against the same
+          Every grade is behavioral and reproducible. Re-run the open harness against the same
           ref to check it. Browse the full{" "}
           <Link
             href="/mcp-index"
