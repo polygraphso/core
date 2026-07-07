@@ -2,6 +2,7 @@
 title: "State of MCP Security #1: what running the top 100 MCP servers actually shows"
 date: "2026-07-06"
 excerpt: "As of July 2026, we ran an open behavioral harness across the most-adopted MCP servers. Here's what came back — the results, the mistakes we caught in our own harness, and an honest accounting of what we can't yet reach."
+unlisted: true
 ---
 
 **As of early July 2026.** We ran an open behavioral harness across the most-adopted MCP servers we track. The short version: 119 carry a published grade, and all but two are an A. Here is the longer version — the results, the mistakes we caught in our own harness and fixed, what an "A" does and doesn't mean, and an honest accounting of the servers we can't yet reach.

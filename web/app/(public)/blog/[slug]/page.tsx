@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAllPosts, getPost } from "@/lib/blog";
+import { getAllSlugs, getPost } from "@/lib/blog";
 import { Markdown } from "../_components/Markdown";
 
 export async function generateStaticParams() {
-  const posts = await getAllPosts();
-  return posts.map((p) => ({ slug: p.slug }));
+  // Include unlisted posts so their direct link still resolves; they're just
+  // hidden from the index and sitemap and marked noindex (see below).
+  const slugs = await getAllSlugs();
+  return slugs.map((slug) => ({ slug }));
 }
 
 function formatDate(iso: string): string {
@@ -34,6 +36,8 @@ export async function generateMetadata({
     title: post.title,
     description: post.excerpt,
     alternates: { canonical: url },
+    // Unlisted posts are shareable by link but kept out of search indexes.
+    robots: post.unlisted ? { index: false, follow: false } : undefined,
     openGraph: {
       type: "article",
       title: post.title,
