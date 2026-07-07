@@ -16,6 +16,7 @@ const USER_NAV: NavItem[] = [
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Metrics", active: (p) => p === "/admin" },
   { href: "/admin/attestations", label: "Attestations", active: (p) => p.startsWith("/admin/attestations") },
+  { href: "/admin/twitter", label: "Twitter", active: (p) => p.startsWith("/admin/twitter") },
   { href: "/admin/users", label: "Users", active: (p) => p.startsWith("/admin/users") },
   { href: "/admin/monitors", label: "All monitors", active: (p) => p.startsWith("/admin/monitors") },
   { href: "/ecosystems", label: "Ecosystems", active: (p) => p.startsWith("/ecosystems"), external: true },
