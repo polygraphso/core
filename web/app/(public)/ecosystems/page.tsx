@@ -99,6 +99,13 @@ const HOLDS = [
 export default async function EcosystemsPage() {
   const stats = await Promise.all(ECOSYSTEMS.map((e) => e.loadStats()));
   const totalGraded = stats.reduce((sum, s) => sum + s.graded, 0);
+  // The most recent re-grade anywhere in the index — the "last refreshed" stamp the
+  // § 05 CTA turns into its hook. Per-ecosystem dates (YYYY-MM-DD) already sort
+  // lexicographically, so max() is the latest. null when nothing is graded yet.
+  const lastRefreshed = stats
+    .map((s) => s.lastRefreshed)
+    .filter((d): d is string => Boolean(d))
+    .reduce<string | null>((latest, d) => (latest && latest > d ? latest : d), null);
 
   return (
       <article>
@@ -164,8 +171,15 @@ export default async function EcosystemsPage() {
                 <div className="mt-4">
                   <Distribution stats={stats[i]} />
                 </div>
-                <div className="mt-4 flex items-center justify-between gap-3 font-mono text-[11px] text-ink-faint">
-                  <span className="min-w-0 truncate">{stats[i].summary}</span>
+                <div className="mt-4 flex items-end justify-between gap-3 font-mono text-[11px] text-ink-faint">
+                  <span className="flex min-w-0 flex-col gap-1">
+                    <span className="truncate">{stats[i].summary}</span>
+                    <span className="tabular text-[10.5px]">
+                      {stats[i].lastRefreshed
+                        ? `Last graded ${stats[i].lastRefreshed}`
+                        : "Not graded yet"}
+                    </span>
+                  </span>
                   <span className="shrink-0 text-ink-muted group-hover:text-oxblood transition-colors">
                     View ecosystem →
                   </span>
@@ -271,11 +285,21 @@ export default async function EcosystemsPage() {
 
         {/* § 05 — The ask: an honest, mailto conversation-starter. */}
         <section id="get-monitored" className="scroll-mt-24">
-          <SectionHeader number="§ 05" label="Get monitored" />
+          <SectionHeader number="§ 05" label="Get monitored" title="Keep this index from going stale.">
+            {lastRefreshed ? (
+              <>
+                Every grade above was last re-run on{" "}
+                <span className="font-mono text-ink tabular">{lastRefreshed}</span>.{" "}
+                <span className="text-oxblood">
+                  Without monitoring, that&rsquo;s the date it stays frozen at.
+                </span>
+              </>
+            ) : null}
+          </SectionHeader>
 
           <EcosystemCta
             heading="Monitor your ecosystem."
-            body="Run an independent, continuous trust index for your network's MCP servers, agents, and skills — re-graded on a cadence, with regressions flagged to your team. We set it up per network; tell us what you ship."
+            body="Run an independent, continuous trust index for your network's MCP servers, agents, and skills, re-graded daily instead of once, with regressions flagged to your team. Tell us what you ship and we'll keep the tracked list of servers and skills current as you add them."
             mailtoSubject="Monitor our ecosystem with polygraph"
             secondaryHref="/base"
             secondaryLabel="See a live index"

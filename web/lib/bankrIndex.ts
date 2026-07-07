@@ -35,6 +35,8 @@ export interface BankrSkill extends BankrSkillMeta {
   s03: "pass" | "fail" | null;
   s04: "pass" | "fail" | null;
   hash: string | null;
+  /** When this skill was last graded (hosted_runs.completed_at, ISO); null until graded. */
+  completedAt: string | null;
 }
 
 /**
@@ -163,7 +165,7 @@ export function bankrSkillTarget(slug: string): string {
   return `${BANKR_SKILLS_REPO}#${slug}`;
 }
 
-type SkillLive = { grade: SkillGrade; s01: "pass" | "fail"; s03: "pass" | "fail"; s04: "pass" | "fail"; hash: string };
+type SkillLive = { grade: SkillGrade; s01: "pass" | "fail"; s03: "pass" | "fail"; s04: "pass" | "fail"; hash: string; completedAt: string | null };
 
 /** One query → latest litmus-skill-v2 grade per BankrBot/skills target, keyed by the
  *  canonical `github/BankrBot/skills#<slug>` ref the runner stores. Newest row wins;
@@ -185,6 +187,7 @@ async function fetchSkillGradeMap(db: ReturnType<typeof getSupabaseAdmin>): Prom
     grade: string | null;
     content_hash: string | null;
     evidence: { categories?: Array<{ code?: string; status?: string }> } | null;
+    completed_at: string | null;
   }>) {
     if (map.has(row.target)) continue; // ordered desc → first (newest) wins
     if (!row.grade || !SKILL_GRADES.has(row.grade)) continue;
@@ -196,6 +199,7 @@ async function fetchSkillGradeMap(db: ReturnType<typeof getSupabaseAdmin>): Prom
       s03: st("S-03"),
       s04: st("S-04"),
       hash: row.content_hash ? row.content_hash.slice(0, 12) : "",
+      completedAt: row.completed_at ?? null,
     });
   }
   return map;
@@ -208,7 +212,7 @@ export async function loadBankrSkills(): Promise<BankrSkill[]> {
   return BANKR_SKILLS_META.map((m) => {
     const target = bankrSkillTarget(m.slug);
     const g = map.get(target);
-    return { ...m, target, grade: g?.grade ?? null, s01: g?.s01 ?? null, s03: g?.s03 ?? null, s04: g?.s04 ?? null, hash: g?.hash ?? null };
+    return { ...m, target, grade: g?.grade ?? null, s01: g?.s01 ?? null, s03: g?.s03 ?? null, s04: g?.s04 ?? null, hash: g?.hash ?? null, completedAt: g?.completedAt ?? null };
   });
 }
 
@@ -233,6 +237,8 @@ export interface BankrAgent extends BankrAgentMeta {
   c01: string | null;
   c02: string | null;
   c03: string | null;
+  /** When this agent's server was last graded (hosted_runs.completed_at, ISO); null until graded. */
+  completedAt: string | null;
 }
 
 /**
@@ -259,7 +265,7 @@ export async function loadBankrAgents(): Promise<BankrAgent[]> {
   for (const m of BANKR_AGENTS_META) {
     const g = m.target ? await latestForTarget(db, m.target) : null;
     const d = g?.detail ?? null;
-    out.push({ ...m, grade: d?.grade ?? null, c01: d?.c01 ?? null, c02: d?.c02 ?? null, c03: d?.c03 ?? null });
+    out.push({ ...m, grade: d?.grade ?? null, c01: d?.c01 ?? null, c02: d?.c02 ?? null, c03: d?.c03 ?? null, completedAt: g?.completedAt ?? null });
   }
   return out;
 }

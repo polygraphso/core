@@ -30,14 +30,28 @@ export interface Ecosystem {
 }
 
 /** Card stats: the ordered, non-zero grade counts for the distribution strip
- *  (same shape /base and /bankr build inline), plus a one-line summary. */
+ *  (same shape /base and /bankr build inline), plus a one-line summary and the
+ *  date this ecosystem was last re-graded. */
 export interface EcosystemStats {
   counts: Array<{ g: LitmusGrade; n: number }>;
   graded: number;
   summary: string;
+  /** Newest hosted_runs.completed_at across the ecosystem's graded members, as a
+   *  YYYY-MM-DD date; null when nothing is graded yet. This is the honest "last
+   *  refreshed" stamp — the day the snapshot was taken, not a promise of a cadence. */
+  lastRefreshed: string | null;
 }
 
 const GRADE_ORDER: LitmusGrade[] = ["A", "B", "C", "D", "F"];
+
+/** Newest of a set of (possibly null) ISO timestamps, as a YYYY-MM-DD date.
+ *  ISO strings sort lexicographically, so max() is the latest run. null when the
+ *  ecosystem has no graded members yet. */
+function latestRefreshed(times: Array<string | null | undefined>): string | null {
+  const dates = times.filter((t): t is string => Boolean(t));
+  if (dates.length === 0) return null;
+  return dates.reduce((a, b) => (a > b ? a : b)).slice(0, 10);
+}
 
 /** Tally a flat list of (possibly null) grades into the A→F, zero-dropped
  *  `{ g, n }[]` the distribution bar expects — the same reduction the existing
@@ -60,6 +74,7 @@ export const ECOSYSTEMS: Ecosystem[] = [
         counts: distribution(graded.map((e) => e.grade)),
         graded: graded.length,
         summary: `${graded.length} graded · ${entries.length} tracked`,
+        lastRefreshed: latestRefreshed(graded.map((e) => e.completedAt)),
       };
     },
   },
@@ -76,6 +91,10 @@ export const ECOSYSTEMS: Ecosystem[] = [
         counts: distribution(grades),
         graded: grades.filter(Boolean).length,
         summary: `${skills.length} skills · ${agents.length} agents`,
+        lastRefreshed: latestRefreshed([
+          ...skills.map((s) => s.completedAt),
+          ...agents.map((a) => a.completedAt),
+        ]),
       };
     },
   },
@@ -92,6 +111,7 @@ export const ECOSYSTEMS: Ecosystem[] = [
         counts: distribution(graded.map((e) => e.grade)),
         graded: graded.length,
         summary: `${graded.length} graded · ${entries.length} tracked`,
+        lastRefreshed: latestRefreshed(graded.map((e) => e.completedAt)),
       };
     },
   },
@@ -108,6 +128,7 @@ export const ECOSYSTEMS: Ecosystem[] = [
         counts: distribution(grades),
         graded: grades.filter(Boolean).length,
         summary: `${skills.length} skills`,
+        lastRefreshed: latestRefreshed(skills.map((s) => s.completedAt)),
       };
     },
   },
@@ -124,6 +145,7 @@ export const ECOSYSTEMS: Ecosystem[] = [
         counts: distribution(grades),
         graded: grades.filter(Boolean).length,
         summary: `${skills.length} skills`,
+        lastRefreshed: latestRefreshed(skills.map((s) => s.completedAt)),
       };
     },
   },
@@ -140,6 +162,7 @@ export const ECOSYSTEMS: Ecosystem[] = [
         counts: distribution(grades),
         graded: grades.filter(Boolean).length,
         summary: `${skills.length} skills`,
+        lastRefreshed: latestRefreshed(skills.map((s) => s.completedAt)),
       };
     },
   },
