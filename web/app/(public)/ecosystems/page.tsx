@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ECOSYSTEMS, type EcosystemStats } from "@/lib/ecosystems";
-import { GRADE_HEX } from "@/lib/gradeColors";
+import { ECOSYSTEMS } from "@/lib/ecosystems";
 import { SectionHeader } from "@/app/_components/SectionHeader";
 import { EcosystemCta } from "@/app/_components/EcosystemCta";
+import { EcosystemCard, NotListedTile, ECOSYSTEM_MAILTO } from "@/app/_components/EcosystemCards";
 
 /**
- * UNLISTED ecosystems hub. Not linked from nav/footer, not in any sitemap,
- * robots noindex — reachable only by direct link, matching the /base and /bankr
- * pages it points to. Pitched as an operator-facing deck: it sells continuous
- * monitoring of a network's MCP servers + skills, anchored on the live indexes
- * it links to. Each card's stats are read LIVE from those pages' own loaders
- * (see lib/ecosystems), so a card never drifts from its destination.
+ * The ecosystems hub — the full list of live per-network indexes plus the
+ * monitoring deck. Linked from the primary nav (the ecosystem-first homepage
+ * carries the pitch + a featured subset; this page is the complete hub). Each
+ * card's stats are read LIVE from the per-network pages' own loaders (see
+ * lib/ecosystems), so a card never drifts from its destination. The card units
+ * are shared with the homepage via app/_components/EcosystemCards.
  *
  * Honesty note: daily re-grading, grade-change detection, and dev alerts are
  * the OFFERING — set up per network when an ecosystem signs on, not automation
@@ -19,8 +19,9 @@ import { EcosystemCta } from "@/app/_components/EcosystemCta";
  * claims live automation or invents metrics. See core/CLAUDE.md.
  */
 export const metadata: Metadata = {
-  title: "Ecosystems — polygraph (private)",
-  robots: { index: false, follow: false },
+  title: "Ecosystems — polygraph",
+  description:
+    "Independent, continuously re-graded trust indexes for the MCP servers, agents, and skills a network ships. Live example indexes, and how per-network monitoring works.",
 };
 
 // Stats come from the live hosted_runs loaders; render per-request like /base & /bankr.
@@ -29,36 +30,9 @@ export const dynamic = "force-dynamic";
 // The one ask this page exists to trigger. Shared by the hero CTA, the § 01
 // "not listed" tile, and (via its own subject) the closing EcosystemCta, so the
 // conversation always opens the same way.
+// The address shown in plain text beside the hero mailto (a copy-able fallback).
+// The mailto itself is shared with the homepage via EcosystemCards.
 const CONTACT_EMAIL = "hello@polygraph.so";
-const ECOSYSTEM_MAILTO = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-  "Monitor our ecosystem with polygraph",
-)}`;
-
-/** The grade-distribution strip — bar + legend, lifted from /base so every
- *  ecosystem surface reads the same. */
-function Distribution({ stats }: { stats: EcosystemStats }) {
-  if (stats.counts.length === 0) {
-    return <span className="font-mono text-[11px] text-ink-faint">no grades yet</span>;
-  }
-  return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-      <div className="flex h-2 w-40 overflow-hidden rounded-full border hairline">
-        {stats.counts.map(({ g, n }) => (
-          <span key={g} style={{ backgroundColor: GRADE_HEX[g], flexGrow: n }} title={`${n} × ${g}`} />
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-ink-muted">
-        {stats.counts.map(({ g, n }) => (
-          <span key={g} className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-2 w-2 rounded-[1px]" style={{ backgroundColor: GRADE_HEX[g] }} />
-            {n}
-            <span className="text-ink-faint">{g}</span>
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /** The monitoring engagement, step by step. Framed as the offering — the same
  *  open harness, on a clock, wired up per network. */
@@ -161,52 +135,9 @@ export default async function EcosystemsPage() {
 
           <div className="grid gap-4 md:grid-cols-2">
             {ECOSYSTEMS.map((e, i) => (
-              <Link
-                key={e.slug}
-                href={e.href}
-                className="group flex min-w-0 flex-col rounded-[5px] border hairline bg-parchment-50 px-5 py-5 transition-colors hover:bg-[#efe8d6]"
-              >
-                <h2 className="font-serif text-2xl text-ink tracking-tight">{e.name}</h2>
-                <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">{e.blurb}</p>
-                <div className="mt-4">
-                  <Distribution stats={stats[i]} />
-                </div>
-                <div className="mt-4 flex items-end justify-between gap-3 font-mono text-[11px] text-ink-faint">
-                  <span className="flex min-w-0 flex-col gap-1">
-                    <span className="truncate">{stats[i].summary}</span>
-                    <span className="tabular text-[10.5px]">
-                      {stats[i].lastRefreshed
-                        ? `Last graded ${stats[i].lastRefreshed}`
-                        : "Not graded yet"}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-ink-muted group-hover:text-oxblood transition-colors">
-                    View ecosystem →
-                  </span>
-                </div>
-              </Link>
+              <EcosystemCard key={e.slug} eco={e} stats={stats[i]} />
             ))}
-
-            {/* The "where's mine?" tile — the ask, placed where a reader is
-                already comparing example indexes. Ghosted so it reads as
-                "add yours," not another graded network. */}
-            <a
-              href={ECOSYSTEM_MAILTO}
-              className="group flex min-w-0 flex-col justify-center rounded-[5px] border border-dashed hairline px-5 py-5 transition-colors hover:border-oxblood hover:bg-[#efe8d6]"
-            >
-              <p className="section-label mb-2">Your network</p>
-              <h2 className="font-serif text-2xl text-ink tracking-tight">Not listed yet?</h2>
-              <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">
-                Start a trust index for your ecosystem&rsquo;s servers, agents, and skills — graded,
-                then re-graded on a cadence.
-              </p>
-              <span className="mt-4 inline-flex items-center gap-2 font-mono text-[11px] text-oxblood">
-                Start monitoring
-                <span aria-hidden className="transition-transform group-hover:translate-x-0.5">
-                  →
-                </span>
-              </span>
-            </a>
+            <NotListedTile />
           </div>
         </section>
 

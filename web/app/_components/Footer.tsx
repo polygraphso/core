@@ -4,8 +4,41 @@ export function Footer() {
       <div className="mx-auto max-w-6xl px-6 py-14 grid md:grid-cols-12 gap-10">
         <nav
           aria-label="Footer"
-          className="md:col-span-9 grid grid-cols-1 sm:grid-cols-2 gap-8 text-sm"
+          className="md:col-span-9 grid grid-cols-1 sm:grid-cols-3 gap-8 text-sm"
         >
+          <div>
+            <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint mb-3">
+              Product
+            </div>
+            <ul className="space-y-2 font-sans text-[12.5px]">
+              <li>
+                <a className="text-ink hover:text-oxblood transition-colors" href="/ecosystems">
+                  Ecosystems →
+                </a>
+              </li>
+              <li>
+                <a className="text-ink hover:text-oxblood transition-colors" href="/mcp-index">
+                  MCP Security Index →
+                </a>
+              </li>
+              <li>
+                <a className="text-ink hover:text-oxblood transition-colors" href="/builders">
+                  For builders →
+                </a>
+              </li>
+              <li>
+                <a className="text-ink hover:text-oxblood transition-colors" href="/methodology">
+                  Methodology →
+                </a>
+              </li>
+              <li>
+                <a className="text-ink hover:text-oxblood transition-colors" href="/blog">
+                  Blog →
+                </a>
+              </li>
+            </ul>
+          </div>
+
           <div>
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint mb-3">
               CLI
@@ -33,25 +66,9 @@ export function Footer() {
             <p className="mt-1.5 font-sans text-[11.5px] leading-relaxed">
               <a
                 className="text-ink hover:text-oxblood transition-colors"
-                href="/#badge"
+                href="/builders#badge"
               >
                 Get a badge →
-              </a>
-            </p>
-            <p className="mt-1.5 font-sans text-[11.5px] leading-relaxed">
-              <a
-                className="text-ink hover:text-oxblood transition-colors"
-                href="/blog"
-              >
-                Blog →
-              </a>
-            </p>
-            <p className="mt-1.5 font-sans text-[11.5px] leading-relaxed">
-              <a
-                className="text-ink hover:text-oxblood transition-colors"
-                href="/methodology"
-              >
-                Methodology →
               </a>
             </p>
             <p className="mt-1.5 font-sans text-[11.5px] leading-relaxed">
