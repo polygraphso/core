@@ -255,6 +255,8 @@ export interface TwitterThreadRow {
   scheduled_at: string | null;
   posted_at: string | null;
   tweets: TwitterThreadTweet[];
+  /** Permalink of the thread's main (root) tweet — the whole-thread share link. */
+  main_url: string | null;
   alt_text: string | null;
   image_ref: string | null;
   sources: string | null;

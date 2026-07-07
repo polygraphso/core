@@ -52,6 +52,7 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
       ? thread.tweets.map((t) => ({ text: t.text, url: t.url ?? "", posted: !!t.posted }))
       : [{ text: "", url: "", posted: false }],
   );
+  const [mainUrl, setMainUrl] = useState(thread.main_url ?? "");
   const [altText, setAltText] = useState(thread.alt_text ?? "");
   const [imageRef, setImageRef] = useState(thread.image_ref ?? "");
   const [sources, setSources] = useState(thread.sources ?? "");
@@ -59,8 +60,20 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const liveCount = tweets.filter((t) => t.posted).length;
+
+  async function copyThread() {
+    const text = tweets.map((t) => t.text).join("\n\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setMsg({ kind: "err", text: "Copy failed" });
+    }
+  }
 
   function setTweet(i: number, patch: Partial<EditTweet>) {
     setTweets((prev) => prev.map((t, k) => (k === i ? { ...t, ...patch } : t)));
@@ -100,6 +113,7 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
             url: t.url.trim() || null,
             posted: t.posted,
           })),
+          main_url: mainUrl.trim() || null,
           alt_text: altText,
           image_ref: imageRef,
           sources,
@@ -175,6 +189,30 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
         </Field>
       </div>
 
+      <div className="mb-6">
+        <Field label="Thread URL (main tweet)">
+          <div className="flex items-center gap-2">
+            <input
+              type="url"
+              value={mainUrl}
+              onChange={(e) => setMainUrl(e.target.value)}
+              placeholder="https://x.com/polygraphso/status/…"
+              className={inputCls}
+            />
+            {mainUrl.trim() && (
+              <a
+                href={mainUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="shrink-0 font-mono text-[11px] text-oxblood hover:underline"
+              >
+                open ↗
+              </a>
+            )}
+          </div>
+        </Field>
+      </div>
+
       {/* Tweets */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
@@ -182,13 +220,22 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
             Tweets ({tweets.length}
             {liveCount > 0 ? ` · ${liveCount} live` : ""})
           </p>
-          <button
-            type="button"
-            onClick={addTweet}
-            className="font-mono text-[11px] border px-2 py-1 hover:bg-ink/5"
-          >
-            + Add tweet
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={copyThread}
+              className="font-mono text-[11px] border px-2 py-1 hover:bg-ink/5"
+            >
+              {copied ? "✓ copied" : "Copy thread"}
+            </button>
+            <button
+              type="button"
+              onClick={addTweet}
+              className="font-mono text-[11px] border px-2 py-1 hover:bg-ink/5"
+            >
+              + Add tweet
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">

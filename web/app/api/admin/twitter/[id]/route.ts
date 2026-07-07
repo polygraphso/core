@@ -68,7 +68,7 @@ function buildPatch(body: Record<string, unknown>): { patch: Record<string, unkn
     );
   }
 
-  for (const key of ["alt_text", "image_ref", "sources", "notes"] as const) {
+  for (const key of ["main_url", "alt_text", "image_ref", "sources", "notes"] as const) {
     if (key in body) {
       if (body[key] !== null && typeof body[key] !== "string") {
         return { error: `${key} must be a string or null` };
