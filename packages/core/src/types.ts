@@ -228,6 +228,36 @@ export interface AlertDeliveryRow {
   sent_at: string | null;
 }
 
+// ── Twitter threads ──────────────────────────────────────────────────────────
+
+export type TwitterThreadStatus = "draft" | "scheduled" | "posted";
+
+/** One tweet in a thread, in order. Char counts are computed in the UI. */
+export interface TwitterThreadTweet {
+  text: string;
+}
+
+/**
+ * A launch/announcement thread authored for @polygraphso, editable from
+ * Admin › Twitter. Mirrors the `twitter_threads` table. `tweets` is an ordered
+ * array; a thread is always read and saved as a whole.
+ */
+export interface TwitterThreadRow {
+  id: string;
+  slug: string;
+  title: string;
+  status: TwitterThreadStatus;
+  scheduled_at: string | null;
+  posted_at: string | null;
+  tweets: TwitterThreadTweet[];
+  alt_text: string | null;
+  image_ref: string | null;
+  sources: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── LISTEN/NOTIFY payloads ───────────────────────────────────────────────────
 
 export interface VersionDetectedPayload {
