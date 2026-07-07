@@ -66,7 +66,7 @@ export const ECOSYSTEMS: Ecosystem[] = [
     href: "/base",
     name: "Base network",
     blurb:
-      "MCP servers an onchain agent on Base can use — the projects integrating Base MCP, plus the wider DeFi, data, and infrastructure servers around the network.",
+      "MCP servers an onchain agent on Base can use: the projects integrating Base MCP, plus the wider DeFi, data, and infrastructure servers around the network.",
     async loadStats() {
       const entries = await loadBaseIndex();
       const graded = entries.filter((e) => e.grade);
@@ -103,7 +103,7 @@ export const ECOSYSTEMS: Ecosystem[] = [
     href: "/virtuals",
     name: "Virtuals Protocol",
     blurb:
-      "Behavioral grades for the MCP surface of the Virtuals agent launchpad on Base — the protocol's own commerce and framework infrastructure, and the agents launched on it.",
+      "Behavioral grades for the MCP surface of the Virtuals agent launchpad on Base: the protocol's own commerce and framework infrastructure, and the agents launched on it.",
     async loadStats() {
       const entries = await loadVirtualsIndex();
       const graded = entries.filter((e) => e.grade);
@@ -120,7 +120,7 @@ export const ECOSYSTEMS: Ecosystem[] = [
     href: "/uniswap",
     name: "Uniswap builder skills",
     blurb:
-      "Static safety grades for the community “build on Uniswap” skills carried in the Bankr library — v4 hooks, trading, and client-integration helpers.",
+      "Static safety grades for the community “build on Uniswap” skills carried in the Bankr library: v4 hooks, trading, and client-integration helpers.",
     async loadStats() {
       const skills = await loadUniswapSkills();
       const grades = skills.map((s) => s.grade);
@@ -137,7 +137,7 @@ export const ECOSYSTEMS: Ecosystem[] = [
     href: "/clawhub",
     name: "ClawHub registry",
     blurb:
-      "Static safety grades for skills distributed through ClawHub — the malicious skills Snyk flagged (graded D under litmus-skill-v3) next to the popular ones an agent would install.",
+      "Static safety grades for skills distributed through ClawHub: the malicious skills Snyk flagged (graded D under litmus-skill-v3) next to the popular ones an agent would install.",
     async loadStats() {
       const skills = await loadClawhubSkills();
       const grades = skills.map((s) => s.grade);
@@ -154,7 +154,7 @@ export const ECOSYSTEMS: Ecosystem[] = [
     href: "/skills-sh",
     name: "skills.sh directory",
     blurb:
-      "Static safety grades for the most-installed skills on skills.sh — Vercel’s open Agent Skills directory — a behavioral A–F verdict alongside its dependency alerts.",
+      "Static safety grades for the most-installed skills on skills.sh (Vercel’s open Agent Skills directory): a behavioral A to F verdict alongside its dependency alerts.",
     async loadStats() {
       const skills = await loadSkillsShSkills();
       const grades = skills.map((s) => s.grade);

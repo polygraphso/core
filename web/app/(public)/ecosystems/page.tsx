@@ -85,7 +85,7 @@ export default async function EcosystemsPage() {
       <article>
         {/* Hero — the hook: a grade decays, so we keep grading. */}
         <header className="mb-12">
-          <p className="section-label mb-4">Private · ecosystems</p>
+          <p className="section-label mb-4">Continuous monitoring</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             Grades are snapshots. Tools keep shipping.
           </h1>
