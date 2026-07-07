@@ -26,7 +26,7 @@ Polygraph is an independent open-source project that tests AI tools under advers
 
 That matters because open-source AI safety infrastructure has a trust problem.
 
-If the people being graded pay for the grade, the result is easy to question. If the work depends only on grants or goodwill, it may not be sustainable. If it is closed, developers cannot inspect or challenge the tests.
+If the people being graded pay for the grade, the result is easy to question. A project that lives only on grants or goodwill may not be sustainable. And closed tests cannot be inspected or challenged by the developers they grade.
 
 Polygraph is our attempt at a different model: open tests, public evidence, simple grades, and a simple path to sustainability.
 
@@ -42,7 +42,7 @@ But the bigger question is this:
 
 A simple example: an AI tool might look safe in a normal demo, but behave very differently when connected to private context and given a malicious instruction through a webpage, repo, document, or MCP server.
 
-Maybe it leaks context it should not expose. Maybe it follows instructions from an untrusted source. Maybe it takes an action the user never intended. Maybe it gives another tool too much authority.
+Maybe it leaks context it should not expose, or follows instructions from an untrusted source. Maybe it takes an action the user never intended, or hands another tool too much authority.
 
 These are not abstract risks… So, the grading needs to be public enough to challenge, reproduce, and improve. That is why Polygraph needs to be open source.
 
@@ -64,4 +64,4 @@ The next step is to make Polygraph more useful and harder to fool. The roadmap i
 
 If you care about independent AI safety infrastructure, don't just watch us shipping. Use Polygraph. Challenge the grades and submit AI tools that should be graded. And, suggest ways to make the methodology harder to fool.
 
-Last but not least, if you want to support Polygraph's maintenance, join the [Polygraphers community on telegram](http://t.me/polygraphcommunity) and support [$POLYGRAPH](https://bankr.bot/discover/0x2878cfc54aabdadd9bb5d70dd24d6b91485afba3).
+If you want to support Polygraph's maintenance, join the [Polygraphers community on telegram](http://t.me/polygraphcommunity) and support [$POLYGRAPH](https://bankr.bot/discover/0x2878cfc54aabdadd9bb5d70dd24d6b91485afba3).
