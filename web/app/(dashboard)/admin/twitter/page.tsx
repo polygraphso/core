@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import type { TwitterThreadRow } from "@/lib/twitterThreads";
 import { NewThreadButton } from "./_components/NewThreadButton";
+import { CopyThreadButton } from "./_components/CopyThreadButton";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,7 @@ export default async function AdminTwitterPage() {
               <th className="py-2 pr-3">Scheduled</th>
               <th className="py-2 pr-3 text-right">Tweets</th>
               <th className="py-2 pr-3">Updated</th>
+              <th className="py-2 pr-3 text-right">Copy</th>
             </tr>
           </thead>
           <tbody>
@@ -88,6 +90,9 @@ export default async function AdminTwitterPage() {
                 </td>
                 <td className="py-2 pr-3 font-mono text-[11px] text-ink/50 whitespace-nowrap">
                   {fmt(r.updated_at)}
+                </td>
+                <td className="py-2 pr-3 text-right">
+                  <CopyThreadButton tweets={(r.tweets ?? []).map((t) => t.text)} />
                 </td>
               </tr>
             ))}
