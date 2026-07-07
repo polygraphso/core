@@ -258,7 +258,10 @@ export interface TwitterThreadRow {
   /** Permalink of the thread's main (root) tweet — the whole-thread share link. */
   main_url: string | null;
   alt_text: string | null;
+  /** Human filename label for the showcase image (e.g. "showcase.png"). */
   image_ref: string | null;
+  /** Public URL of the showcase image in the `twitter-images` Storage bucket. */
+  image_url: string | null;
   sources: string | null;
   notes: string | null;
   created_at: string;

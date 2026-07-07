@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { TwitterThreadRow, TwitterThreadStatus } from "@/lib/twitterThreads";
 import { xWeightedLength, TWEET_TARGET, TWEET_HARD_MAX } from "./charCount";
@@ -54,13 +54,18 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
   );
   const [mainUrl, setMainUrl] = useState(thread.main_url ?? "");
   const [altText, setAltText] = useState(thread.alt_text ?? "");
-  const [imageRef, setImageRef] = useState(thread.image_ref ?? "");
   const [sources, setSources] = useState(thread.sources ?? "");
   const [notes, setNotes] = useState(thread.notes ?? "");
 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
+
+  // Image is stored in Storage and driven by the `thread` prop (updates on
+  // router.refresh()), not local state — so it survives unsaved text edits.
+  const [imgBusy, setImgBusy] = useState(false);
+  const [imgMsg, setImgMsg] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const liveCount = tweets.filter((t) => t.posted).length;
 
@@ -115,7 +120,6 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
           })),
           main_url: mainUrl.trim() || null,
           alt_text: altText,
-          image_ref: imageRef,
           sources,
           notes,
         }),
@@ -150,6 +154,72 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
     } catch (e) {
       setMsg({ kind: "err", text: e instanceof Error ? e.message : "Delete failed" });
       setBusy(false);
+    }
+  }
+
+  async function onPickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!file) return;
+    setImgBusy(true);
+    setImgMsg(null);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch(`/api/admin/twitter/${thread.id}/image`, { method: "POST", body: fd });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setImgMsg(json.error ?? "Upload failed");
+        return;
+      }
+      router.refresh();
+    } catch (err) {
+      setImgMsg(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setImgBusy(false);
+    }
+  }
+
+  async function removeImage() {
+    if (!confirm("Remove this image?")) return;
+    setImgBusy(true);
+    setImgMsg(null);
+    try {
+      const res = await fetch(`/api/admin/twitter/${thread.id}/image`, { method: "DELETE" });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setImgMsg(json.error ?? "Remove failed");
+        return;
+      }
+      router.refresh();
+    } catch (err) {
+      setImgMsg(err instanceof Error ? err.message : "Remove failed");
+    } finally {
+      setImgBusy(false);
+    }
+  }
+
+  async function copyImage() {
+    if (!thread.image_url) return;
+    try {
+      const res = await fetch(thread.image_url, { cache: "no-store" });
+      const blob = await res.blob();
+      await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      setImgMsg("image copied");
+      setTimeout(() => setImgMsg(null), 1500);
+    } catch {
+      setImgMsg("copy failed — use Copy URL");
+    }
+  }
+
+  async function copyImageUrl() {
+    if (!thread.image_url) return;
+    try {
+      await navigator.clipboard.writeText(thread.image_url);
+      setImgMsg("url copied");
+      setTimeout(() => setImgMsg(null), 1500);
+    } catch {
+      setImgMsg("copy failed");
     }
   }
 
@@ -332,18 +402,79 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
           <textarea
             value={altText}
             onChange={(e) => setAltText(e.target.value)}
-            rows={4}
+            rows={6}
             className={`${inputCls} resize-y`}
           />
         </Field>
-        <Field label="Image filename">
+        <div>
+          <div className="flex items-center justify-between mb-1">
+            <span className="section-label">Image</span>
+            {imgMsg && <span className="font-mono text-[11px] text-ink/60">{imgMsg}</span>}
+          </div>
           <input
-            value={imageRef}
-            onChange={(e) => setImageRef(e.target.value)}
-            placeholder="showcase.png"
-            className={inputCls}
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            onChange={onPickFile}
+            className="hidden"
           />
-        </Field>
+          {thread.image_url ? (
+            <div className="border hairline p-2 bg-parchment-50">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={thread.image_url}
+                alt={thread.alt_text ?? "thread image preview"}
+                className="w-full max-h-72 object-contain border border-rule"
+              />
+              <p className="font-mono text-[10px] text-ink/50 mt-1.5 truncate">
+                {thread.image_ref ?? "image"}
+              </p>
+              <div className="flex flex-wrap items-center gap-2 mt-2">
+                <button
+                  type="button"
+                  onClick={copyImage}
+                  disabled={imgBusy}
+                  className="font-mono text-[11px] border px-2 py-1 hover:bg-ink/5 disabled:opacity-50"
+                >
+                  Copy image
+                </button>
+                <button
+                  type="button"
+                  onClick={copyImageUrl}
+                  disabled={imgBusy}
+                  className="font-mono text-[11px] border px-2 py-1 hover:bg-ink/5 disabled:opacity-50"
+                >
+                  Copy URL
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={imgBusy}
+                  className="font-mono text-[11px] border px-2 py-1 hover:bg-ink/5 disabled:opacity-50"
+                >
+                  {imgBusy ? "…" : "Replace"}
+                </button>
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  disabled={imgBusy}
+                  className="font-mono text-[11px] border px-2 py-1 hover:bg-ink/5 text-ink/60 disabled:opacity-50"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => fileRef.current?.click()}
+              disabled={imgBusy}
+              className="w-full border hairline border-dashed py-8 font-mono text-[11px] text-ink/50 hover:bg-ink/5 disabled:opacity-50"
+            >
+              {imgBusy ? "uploading…" : "+ Upload image (PNG/JPG/WebP/GIF, ≤10 MB)"}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="mb-6">
