@@ -43,7 +43,7 @@ Two limits shape how much an almost-all-A distribution is worth, and we would ra
 
 ## What's next
 
-The corpus grows in adoption order, and re-grades follow version changes. If you maintain a graded server, the report page has your badge and your full findings — free, no account.
+A grade is pinned to one version, which is exactly why a single pass was never the point. Every new release can change how a server behaves — a refactor that opens an injection path, a new tool that reaches the network, a dependency bump that regresses input handling — so a server that grades A today can introduce a vulnerability in the version it ships next week. The goal is to keep tracking these servers and re-grade as they release, so a regression surfaces when it happens rather than months later. The corpus grows in adoption order, re-grades follow version changes, and a grade that no longer matches the live tool surface stops applying. If you maintain a graded server, the report page has your badge and your full findings — free, no account.
 
 **Run an ecosystem whose users install these things** — a registry, a marketplace, an agent platform, a wallet? The public index you're reading is the free, point-in-time layer. Continuous monitoring of *your* surface — every listed server and skill re-graded on a schedule, tool-surface drift caught the day it happens, a private dashboard, an alert channel — is what we operate for networks. [See how ecosystem monitoring works →](/ecosystems)
 
