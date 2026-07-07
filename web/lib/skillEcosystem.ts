@@ -43,6 +43,9 @@ export interface GradedSkill extends SkillMeta {
   s03: "pass" | "fail" | null;
   s04: "pass" | "fail" | null;
   hash: string | null;
+  /** When this skill was last graded (hosted_runs.completed_at, ISO); null until graded.
+   *  Powers the "last refreshed" date on the /ecosystems hub. */
+  completedAt: string | null;
 }
 
 type SkillLive = {
@@ -51,6 +54,7 @@ type SkillLive = {
   s03: "pass" | "fail";
   s04: "pass" | "fail";
   hash: string;
+  completedAt: string | null;
 };
 
 const SKILL_GRADES = new Set(["A", "B", "D", "F"]);
@@ -80,6 +84,7 @@ async function fetchSkillGradeMap(
     grade: string | null;
     content_hash: string | null;
     evidence: { categories?: Array<{ code?: string; status?: string }> } | null;
+    completed_at: string | null;
   }>) {
     if (map.has(row.target)) continue; // ordered desc → first (newest) wins
     if (!row.grade || !SKILL_GRADES.has(row.grade)) continue;
@@ -92,6 +97,7 @@ async function fetchSkillGradeMap(
       s03: st("S-03"),
       s04: st("S-04"),
       hash: row.content_hash ? row.content_hash.slice(0, 12) : "",
+      completedAt: row.completed_at ?? null,
     });
   }
   return map;
@@ -114,6 +120,7 @@ export async function loadSkillCohort(metas: SkillMeta[]): Promise<GradedSkill[]
       s03: g?.s03 ?? null,
       s04: g?.s04 ?? null,
       hash: g?.hash ?? null,
+      completedAt: g?.completedAt ?? null,
     };
   });
 }
