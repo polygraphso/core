@@ -228,6 +228,46 @@ export interface AlertDeliveryRow {
   sent_at: string | null;
 }
 
+// ── Twitter threads ──────────────────────────────────────────────────────────
+
+export type TwitterThreadStatus = "draft" | "scheduled" | "posted";
+
+/**
+ * One tweet in a thread, in order. Char counts are computed in the UI.
+ * `url` is the X permalink once the tweet is live; `posted` marks it live.
+ */
+export interface TwitterThreadTweet {
+  text: string;
+  url?: string | null;
+  posted?: boolean;
+}
+
+/**
+ * A launch/announcement thread authored for @polygraphso, editable from
+ * Admin › Twitter. Mirrors the `twitter_threads` table. `tweets` is an ordered
+ * array; a thread is always read and saved as a whole.
+ */
+export interface TwitterThreadRow {
+  id: string;
+  slug: string;
+  title: string;
+  status: TwitterThreadStatus;
+  scheduled_at: string | null;
+  posted_at: string | null;
+  tweets: TwitterThreadTweet[];
+  /** Permalink of the thread's main (root) tweet — the whole-thread share link. */
+  main_url: string | null;
+  alt_text: string | null;
+  /** Human filename label for the showcase image (e.g. "showcase.png"). */
+  image_ref: string | null;
+  /** Public URL of the showcase image in the `twitter-images` Storage bucket. */
+  image_url: string | null;
+  sources: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 // ── LISTEN/NOTIFY payloads ───────────────────────────────────────────────────
 
 export interface VersionDetectedPayload {
