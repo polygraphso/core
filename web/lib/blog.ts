@@ -10,6 +10,9 @@ export type PostMeta = {
   title: string;
   date: string; // ISO yyyy-mm-dd
   excerpt: string;
+  // Reachable by direct link but hidden from the index and sitemap and marked
+  // noindex — for sharing a draft with the team before it goes public.
+  unlisted: boolean;
 };
 
 export type Post = PostMeta & { body: string };
@@ -29,6 +32,7 @@ function parseFile(slug: string, raw: string): Post {
     title: data.title,
     date: data.date,
     excerpt: data.excerpt,
+    unlisted: data.unlisted === true,
     body: content.trim(),
   };
 }
@@ -47,9 +51,20 @@ async function readAll(): Promise<Post[]> {
   return posts.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 }
 
+// Listed posts only — used by the /blog index and the sitemap. Unlisted posts
+// are omitted so they're shareable by direct link without being surfaced.
 export async function getAllPosts(): Promise<PostMeta[]> {
   const posts = await readAll();
-  return posts.map(({ body: _body, ...meta }) => meta);
+  return posts
+    .filter((p) => !p.unlisted)
+    .map(({ body: _body, ...meta }) => meta);
+}
+
+// Every slug, including unlisted — so the route still pre-renders and the direct
+// link resolves.
+export async function getAllSlugs(): Promise<string[]> {
+  const posts = await readAll();
+  return posts.map((p) => p.slug);
 }
 
 export async function getPost(slug: string): Promise<Post | null> {
