@@ -7,6 +7,8 @@ import { xWeightedLength, TWEET_TARGET, TWEET_HARD_MAX } from "./charCount";
 
 const STATUSES: TwitterThreadStatus[] = ["draft", "scheduled", "posted"];
 
+type EditTweet = { text: string; url: string; posted: boolean };
+
 const inputCls =
   "w-full border hairline bg-transparent px-2.5 py-1.5 font-mono text-[12px] focus:outline-none focus:border-ink/40";
 
@@ -45,8 +47,10 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
   const [slug, setSlug] = useState(thread.slug);
   const [status, setStatus] = useState<TwitterThreadStatus>(thread.status);
   const [scheduledAt, setScheduledAt] = useState(toLocalInput(thread.scheduled_at));
-  const [tweets, setTweets] = useState<string[]>(
-    thread.tweets?.length ? thread.tweets.map((t) => t.text) : [""],
+  const [tweets, setTweets] = useState<EditTweet[]>(
+    thread.tweets?.length
+      ? thread.tweets.map((t) => ({ text: t.text, url: t.url ?? "", posted: !!t.posted }))
+      : [{ text: "", url: "", posted: false }],
   );
   const [altText, setAltText] = useState(thread.alt_text ?? "");
   const [imageRef, setImageRef] = useState(thread.image_ref ?? "");
@@ -56,14 +60,18 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
 
-  function setTweet(i: number, value: string) {
-    setTweets((prev) => prev.map((t, k) => (k === i ? value : t)));
+  const liveCount = tweets.filter((t) => t.posted).length;
+
+  function setTweet(i: number, patch: Partial<EditTweet>) {
+    setTweets((prev) => prev.map((t, k) => (k === i ? { ...t, ...patch } : t)));
   }
   function addTweet() {
-    setTweets((prev) => [...prev, ""]);
+    setTweets((prev) => [...prev, { text: "", url: "", posted: false }]);
   }
   function removeTweet(i: number) {
-    setTweets((prev) => (prev.length <= 1 ? [""] : prev.filter((_, k) => k !== i)));
+    setTweets((prev) =>
+      prev.length <= 1 ? [{ text: "", url: "", posted: false }] : prev.filter((_, k) => k !== i),
+    );
   }
   function moveTweet(i: number, dir: -1 | 1) {
     setTweets((prev) => {
@@ -87,7 +95,11 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
           slug,
           status,
           scheduled_at: scheduledAt ? `${scheduledAt}:00Z` : null,
-          tweets: tweets.map((text) => ({ text })),
+          tweets: tweets.map((t) => ({
+            text: t.text,
+            url: t.url.trim() || null,
+            posted: t.posted,
+          })),
           alt_text: altText,
           image_ref: imageRef,
           sources,
@@ -166,7 +178,10 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
       {/* Tweets */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <p className="section-label">Tweets ({tweets.length})</p>
+          <p className="section-label">
+            Tweets ({tweets.length}
+            {liveCount > 0 ? ` · ${liveCount} live` : ""})
+          </p>
           <button
             type="button"
             onClick={addTweet}
@@ -177,13 +192,19 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
         </div>
 
         <div className="space-y-4">
-          {tweets.map((text, i) => {
-            const len = xWeightedLength(text);
+          {tweets.map((t, i) => {
+            const len = xWeightedLength(t.text);
             return (
-              <div key={i} className="border hairline p-3 bg-parchment-50">
+              <div
+                key={i}
+                className={`border hairline p-3 bg-parchment-50 ${
+                  t.posted ? "border-l-2 border-l-oxblood" : ""
+                }`}
+              >
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="font-mono text-[11px] text-ink/50">
                     {i + 1}/{tweets.length}
+                    {t.posted && <span className="ml-2 text-oxblood">● live</span>}
                   </span>
                   <div className="flex items-center gap-2">
                     <span className={`font-mono text-[11px] tabular ${counterClass(len)}`}>
@@ -218,12 +239,41 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
                   </div>
                 </div>
                 <textarea
-                  value={text}
-                  onChange={(e) => setTweet(i, e.target.value)}
-                  rows={Math.max(3, text.split("\n").length + 1)}
+                  value={t.text}
+                  onChange={(e) => setTweet(i, { text: e.target.value })}
+                  rows={Math.max(3, t.text.split("\n").length + 1)}
                   className="w-full bg-transparent font-mono text-[13px] leading-relaxed resize-y focus:outline-none"
                   placeholder="Tweet text…"
                 />
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-rule/60">
+                  <button
+                    type="button"
+                    onClick={() => setTweet(i, { posted: !t.posted })}
+                    aria-pressed={t.posted}
+                    className={`shrink-0 font-mono text-[11px] border px-2 py-1 hover:bg-ink/5 ${
+                      t.posted ? "bg-oxblood/10 border-oxblood/40 text-oxblood" : "text-ink/60"
+                    }`}
+                  >
+                    {t.posted ? "● live" : "○ mark live"}
+                  </button>
+                  <input
+                    type="url"
+                    value={t.url}
+                    onChange={(e) => setTweet(i, { url: e.target.value })}
+                    placeholder="https://x.com/polygraphso/status/…"
+                    className="flex-1 border hairline bg-transparent px-2 py-1 font-mono text-[11px] focus:outline-none focus:border-ink/40"
+                  />
+                  {t.url.trim() && (
+                    <a
+                      href={t.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="shrink-0 font-mono text-[11px] text-oxblood hover:underline"
+                    >
+                      open ↗
+                    </a>
+                  )}
+                </div>
               </div>
             );
           })}

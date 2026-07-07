@@ -6,7 +6,7 @@
  * getSupabaseAdmin(), return JSON. Tweets are saved as a whole ordered array.
  */
 import { getSupabaseAdmin } from "@/lib/supabase";
-import type { TwitterThreadStatus } from "@/lib/twitterThreads";
+import type { TwitterThreadStatus, TwitterThreadTweet } from "@/lib/twitterThreads";
 
 const STATUSES: TwitterThreadStatus[] = ["draft", "scheduled", "posted"];
 
@@ -46,13 +46,26 @@ function buildPatch(body: Record<string, unknown>): { patch: Record<string, unkn
   }
 
   if ("tweets" in body) {
-    if (
-      !Array.isArray(body.tweets) ||
-      !body.tweets.every((t) => t && typeof (t as { text?: unknown }).text === "string")
-    ) {
-      return { error: "tweets must be an array of { text: string }" };
-    }
-    patch.tweets = (body.tweets as { text: string }[]).map((t) => ({ text: t.text }));
+    const ok =
+      Array.isArray(body.tweets) &&
+      body.tweets.every((t) => {
+        if (!t || typeof (t as { text?: unknown }).text !== "string") return false;
+        const url = (t as { url?: unknown }).url;
+        const posted = (t as { posted?: unknown }).posted;
+        if (url != null && typeof url !== "string") return false;
+        if (posted != null && typeof posted !== "boolean") return false;
+        return true;
+      });
+    if (!ok) return { error: "tweets must be an array of { text, url?, posted? }" };
+    patch.tweets = (body.tweets as { text: string; url?: string | null; posted?: boolean }[]).map(
+      (t) => {
+        const tweet: TwitterThreadTweet = { text: t.text };
+        const url = typeof t.url === "string" ? t.url.trim() : "";
+        if (url) tweet.url = url;
+        if (t.posted) tweet.posted = true;
+        return tweet;
+      },
+    );
   }
 
   for (const key of ["alt_text", "image_ref", "sources", "notes"] as const) {

@@ -232,9 +232,14 @@ export interface AlertDeliveryRow {
 
 export type TwitterThreadStatus = "draft" | "scheduled" | "posted";
 
-/** One tweet in a thread, in order. Char counts are computed in the UI. */
+/**
+ * One tweet in a thread, in order. Char counts are computed in the UI.
+ * `url` is the X permalink once the tweet is live; `posted` marks it live.
+ */
 export interface TwitterThreadTweet {
   text: string;
+  url?: string | null;
+  posted?: boolean;
 }
 
 /**
