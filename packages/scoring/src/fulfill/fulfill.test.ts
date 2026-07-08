@@ -58,7 +58,7 @@ class FakeStore implements FulfillStore {
   async inFlightRegradeId(target: string) {
     return this.inFlight.get(target) ?? null;
   }
-  async enqueueRegrade(target: string, kind: "registry_ref" | "remote_url") {
+  async enqueueRegrade(target: string, kind: "registry_ref" | "remote_url" | "skill") {
     this.enqueued.push({ target, kind });
     const id = `run-${++this.runSeq}`;
     this.inFlight.set(target, id);
@@ -157,6 +157,26 @@ describe("runFulfillment — enqueue pass", () => {
     await runFulfillment(store, { fetchLatestVersion: latestNpm });
     expect(store.completed).toEqual(["r1"]);
     expect(store.enqueued).toEqual([{ target: "https://mcp.b.com/sse", kind: "remote_url" }]);
+  });
+
+  it("enqueues a skill request, preserving target_kind='skill' for the runner", async () => {
+    const store = new FakeStore({
+      queued: [
+        req({
+          id: "r1",
+          target: "github/polygraphso/litmus#plugins/polygraph/skills/polygraph",
+          target_kind: "skill",
+        }),
+      ],
+    });
+    const result = await runFulfillment(store, { fetchLatestVersion: latestNpm });
+    // A skill routes through the unversioned lane and keeps its kind so the
+    // worker sends it to the skill grader, not the MCP-server path.
+    expect(store.enqueued).toEqual([
+      { target: "github/polygraphso/litmus#plugins/polygraph/skills/polygraph", kind: "skill" },
+    ]);
+    expect(store.linked).toEqual([{ requestId: "r1", runId: "run-1" }]);
+    expect(result.enqueued).toBe(1);
   });
 
   it("declines instead of enqueueing when the target failed recently", async () => {

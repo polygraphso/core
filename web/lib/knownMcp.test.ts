@@ -31,4 +31,14 @@ describe("gateKnownMcp", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toMatch(/MCP server/i);
   });
+
+  it("passes a github skill ref without consulting the catalog", async () => {
+    const isCataloged = vi.fn(async () => false);
+    const r = await gateKnownMcp(
+      { target: "github/anthropics/skills#pdf", kind: "skill" },
+      isCataloged,
+    );
+    expect(r.ok).toBe(true);
+    expect(isCataloged).not.toHaveBeenCalled();
+  });
 });

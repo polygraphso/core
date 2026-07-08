@@ -36,4 +36,38 @@ describe("parseGradeTarget", () => {
     const result = parseGradeTarget("not a real ref");
     expect(result).toHaveProperty("error");
   });
+
+  it("classifies a github blob SKILL.md URL as a skill, canonicalized", () => {
+    // The exact form that was queued as a remote server and failed to grade.
+    expect(
+      parseGradeTarget(
+        "https://github.com/polygraphso/litmus/blob/main/plugins/polygraph/skills/polygraph/SKILL.md",
+      ),
+    ).toEqual({
+      target: "github/polygraphso/litmus#plugins/polygraph/skills/polygraph",
+      kind: "skill",
+    });
+  });
+
+  it("classifies a github tree URL (skill folder) as a skill", () => {
+    expect(
+      parseGradeTarget("https://github.com/anthropics/skills/tree/main/pdf"),
+    ).toEqual({ target: "github/anthropics/skills#pdf", kind: "skill" });
+  });
+
+  it("classifies an already-canonical github skill ref as a skill", () => {
+    expect(parseGradeTarget("github/anthropics/skills#pdf")).toEqual({
+      target: "github/anthropics/skills#pdf",
+      kind: "skill",
+    });
+  });
+
+  it("keeps a bare github/owner/repo a registry_ref (a server, not a skill)", () => {
+    // No subpath → ambiguous with a github MCP server; the server reading wins,
+    // matching the monitor funnel. Only a `#`-scoped ref is a skill.
+    expect(parseGradeTarget("github/owner/repo")).toEqual({
+      target: "github/owner/repo",
+      kind: "registry_ref",
+    });
+  });
 });
