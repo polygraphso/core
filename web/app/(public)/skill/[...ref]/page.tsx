@@ -274,6 +274,23 @@ function Graded({
         </p>
       ) : null}
 
+      {/* monitor — watch the skill's github path for changes */}
+      <div className="mt-12 border-t hairline pt-6">
+        <h2 className="font-serif text-lg text-ink mb-1">Watch for changes</h2>
+        <p className="font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl mb-4">
+          This grade is a snapshot of the skill&rsquo;s files at one commit. Get an email when a new
+          commit changes <span className="font-mono text-[12px] text-ink">{name}</span> and polygraph
+          re-runs the litmus — one message per change, one-click unsubscribe.
+        </p>
+        <Link
+          href={`/monitor?for=${encodeURIComponent(target)}`}
+          className="inline-flex items-center gap-2 border hairline px-5 py-3 font-mono text-sm tracking-wide text-ink-muted hover:text-ink transition-colors"
+        >
+          Monitor this skill
+          <span aria-hidden className="text-base leading-none">→</span>
+        </Link>
+      </div>
+
       {/* on-chain attestation — shown only when this skill's grade is attested */}
       <OnchainSection target={target} />
 

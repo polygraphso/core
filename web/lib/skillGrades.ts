@@ -132,6 +132,34 @@ export function githubUrlForSkillRef(target: string): string | null {
   return subpath ? `${url}/tree/main/${subpath}` : url;
 }
 
+/**
+ * A full GitHub URL to a skill → canonical `github/owner/repo#subpath`, or null.
+ * Accepts blob/tree URLs; strips a trailing `SKILL.md` and the git ref, e.g.
+ *   https://github.com/owner/repo/blob/main/a/b/SKILL.md → github/owner/repo#a/b
+ */
+export function githubUrlToSkillRef(raw: string): string | null {
+  const m = /^https?:\/\/github\.com\/([^/\s]+)\/([^/\s]+)\/(?:blob|tree)\/[^/\s]+\/(.+)$/i.exec(raw.trim());
+  if (!m) return null;
+  const owner = m[1]!;
+  const repo = m[2]!.replace(/\.git$/i, "");
+  const path = m[3]!
+    .replace(/[?#].*$/, "") // drop any ?query / #fragment
+    .replace(/\/+$/, "") // trailing slash
+    .replace(/\/?SKILL\.md$/i, ""); // the skill dir is what contains SKILL.md
+  return path ? `github/${owner}/${repo}#${path}` : `github/${owner}/${repo}`;
+}
+
+/**
+ * Canonicalize any skill input a user might paste — a full GitHub blob/tree URL,
+ * a `/skill` URL path, or an already-canonical `github/owner/repo#subpath` — to
+ * the stored skill ref. Returns the trimmed input unchanged when it doesn't look
+ * like a skill (callers validate the result).
+ */
+export function normalizeSkillInput(raw: string): string {
+  const t = raw.trim();
+  return githubUrlToSkillRef(t) ?? decodeSkillRef(t) ?? t;
+}
+
 /** Human display name for a skill ref — the subpath, else the repo name. */
 export function skillDisplayName(target: string): string {
   const hashIdx = target.indexOf("#");
