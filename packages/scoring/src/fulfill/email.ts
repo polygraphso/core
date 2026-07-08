@@ -17,10 +17,13 @@ function escapeHtml(s: string): string {
     .replaceAll('"', "&quot;");
 }
 
-function reportUrl(target: string, kind: "registry_ref" | "remote_url", siteUrl?: string): string {
+function reportUrl(target: string, kind: "registry_ref" | "remote_url" | "skill", siteUrl?: string): string {
   const site = (siteUrl ?? DEFAULT_SITE).replace(/\/+$/, "");
-  // Registry refs render at /mcp/<target> unencoded (the site's convention);
+  // Skills render at /skill/<owner>/<repo>/<subpath> — the canonical
+  // github/owner/repo#path with the '#' unfolded into a path segment (the site's
+  // decodeSkillRef reverses it). Registry refs render at /mcp/<target> unencoded;
   // remote URLs need encoding to survive as a path segment.
+  if (kind === "skill") return `${site}/skill/${target.replace("#", "/")}`;
   return kind === "remote_url"
     ? `${site}/mcp/${encodeURIComponent(target)}`
     : `${site}/mcp/${target}`;
@@ -28,7 +31,7 @@ function reportUrl(target: string, kind: "registry_ref" | "remote_url", siteUrl?
 
 export function buildFulfilledEmail(input: {
   target: string;
-  targetKind: "registry_ref" | "remote_url";
+  targetKind: "registry_ref" | "remote_url" | "skill";
   grade: string;
   version: string | null;
   siteUrl?: string;
