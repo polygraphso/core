@@ -62,4 +62,17 @@ describe("verifyRunnable", () => {
     if (!result.ok) expect(result.reason).toMatch(/npm|pypi|https/i);
     expect(probe).not.toHaveBeenCalled();
   });
+
+  it("trusts a github skill ref without probing a registry", async () => {
+    const probe = vi.fn();
+    const result = await verifyRunnable(
+      { target: "github/polygraphso/litmus#plugins/polygraph/skills/polygraph", kind: "skill" },
+      probe,
+    );
+    expect(result).toEqual({
+      ok: true,
+      target: "github/polygraphso/litmus#plugins/polygraph/skills/polygraph",
+    });
+    expect(probe).not.toHaveBeenCalled();
+  });
 });

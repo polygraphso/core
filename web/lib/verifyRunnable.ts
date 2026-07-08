@@ -4,6 +4,7 @@
  * The request funnel lets a human type a free-form ref. `parseGradeTarget`
  * proves it's well-formed; this proves the harness could actually grade it:
  *   - https:// remote  → trusted (a live endpoint, graded up to B)
+ *   - skill            → trusted (a github skill ref the runner clones + scans)
  *   - npm/… , pypi/…   → must exist on the registry (probe injected)
  *   - anything else     (a bare github repo, etc.) → not a runnable package yet
  *
@@ -24,10 +25,12 @@ export type RegistryProbe = (
 ) => Promise<boolean>;
 
 export async function verifyRunnable(
-  parsed: { target: string; kind: "registry_ref" | "remote_url" },
+  parsed: { target: string; kind: "registry_ref" | "remote_url" | "skill" },
   probe: RegistryProbe,
 ): Promise<RunnableCheck> {
-  if (parsed.kind === "remote_url") {
+  // A remote endpoint or a github skill ref is trusted as-is: neither has a
+  // registry to existence-check, and a bad URL/repo just fails the run later.
+  if (parsed.kind === "remote_url" || parsed.kind === "skill") {
     return { ok: true, target: parsed.target };
   }
 

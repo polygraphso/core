@@ -12,7 +12,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export interface GradeRequestRecord {
   id: string;
   target: string;
-  target_kind: "registry_ref" | "remote_url";
+  target_kind: "registry_ref" | "remote_url" | "skill";
   email: string | null;
   /** The hosted_runs row this request rides on; null until enqueued. */
   hosted_run_id: string | null;
@@ -58,7 +58,7 @@ export interface FulfillStore {
    *  lets a request ride an in-flight run instead of enqueueing a duplicate. */
   inFlightRegradeId(target: string): Promise<string | null>;
   /** Enqueue a free auto-published grading run; returns the new run's id. */
-  enqueueRegrade(target: string, kind: "registry_ref" | "remote_url"): Promise<string>;
+  enqueueRegrade(target: string, kind: "registry_ref" | "remote_url" | "skill"): Promise<string>;
   markInProgress(requestId: string, hostedRunId: string): Promise<void>;
   completeRequest(requestId: string): Promise<void>;
   declineRequest(requestId: string): Promise<void>;
