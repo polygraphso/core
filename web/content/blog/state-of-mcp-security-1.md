@@ -1,8 +1,7 @@
 ---
 title: "State of MCP Security #1: what running the top 100 MCP servers actually shows"
-date: "2026-07-06"
+date: "2026-07-08"
 excerpt: "As of July 2026, we ran an open behavioral harness across the most-adopted MCP servers. Here's what came back — the results, the mistakes we caught in our own harness, and an honest accounting of what we can't yet reach."
-unlisted: true
 ---
 
 **As of early July 2026.** We ran an open behavioral harness across the most-adopted MCP servers we track. The short version: 119 carry a published grade, and all but two are an A. Here is the longer version — the results, the mistakes we caught in our own harness and fixed, what an "A" does and doesn't mean, and an honest accounting of the servers we can't yet reach.
@@ -11,7 +10,7 @@ unlisted: true
 
 We track the most-adopted MCP servers — 235 today — and grade every one we can actually launch. How we assemble that ranking is a later section. As of this edition the index carries **119 published grades**:
 
-- **106 servers graded for behavior: 104 A, 2 D.** Of the top 50 by adoption, 25 carry a grade; of the top 100, 50 do.
+- **106 servers graded for behavior: 104 A, 2 D.** Of the top 50 by adoption, 24 carry a grade; of the top 100, 49 do.
 - **13 remote (`https://`) MCP endpoints, all B.** That is a ceiling, not a score: a remote server's code can change server-side at any moment after grading, so the methodology caps what a point-in-time run can honestly claim. The published tool-surface fingerprint is the tripwire — if the server's tools change after grading, the recheck fails and the grade no longer applies.
 
 ## What the grades show
@@ -36,7 +35,7 @@ That tracked set is a curated seed we grow deliberately, not a scrape of every p
 
 Two limits shape how much an almost-all-A distribution is worth, and we would rather state them than let a clean chart oversell.
 
-**The most-adopted servers are the hardest to grade.** The harness launches a server exactly the way an agent's config would — from a bare package reference — and the biggest names refuse to boot without credentials. Supabase, GitHub, Slack, Notion, Stripe, the database and cloud connectors each need an API key, an OAuth token, or a connection string just to start. We won't fabricate those, so these servers show as **ungraded** — a disclosed state, explicitly *not* graded-and-safe. That is why only 50 of the top 100 carry a grade: the ceiling on coverage is authentication, not effort. The published set therefore skews toward servers that run without secrets — focused, self-contained tools that are simply easier to earn an A on than a sprawling cloud connector would be, so a clean distribution over *this* sample is not a clean bill of health for the ecosystem. Grading credential-gated servers, with test credentials supplied by their maintainers, is on the roadmap and the single biggest lever on coverage.
+**The most-adopted servers are the hardest to grade.** The harness launches a server exactly the way an agent's config would — from a bare package reference — and the biggest names refuse to boot without credentials. Supabase, GitHub, Slack, Notion, Stripe, the database and cloud connectors each need an API key, an OAuth token, or a connection string just to start. We won't fabricate those, so these servers show as **ungraded** — a disclosed state, explicitly *not* graded-and-safe. That is why only 49 of the top 100 carry a grade: the ceiling on coverage is authentication, not effort. The published set therefore skews toward servers that run without secrets — focused, self-contained tools that are simply easier to earn an A on than a sprawling cloud connector would be, so a clean distribution over *this* sample is not a clean bill of health for the ecosystem. Grading credential-gated servers, with test credentials supplied by their maintainers, is on the roadmap and the single biggest lever on coverage.
 
 **And a grade does not mean "safe."** A server can detect a test context and behave (the disclosed residual limit of any dynamic analysis); a maintainer can ship a different version tomorrow (that is what the version pin and fingerprint are for); and the harness only measures the four categories it measures. The honest claim is narrower, and we think more useful: the grade is reproducible, and its limits are disclosed rather than hidden.
 
