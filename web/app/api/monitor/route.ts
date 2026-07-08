@@ -5,9 +5,12 @@
  * (target, user_id) via record_monitor's ON CONFLICT. Maps the 'quota_exceeded'
  * DB exception to 409 so the client can show a friendly message.
  *
- * v1 only accepts npm/pypi registry refs — the targets with a version stream the
- * alert engine can detect. Remote URLs (rejected by parseServerRef) and github
- * refs are turned away so we never create a monitor that can physically never fire.
+ * Accepts the targets that have a "version stream" the alert engine can watch:
+ *   - npm/pypi packages        → the registry version stream
+ *   - github/owner/repo        → the repo's commit stream (a github MCP server)
+ *   - github/owner/repo#path   → the skill subdir's path-scoped commit stream
+ * Remote https URLs and immutable @commit pins have no stream to watch, so they
+ * are rejected — we never create a monitor that can physically never fire.
  */
 
 import { NextResponse } from "next/server";
@@ -17,6 +20,7 @@ import {
   parseServerRef,
   serverKey,
 } from "@/lib/identity";
+import { decodeSkillRef } from "@/lib/skillGrades";
 import { getSession } from "@/lib/session";
 import { verifyRunnable, checkRegistryExists } from "@/lib/verifyRunnable";
 import { gateKnownMcp, isCatalogedServer } from "@/lib/knownMcp";
@@ -63,28 +67,59 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "server_ref is too long." }, { status: 400 });
   }
 
-  // Normalize to the versionless server_key form AND gate on a monitorable
-  // registry (npm/pypi). parseServerRef rejects remote URLs; we additionally
-  // reject github refs (no first-class version stream).
+  // Normalize to the stored key form and classify the target. A '#' marks a
+  // skill ref (github/owner/repo#path) — parseServerRef can't split the subpath,
+  // so skills take a dedicated branch. github servers and npm/pypi go through
+  // parseServerRef. An immutable @commit pin has no stream to watch → rejected.
+  const PIN_MESSAGE =
+    "Pin a branch, not a commit — a fixed @commit never changes, so there's nothing to monitor.";
   let normalizedRef: string;
-  try {
-    const parsed = parseServerRef(server_ref);
-    if (parsed.registry !== "npm" && parsed.registry !== "pypi") {
+  let targetKind: "registry_ref" | "skill";
+  let isGithub: boolean;
+
+  if (server_ref.includes("#")) {
+    if (server_ref.includes("@")) {
+      return NextResponse.json({ ok: false, message: PIN_MESSAGE }, { status: 400 });
+    }
+    const canonical = decodeSkillRef(server_ref);
+    if (!canonical || !canonical.startsWith("github/")) {
       return NextResponse.json(
-        {
-          ok: false,
-          message:
-            "Monitoring is available for npm and pypi servers — they're the ones with a version stream we can watch.",
-        },
+        { ok: false, message: "That doesn't look like a skill ref (expected github/owner/repo#path)." },
         { status: 400 },
       );
     }
-    normalizedRef = serverKey(parsed);
-  } catch (err) {
-    if (err instanceof ServerRefParseError) {
-      return NextResponse.json({ ok: false, message: err.message }, { status: 400 });
+    normalizedRef = canonical;
+    targetKind = "skill";
+    isGithub = true;
+  } else {
+    try {
+      const parsed = parseServerRef(server_ref);
+      if (parsed.registry === "github") {
+        if (parsed.version) {
+          return NextResponse.json({ ok: false, message: PIN_MESSAGE }, { status: 400 });
+        }
+        normalizedRef = serverKey(parsed);
+        targetKind = "registry_ref";
+        isGithub = true;
+      } else if (parsed.registry === "npm" || parsed.registry === "pypi") {
+        normalizedRef = serverKey(parsed);
+        targetKind = "registry_ref";
+        isGithub = false;
+      } else {
+        return NextResponse.json(
+          {
+            ok: false,
+            message: "Monitoring is available for npm, pypi, and GitHub servers and skills.",
+          },
+          { status: 400 },
+        );
+      }
+    } catch (err) {
+      if (err instanceof ServerRefParseError) {
+        return NextResponse.json({ ok: false, message: err.message }, { status: 400 });
+      }
+      throw err;
     }
-    throw err;
   }
 
   // Proxy guarantees a Supabase session for this route.
@@ -93,28 +128,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "Sign in to monitor servers." }, { status: 401 });
   }
 
-  // Same gate as the grade-request funnel: only monitor a target the harness
-  // could actually run (an npm/pypi package that exists) and that is plausibly
-  // an MCP server — otherwise we'd watch a non-existent or unrelated package
-  // (npm/benfica, npm/context) that can never produce a meaningful regrade.
+  // Same gate as the grade-request funnel, for registry targets only: monitor an
+  // npm/pypi package only if it exists and is plausibly an MCP server, else we'd
+  // watch a non-existent or unrelated package (npm/benfica, npm/context) that can
+  // never produce a meaningful regrade. github targets skip these (they have no
+  // registry entry / catalog row); the user typed an explicit owner/repo[#path],
+  // and the alert engine simply no-ops if the repo/path resolves to no commit.
   const gateTarget = { target: normalizedRef, kind: "registry_ref" as const };
-  const runnable = await verifyRunnable(gateTarget, checkRegistryExists);
-  if (!runnable.ok) {
-    return NextResponse.json({ ok: false, message: runnable.reason }, { status: 422 });
+  if (!isGithub) {
+    const runnable = await verifyRunnable(gateTarget, checkRegistryExists);
+    if (!runnable.ok) {
+      return NextResponse.json({ ok: false, message: runnable.reason }, { status: 422 });
+    }
   }
 
   try {
     const supabase = getSupabase();
 
-    const known = await gateKnownMcp(gateTarget, (ref) => isCatalogedServer(supabase, ref));
-    if (!known.ok) {
-      return NextResponse.json({ ok: false, message: known.reason }, { status: 422 });
+    if (!isGithub) {
+      const known = await gateKnownMcp(gateTarget, (ref) => isCatalogedServer(supabase, ref));
+      if (!known.ok) {
+        return NextResponse.json({ ok: false, message: known.reason }, { status: 422 });
+      }
     }
 
     const { error } = await supabase.rpc("record_monitor", {
       p_target: normalizedRef,
       p_email: null,
       p_user_id: session.userId,
+      p_target_kind: targetKind,
     });
     if (error) {
       if (error.message.includes("quota_exceeded")) {

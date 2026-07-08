@@ -57,6 +57,11 @@ export interface SkillDetail {
   content_hash: string | null;
   methodology_version: string;
   computed_at: string | null;
+  /** The github commit this grade was run against, and when it landed — the
+   *  path-scoped commit stream the monitor watches. Null for grades run before
+   *  the commit anchor landed (until backfilled). */
+  commit_sha: string | null;
+  commit_at: string | null;
 }
 
 interface EvidenceFinding {
@@ -83,10 +88,12 @@ export interface SkillGradeRow {
   content_hash: string | null;
   evidence: SkillEvidenceBundle | null;
   completed_at: string | null;
+  commit_sha: string | null;
+  commit_at: string | null;
 }
 
 /** The hosted_runs columns a skill report needs. */
-export const SKILL_GRADE_COLUMNS = "target, grade, content_hash, evidence, completed_at";
+export const SKILL_GRADE_COLUMNS = "target, grade, content_hash, evidence, completed_at, commit_sha, commit_at";
 
 /**
  * Canonical skill target → URL-path-safe form for `/skill/<…>`. The `#` subpath
@@ -174,6 +181,8 @@ export function detailFromSkillRow(row: SkillGradeRow): { grade: SkillLitmusGrad
       content_hash: row.content_hash ?? null,
       methodology_version: bundle?.methodologyVersion ?? "litmus-skill",
       computed_at: row.completed_at ?? null,
+      commit_sha: row.commit_sha ?? null,
+      commit_at: row.commit_at ?? null,
     },
   };
 }

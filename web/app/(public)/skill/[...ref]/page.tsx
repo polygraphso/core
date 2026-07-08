@@ -174,6 +174,15 @@ function Graded({
   const source = githubUrlForSkillRef(target);
   const hash = shortHash(detail.content_hash);
   const dated = detail.computed_at?.slice(0, 10) ?? null;
+  // The github commit this grade was run against — the commit stream the monitor
+  // watches. Shown when present (backfilled or graded after the anchor landed).
+  const commitShort = detail.commit_sha ? detail.commit_sha.slice(0, 7) : null;
+  const commitDate = detail.commit_at?.slice(0, 10) ?? null;
+  const repoSegs = target.split("#")[0]!.split("/"); // [github, owner, repo]
+  const commitUrl =
+    detail.commit_sha && repoSegs.length >= 3
+      ? `https://github.com/${repoSegs[1]}/${repoSegs[2]}/commit/${detail.commit_sha}`
+      : null;
 
   return (
     <>
@@ -199,6 +208,24 @@ function Graded({
             </Link>
             {dated ? <> · {dated}</> : null}
           </p>
+          {commitShort ? (
+            <p className="mt-1 font-mono text-[11.5px] text-ink-faint leading-relaxed">
+              graded at commit{" "}
+              {commitUrl ? (
+                <a
+                  href={commitUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+                >
+                  {commitShort}
+                </a>
+              ) : (
+                commitShort
+              )}
+              {commitDate ? <> · {commitDate}</> : null}
+            </p>
+          ) : null}
         </div>
       </div>
 

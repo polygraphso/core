@@ -32,6 +32,10 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # The enqueue pass now resolves github targets' latest commit via the
+          # GitHub API; the scoring adapter requires a token (60/hr unauthed breaks
+          # it). Reuses the same read-only PAT the score workflow uses.
+          GITHUB_TOKEN: ${{ secrets.SCORING_GITHUB_TOKEN }}
           # Optional overrides (sensible defaults in code):
           #   ALERT_FROM_EMAIL   (default "polygraph <alerts@polygraph.so>")
           #   POLYGRAPH_SITE_URL (default "https://polygraph.so")
