@@ -12,6 +12,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export interface MonitorRecord {
   id: string;
   target: string;
+  /** Discriminates the enqueue path: 'skill' → the worker's skill grader,
+   *  'registry_ref' → npm/pypi/github server. Also tells the engine that a
+   *  github/owner/repo#path target is a skill (path-scoped commit stream). */
+  target_kind: "registry_ref" | "skill";
   email: string | null;
   unsubscribe_token: string;
   last_notified_run_id: string | null;
@@ -25,6 +29,12 @@ export interface PublishedGrade {
   id: string;
   resolved_version: string | null;
   grade: string | null;
+  /** The path-scoped commit the grade was run against (github targets); null
+   *  for npm/pypi/remote and for grades run before the commit anchor landed.
+   *  The github monitor compares THIS (never resolved_version) against the live
+   *  latest commit to detect drift. Always selected by latestPublishedGrade;
+   *  optional only so the reconcile-pass fakes needn't set it. */
+  commit_sha?: string | null;
 }
 
 export interface ClaimDeliveryInput {
@@ -45,8 +55,9 @@ export interface AlertStore {
   hasPublishedGradeForVersion(target: string, version: string): Promise<boolean>;
   /** Is a monitor-sourced regrade already queued/running for this target? */
   hasInFlightMonitorRegrade(target: string): Promise<boolean>;
-  /** Enqueue a free regrade (a source='monitor' hosted_runs row). */
-  enqueueMonitorRegrade(target: string): Promise<void>;
+  /** Enqueue a free regrade (a source='monitor' hosted_runs row). targetKind
+   *  routes the worker's grader (skill vs server) and is stored on the row. */
+  enqueueMonitorRegrade(target: string, targetKind: "registry_ref" | "skill"): Promise<void>;
   /**
    * Claim a (monitor, run) delivery by inserting a pending alert_deliveries row.
    * Returns the new row id, or null if it already existed (the unique constraint
@@ -85,7 +96,7 @@ export function supabaseAlertStore(supabase: SupabaseClient): AlertStore {
     async latestPublishedGrade(target) {
       const { data, error } = await supabase
         .from("hosted_runs")
-        .select("id, resolved_version, grade")
+        .select("id, resolved_version, grade, commit_sha")
         .eq("target", target)
         .eq("status", "complete")
         .not("published_at", "is", null)
@@ -123,10 +134,10 @@ export function supabaseAlertStore(supabase: SupabaseClient): AlertStore {
       return data != null;
     },
 
-    async enqueueMonitorRegrade(target) {
+    async enqueueMonitorRegrade(target, targetKind) {
       const { error } = await supabase.from("hosted_runs").insert({
         target,
-        target_kind: "registry_ref",
+        target_kind: targetKind,
         source: "monitor",
         status: "queued",
         email: "monitor@polygraph.so",

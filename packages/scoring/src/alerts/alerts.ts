@@ -23,6 +23,7 @@
 import { parseServerRef, type ParsedServerRef } from "@polygraph/core";
 import { fetchNpm } from "../adapters/npm.js";
 import { fetchPypi } from "../adapters/pypi.js";
+import { latestCommitForPath, type CommitInfo } from "../adapters/github.js";
 import { buildDigestEmail, type AlertChange, type EmailSender } from "./email.js";
 import { gradeMeetsThreshold } from "./grades.js";
 import type { AlertStore, MonitorRecord, PublishedGrade } from "./store.js";
@@ -30,9 +31,30 @@ import type { AlertStore, MonitorRecord, PublishedGrade } from "./store.js";
 /** Default per-run enqueue cap — a cheap circuit breaker against a runaway pass. */
 const DEFAULT_MAX_ENQUEUE = 50;
 
+/** owner/repo/subPath extracted from a github monitor target. subPath is the
+ *  skill subdirectory (`github/owner/repo#path`) or null for a whole-repo server
+ *  target (`github/owner/repo`). */
+export interface GithubTarget {
+  owner: string;
+  repo: string;
+  subPath: string | null;
+}
+
+/** Parse a stored github target into owner/repo/subPath. Handles both the server
+ *  form (github/owner/repo) and the skill form (github/owner/repo#path); returns
+ *  null for anything that isn't a github target. */
+export function parseGithubTarget(target: string): GithubTarget | null {
+  const m = /^github\/([^/\s]+)\/([^#/\s]+)(?:#(.+))?$/.exec(target);
+  if (!m) return null;
+  return { owner: m[1]!, repo: m[2]!, subPath: m[3] ?? null };
+}
+
 export interface AlertsDeps {
   /** Resolve a registry ref's latest version. Default hits npm/pypi adapters. */
   fetchLatestVersion?: (parsed: ParsedServerRef) => Promise<string | null>;
+  /** Resolve a github target's latest PATH-SCOPED commit (the commit stream for
+   *  skills + github servers). Default hits the GitHub commits API. */
+  fetchLatestCommit?: (gh: GithubTarget) => Promise<CommitInfo | null>;
   /** Email transport. Required to send; omit in tests that don't exercise sends. */
   sender?: EmailSender;
   /** Origin for report/fix/unsubscribe links in the email. */
@@ -61,12 +83,41 @@ async function defaultFetchLatestVersion(parsed: ParsedServerRef): Promise<strin
   if (parsed.registry === "pypi") {
     return (await fetchPypi(parsed.name))?.latest_version ?? null;
   }
-  // github / anything without a registry version stream: not monitorable in v1.
+  // github is monitored via its commit stream (defaultFetchLatestCommit), not here.
   return null;
+}
+
+/** Default github commit stream: the latest commit on the default branch that
+ *  touches the graded path. */
+function defaultFetchLatestCommit(gh: GithubTarget): Promise<CommitInfo | null> {
+  return latestCommitForPath(gh.owner, gh.repo, undefined, gh.subPath);
+}
+
+/** npm/pypi enqueue branch: enqueue a regrade when the latest registry version
+ *  has no published grade and none is in flight. Returns the version it enqueued
+ *  (for logging), or null when it skipped. Mutates `result` like the main loop. */
+async function enqueueByVersion(
+  store: AlertStore,
+  target: string,
+  parsed: ParsedServerRef,
+  fetchLatest: (parsed: ParsedServerRef) => Promise<string | null>,
+  result: AlertsResult,
+): Promise<string | null> {
+  const latest = await fetchLatest(parsed);
+  if (!latest) {
+    result.skipped.push({ target, reason: "no latest version from registry" });
+    return null;
+  }
+  if (await store.hasPublishedGradeForVersion(target, latest)) return null; // graded; pass 2 notifies
+  if (await store.hasInFlightMonitorRegrade(target)) return null; // already queued/running
+  await store.enqueueMonitorRegrade(target, "registry_ref");
+  result.enqueued += 1;
+  return latest;
 }
 
 export async function runAlerts(store: AlertStore, deps: AlertsDeps = {}): Promise<AlertsResult> {
   const fetchLatest = deps.fetchLatestVersion ?? defaultFetchLatestVersion;
+  const fetchLatestCommitFn = deps.fetchLatestCommit ?? defaultFetchLatestCommit;
   const maxEnqueue = deps.maxEnqueue ?? DEFAULT_MAX_ENQUEUE;
   const log = deps.log ?? (() => {});
 
@@ -81,8 +132,12 @@ export async function runAlerts(store: AlertStore, deps: AlertsDeps = {}): Promi
     skipped: [],
   };
 
-  // ── Pass 1: enqueue regrades for targets with an ungraded new version ───────
-  const targets = [...new Set(monitors.map((m) => m.target))];
+  // ── Pass 1: enqueue regrades for targets whose stream has moved past the grade
+  // npm/pypi move by registry version; skills + github servers move by their
+  // path-scoped commit (the github "version stream"). A target maps to exactly one
+  // kind, so carry each target's kind alongside it.
+  const targetKinds = new Map(monitors.map((m) => [m.target, m.target_kind] as const));
+  const targets = [...targetKinds.keys()];
   result.targets = targets.length;
 
   for (const target of targets) {
@@ -91,27 +146,48 @@ export async function runAlerts(store: AlertStore, deps: AlertsDeps = {}): Promi
       break;
     }
     try {
-      const parsed = parseServerRef(target);
-      if (parsed.registry !== "npm" && parsed.registry !== "pypi") {
-        result.skipped.push({ target, reason: `unmonitorable registry: ${parsed.registry}` });
+      const kind = targetKinds.get(target) ?? "registry_ref";
+      // Skills are always github + path-scoped; a registry_ref may be npm/pypi
+      // (version stream) or a github server (commit stream).
+      let github = kind === "skill";
+      if (!github) {
+        const parsed = parseServerRef(target);
+        if (parsed.registry === "npm" || parsed.registry === "pypi") {
+          const enq = await enqueueByVersion(store, target, parsed, fetchLatest, result);
+          if (enq) log(`[alerts] enqueued regrade ${target} (latest ${enq})`);
+          continue;
+        }
+        if (parsed.registry === "github") {
+          github = true;
+        } else {
+          result.skipped.push({ target, reason: `unmonitorable registry: ${parsed.registry}` });
+          continue;
+        }
+      }
+
+      const gh = parseGithubTarget(target);
+      if (!gh) {
+        result.skipped.push({ target, reason: "unparseable github target" });
         continue;
       }
-      const latest = await fetchLatest(parsed);
-      if (!latest) {
-        result.skipped.push({ target, reason: "no latest version from registry" });
+      const live = await fetchLatestCommitFn(gh);
+      if (!live) {
+        result.skipped.push({ target, reason: "no commit from github" });
         continue;
       }
-      if (await store.hasPublishedGradeForVersion(target, latest)) {
-        // Already graded at the latest version — reconcile (pass 2) notifies.
-        continue;
+      const published = await store.latestPublishedGrade(target);
+      // Compare the path-scoped commit, never resolved_version. A null stored
+      // commit_sha (never graded, or a pre-anchor grade not yet backfilled) is
+      // treated as drift so one regrade establishes the baseline (self-heal).
+      if (published?.commit_sha && published.commit_sha === live.sha) {
+        continue; // up to date — reconcile (pass 2) notifies if a new grade landed
       }
       if (await store.hasInFlightMonitorRegrade(target)) {
-        // A regrade is already queued/running; don't enqueue a duplicate.
-        continue;
+        continue; // a regrade is already queued/running; don't duplicate
       }
-      await store.enqueueMonitorRegrade(target);
+      await store.enqueueMonitorRegrade(target, kind);
       result.enqueued += 1;
-      log(`[alerts] enqueued regrade ${target} (latest ${latest})`);
+      log(`[alerts] enqueued regrade ${target} (commit ${live.sha.slice(0, 8)})`);
     } catch (err) {
       result.skipped.push({ target, reason: err instanceof Error ? err.message : String(err) });
     }
