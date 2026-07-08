@@ -264,11 +264,11 @@ export const BANKR_AGENTS_META: BankrAgentMeta[] = [
  *  Uses the shared grade-only lookup (lib/hostedGrades) — same rows /base reads. */
 export async function loadBankrAgents(): Promise<BankrAgent[]> {
   const db = getSupabaseAdmin();
-  const out: BankrAgent[] = [];
-  for (const m of BANKR_AGENTS_META) {
-    const g = m.target ? await latestForTarget(db, m.target) : null;
-    const d = g?.detail ?? null;
-    out.push({ ...m, grade: d?.grade ?? null, c01: d?.c01 ?? null, c02: d?.c02 ?? null, c03: d?.c03 ?? null, completedAt: g?.completedAt ?? null });
-  }
-  return out;
+  return Promise.all(
+    BANKR_AGENTS_META.map(async (m) => {
+      const g = m.target ? await latestForTarget(db, m.target) : null;
+      const d = g?.detail ?? null;
+      return { ...m, grade: d?.grade ?? null, c01: d?.c01 ?? null, c02: d?.c02 ?? null, c03: d?.c03 ?? null, completedAt: g?.completedAt ?? null };
+    }),
+  );
 }
