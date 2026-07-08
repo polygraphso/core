@@ -20,7 +20,7 @@ import {
   parseServerRef,
   serverKey,
 } from "@/lib/identity";
-import { decodeSkillRef } from "@/lib/skillGrades";
+import { decodeSkillRef, githubUrlToSkillRef } from "@/lib/skillGrades";
 import { getSession } from "@/lib/session";
 import { verifyRunnable, checkRegistryExists } from "@/lib/verifyRunnable";
 import { gateKnownMcp, isCatalogedServer } from "@/lib/knownMcp";
@@ -67,28 +67,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: "server_ref is too long." }, { status: 400 });
   }
 
-  // Normalize to the stored key form and classify the target. A '#' marks a
-  // skill ref (github/owner/repo#path) — parseServerRef can't split the subpath,
-  // so skills take a dedicated branch. github servers and npm/pypi go through
-  // parseServerRef. An immutable @commit pin has no stream to watch → rejected.
+  // Normalize to the stored key form and classify the target. A skill ref is the
+  // canonical github/owner/repo#path form OR a full github.com blob/tree URL to a
+  // SKILL.md — parseServerRef can't split the subpath, so skills take a dedicated
+  // branch. github servers and npm/pypi go through parseServerRef. An immutable
+  // @commit pin has no stream to watch → rejected.
   const PIN_MESSAGE =
     "Pin a branch, not a commit — a fixed @commit never changes, so there's nothing to monitor.";
   let normalizedRef: string;
   let targetKind: "registry_ref" | "skill";
   let isGithub: boolean;
 
-  if (server_ref.includes("#")) {
+  const skillCandidate = server_ref.includes("#")
+    ? decodeSkillRef(server_ref)
+    : githubUrlToSkillRef(server_ref);
+
+  if (skillCandidate) {
+    // URLs carry the ref in the path (dropped); only a canonical #…@sha is a pin.
     if (server_ref.includes("@")) {
       return NextResponse.json({ ok: false, message: PIN_MESSAGE }, { status: 400 });
     }
-    const canonical = decodeSkillRef(server_ref);
-    if (!canonical || !canonical.startsWith("github/")) {
+    if (!skillCandidate.startsWith("github/") || !skillCandidate.includes("#")) {
       return NextResponse.json(
         { ok: false, message: "That doesn't look like a skill ref (expected github/owner/repo#path)." },
         { status: 400 },
       );
     }
-    normalizedRef = canonical;
+    normalizedRef = skillCandidate;
     targetKind = "skill";
     isGithub = true;
   } else {

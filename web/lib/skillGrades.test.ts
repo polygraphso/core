@@ -4,11 +4,49 @@ import {
   skillRefToPath,
   decodeSkillRef,
   githubUrlForSkillRef,
+  githubUrlToSkillRef,
+  normalizeSkillInput,
   skillDisplayName,
   detailFromSkillRow,
   SKILL_CATEGORIES,
   type SkillGradeRow,
 } from "./skillGrades";
+
+describe("githubUrlToSkillRef", () => {
+  it("parses a blob SKILL.md URL, dropping the ref and SKILL.md", () => {
+    expect(
+      githubUrlToSkillRef("https://github.com/polygraphso/litmus/blob/main/plugins/polygraph/skills/polygraph/SKILL.md"),
+    ).toBe("github/polygraphso/litmus#plugins/polygraph/skills/polygraph");
+  });
+  it("parses a tree URL (skill directory, no SKILL.md)", () => {
+    expect(githubUrlToSkillRef("https://github.com/BankrBot/skills/tree/main/bankr")).toBe(
+      "github/BankrBot/skills#bankr",
+    );
+  });
+  it("drops a trailing slash and a ?query/#fragment", () => {
+    expect(githubUrlToSkillRef("https://github.com/o/r/blob/abc123/a/b/SKILL.md?plain=1")).toBe("github/o/r#a/b");
+  });
+  it("returns null for non-github or non-blob/tree URLs", () => {
+    expect(githubUrlToSkillRef("https://example.com/x/y/blob/main/z")).toBeNull();
+    expect(githubUrlToSkillRef("https://github.com/o/r")).toBeNull();
+    expect(githubUrlToSkillRef("github/o/r#a")).toBeNull();
+  });
+});
+
+describe("normalizeSkillInput", () => {
+  it("canonicalizes a full SKILL.md URL", () => {
+    expect(normalizeSkillInput("https://github.com/BankrBot/skills/blob/main/bankr/SKILL.md")).toBe(
+      "github/BankrBot/skills#bankr",
+    );
+  });
+  it("passes an already-canonical ref through, and converts the slash form", () => {
+    expect(normalizeSkillInput("github/BankrBot/skills#bankr")).toBe("github/BankrBot/skills#bankr");
+    expect(normalizeSkillInput("github/BankrBot/skills/bankr")).toBe("github/BankrBot/skills#bankr");
+  });
+  it("returns the trimmed input when it isn't a skill", () => {
+    expect(normalizeSkillInput("  npm/foo  ")).toBe("npm/foo");
+  });
+});
 
 describe("skillRefToPath", () => {
   it("turns the `#` subpath separator into a path segment", () => {

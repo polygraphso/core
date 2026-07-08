@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { refToPath } from "@/lib/badgeData";
+import { skillRefToPath } from "@/lib/skillGrades";
 import { MonitorsList, type MonitorEntry } from "./_components/MonitorsList";
 import { AddMonitorForm } from "./_components/AddMonitorForm";
 
@@ -23,6 +24,7 @@ export const metadata = {
 interface MonitorRow {
   id: string;
   target: string;
+  target_kind: "registry_ref" | "skill";
   unsubscribe_token: string;
   unsubscribed_at: string | null;
   created_at: string;
@@ -66,7 +68,7 @@ export default async function DashboardPage() {
     db
       .from("monitors")
       .select(
-        "id, target, unsubscribe_token, unsubscribed_at, created_at, last_notified_grade, last_notified_version, last_notified_at, alert_min_grade",
+        "id, target, target_kind, unsubscribe_token, unsubscribed_at, created_at, last_notified_grade, last_notified_version, last_notified_at, alert_min_grade",
       )
       .eq("user_id", session.userId)
       .order("created_at", { ascending: false }),
@@ -75,24 +77,42 @@ export default async function DashboardPage() {
   ]);
 
   const monitors: MonitorRow[] = (monitorsResult.data ?? []) as MonitorRow[];
-  const targets = monitors.map((m) => m.target);
+  const serverTargets = monitors.filter((m) => m.target_kind !== "skill").map((m) => m.target);
+  const skillTargets = monitors.filter((m) => m.target_kind === "skill").map((m) => m.target);
 
-  // Fetch latest published grades for all monitored targets.
-  let gradeMap: Record<string, { grade: string | null; version: string | null }> = {};
-  if (targets.length > 0) {
-    const { data: runs } = await db
-      .from("hosted_runs")
-      .select("target, grade, resolved_version")
-      .in("target", targets)
-      .eq("status", "complete")
-      .not("published_at", "is", null)
-      .order("published_at", { ascending: false });
-    for (const row of ((runs ?? []) as GradeRow[])) {
+  // Latest grade per monitored target. Servers show the PUBLISHED grade (the live,
+  // minted one); skills aren't published-gated, so the newest complete run wins —
+  // the same rule the /skill report uses.
+  const gradeMap: Record<string, { grade: string | null; version: string | null }> = {};
+  const collect = (rows: GradeRow[]) => {
+    for (const row of rows) {
       if (!gradeMap[row.target]) {
         gradeMap[row.target] = { grade: row.grade, version: row.resolved_version };
       }
     }
-  }
+  };
+  const [serverRuns, skillRuns] = await Promise.all([
+    serverTargets.length > 0
+      ? db
+          .from("hosted_runs")
+          .select("target, grade, resolved_version")
+          .in("target", serverTargets)
+          .eq("status", "complete")
+          .not("published_at", "is", null)
+          .order("published_at", { ascending: false })
+      : Promise.resolve({ data: [] as GradeRow[] }),
+    skillTargets.length > 0
+      ? db
+          .from("hosted_runs")
+          .select("target, grade, resolved_version")
+          .in("target", skillTargets)
+          .eq("target_kind", "skill")
+          .eq("status", "complete")
+          .order("completed_at", { ascending: false })
+      : Promise.resolve({ data: [] as GradeRow[] }),
+  ]);
+  collect((serverRuns.data ?? []) as GradeRow[]);
+  collect((skillRuns.data ?? []) as GradeRow[]);
 
   // Fetch recent alert deliveries for this user's monitors.
   const monitorIds = monitors.map((m) => m.id);
@@ -110,12 +130,17 @@ export default async function DashboardPage() {
 
   const activeCount = monitors.filter((m) => !m.unsubscribed_at).length;
 
-  const monitorEntries: MonitorEntry[] = monitors.map((m) => ({
-    ...m,
-    currentGrade: gradeMap[m.target]?.grade ?? null,
-    currentVersion: gradeMap[m.target]?.version ?? null,
-    mcpPath: refToPath(m.target),
-  }));
+  const monitorEntries: MonitorEntry[] = monitors.map((m) => {
+    const kind = m.target_kind === "skill" ? ("skill" as const) : ("server" as const);
+    return {
+      ...m,
+      kind,
+      // Link a skill row to its /skill report, a server row to /mcp.
+      reportHref: kind === "skill" ? `/skill/${skillRefToPath(m.target)}` : `/mcp/${refToPath(m.target)}`,
+      currentGrade: gradeMap[m.target]?.grade ?? null,
+      currentVersion: gradeMap[m.target]?.version ?? null,
+    };
+  });
 
   return (
     <main className="flex-1">
@@ -134,8 +159,9 @@ export default async function DashboardPage() {
           <div>
             <h1 className="font-serif text-3xl text-ink tracking-tight">Monitors</h1>
             <p className="mt-2 text-ink-muted text-sm leading-relaxed max-w-md">
-              By default, one email per new-version regrade. Set a grade threshold on any
-              monitor to hear only about the grades you care about.
+              MCP servers and skills. By default, one email each time a monitored target is
+              re-graded — a new package version, or a new commit for a github skill or server.
+              Set a grade threshold on any monitor to hear only about the grades you care about.
             </p>
           </div>
           <div className="shrink-0 flex flex-col items-end gap-2">
