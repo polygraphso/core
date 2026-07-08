@@ -2,6 +2,8 @@ import "server-only";
 
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { latestForTarget } from "@/lib/hostedGrades";
+import { loadEntriesForEcosystem } from "@/lib/ecosystemData";
+import type { EcosystemEntryRow } from "@/lib/ecosystemTypes";
 
 /** Static skill-safety grade (litmus-skill-v2): A = clean static scan; D/F flagged. */
 export type SkillGrade = "A" | "B" | "D" | "F";
@@ -205,11 +207,30 @@ async function fetchSkillGradeMap(db: ReturnType<typeof getSupabaseAdmin>): Prom
   return map;
 }
 
+/** Reconstruct the skill metas from seeded ecosystem_entries (section 'skills'),
+ *  or the hardcoded array when unseeded. Curation columns (visible/featured/cohort)
+ *  win over the seeded metadata. */
+function rowsToBankrSkillMetas(rows: EcosystemEntryRow[]): BankrSkillMeta[] {
+  return rows
+    .filter((r) => r.visible && r.metadata.section === "skills")
+    .map((r) => {
+      const m = r.metadata as { slug?: string; cohort?: SkillCohort };
+      return {
+        slug: m.slug ?? "",
+        cohort: (r.cohort ?? m.cohort ?? "other") as SkillCohort,
+        featured: r.featured,
+      };
+    })
+    .filter((m) => m.slug);
+}
+
 /** Skill rows joined to their LIVE litmus-skill-v2 grades from hosted_runs, so the page
  *  tracks the grader instead of embedding a snapshot. Ungraded → grade null. */
 export async function loadBankrSkills(): Promise<BankrSkill[]> {
   const map = await fetchSkillGradeMap(getSupabaseAdmin());
-  return BANKR_SKILLS_META.map((m) => {
+  const rows = await loadEntriesForEcosystem("bankr");
+  const metas = rows ? rowsToBankrSkillMetas(rows) : BANKR_SKILLS_META;
+  return metas.map((m) => {
     const target = bankrSkillTarget(m.slug);
     const g = map.get(target);
     return { ...m, target, grade: g?.grade ?? null, s01: g?.s01 ?? null, s03: g?.s03 ?? null, s04: g?.s04 ?? null, hash: g?.hash ?? null, completedAt: g?.completedAt ?? null };
@@ -262,10 +283,30 @@ export const BANKR_AGENTS_META: BankrAgentMeta[] = [
 /** The agent rows joined to their LIVE grades from hosted_runs (any publish state),
  *  so the page stays in lockstep with the grader instead of hardcoding a letter.
  *  Uses the shared grade-only lookup (lib/hostedGrades) — same rows /base reads. */
+/** Reconstruct the agent metas from seeded ecosystem_entries (section 'agents'),
+ *  or the hardcoded array when unseeded. `target` comes from the column, the rest
+ *  from the seeded metadata. */
+function rowsToBankrAgentMetas(rows: EcosystemEntryRow[]): BankrAgentMeta[] {
+  return rows
+    .filter((r) => r.visible && r.metadata.section === "agents")
+    .map((r) => {
+      const m = r.metadata as Partial<BankrAgentMeta>;
+      return {
+        project: m.project ?? "",
+        handle: m.handle ?? "",
+        mcpRef: m.mcpRef ?? "",
+        target: r.target,
+        note: m.note ?? "",
+      };
+    });
+}
+
 export async function loadBankrAgents(): Promise<BankrAgent[]> {
   const db = getSupabaseAdmin();
+  const rows = await loadEntriesForEcosystem("bankr");
+  const metas = rows ? rowsToBankrAgentMetas(rows) : BANKR_AGENTS_META;
   return Promise.all(
-    BANKR_AGENTS_META.map(async (m) => {
+    metas.map(async (m) => {
       const g = m.target ? await latestForTarget(db, m.target) : null;
       const d = g?.detail ?? null;
       return { ...m, grade: d?.grade ?? null, c01: d?.c01 ?? null, c02: d?.c02 ?? null, c03: d?.c03 ?? null, completedAt: g?.completedAt ?? null };

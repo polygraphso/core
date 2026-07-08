@@ -17,7 +17,9 @@ import "server-only";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { decodeRef, refToPath } from "@/lib/badgeData";
 import { fetchAdoptionForServer } from "@/lib/rankings";
+import { loadEntriesForEcosystem } from "@/lib/ecosystemData";
 import { latestForTarget, type LitmusGrade, type PolygraphDetail } from "@/lib/hostedGrades";
+import type { EcosystemEntryRow } from "@/lib/ecosystemTypes";
 
 /** Display cohort. */
 export type Group = "protocol" | "tooling" | "agents";
@@ -97,13 +99,37 @@ export interface GradedEntry extends VirtualsEntry {
   adoptionSignal: string | null;
 }
 
+/** Reconstruct VirtualsEntry rows from seeded ecosystem_entries (metadata carries
+ *  the whole original object; visible/cohort overlaid from the curation columns). */
+function rowsToVirtualsEntries(rows: EcosystemEntryRow[]): VirtualsEntry[] {
+  return rows
+    .filter((r) => r.visible)
+    .map((r) => {
+      const m = r.metadata as Partial<VirtualsEntry> & { group?: Group };
+      return {
+        project: m.project ?? "",
+        handle: m.handle ?? "",
+        category: m.category ?? "",
+        group: (r.cohort ?? m.group ?? "protocol") as Group,
+        party: (m.party ?? "first") as Party,
+        ownMcp: Boolean(m.ownMcp),
+        mcpRef: m.mcpRef ?? null,
+        target: r.target,
+        pending: (m.pending ?? null) as Pending,
+        note: m.note,
+      };
+    });
+}
+
 /** Load every entry with its live grade (null when unconfigured/ungraded).
- *  Per-entry lookups run concurrently (same pattern as loadBaseIndex); output order
- *  and shape are unchanged. */
+ *  DB is the source once seeded (fallback to VIRTUALS_ENTRIES); per-entry lookups
+ *  run concurrently (same pattern as loadBaseIndex). */
 export async function loadVirtualsIndex(): Promise<GradedEntry[]> {
   const db = getSupabaseAdmin();
+  const rows = await loadEntriesForEcosystem("virtuals");
+  const source = rows ? rowsToVirtualsEntries(rows) : VIRTUALS_ENTRIES;
   return Promise.all(
-    VIRTUALS_ENTRIES.map(async (e) => {
+    source.map(async (e) => {
       const [g, adoption] = await Promise.all([
         e.target ? latestForTarget(db, e.target) : null,
         db && e.mcpRef ? fetchAdoptionForServer(db, e.mcpRef) : null,

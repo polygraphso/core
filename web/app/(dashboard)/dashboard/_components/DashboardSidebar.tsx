@@ -11,6 +11,7 @@ type NavItem = {
 
 const USER_NAV: NavItem[] = [
   { href: "/dashboard", label: "Monitors", active: (p) => p === "/dashboard" || p.startsWith("/dashboard/monitors") },
+  { href: "/manage", label: "Manage", active: (p) => p.startsWith("/manage") },
 ];
 
 const ADMIN_NAV: NavItem[] = [
@@ -19,6 +20,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: "/admin/twitter", label: "Twitter", active: (p) => p.startsWith("/admin/twitter") },
   { href: "/admin/users", label: "Users", active: (p) => p.startsWith("/admin/users") },
   { href: "/admin/monitors", label: "All monitors", active: (p) => p.startsWith("/admin/monitors") },
+  { href: "/admin/ecosystems", label: "New ecosystem", active: (p) => p.startsWith("/admin/ecosystems") },
   { href: "/ecosystems", label: "Ecosystems", active: (p) => p.startsWith("/ecosystems"), external: true },
 ];
 

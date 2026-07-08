@@ -1,9 +1,47 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ECOSYSTEMS } from "@/lib/ecosystems";
+import { ECOSYSTEMS, type Ecosystem, type EcosystemStats } from "@/lib/ecosystems";
+import { listEcosystems, loadGradedEntries } from "@/lib/ecosystemData";
+import { buildEntryVMs } from "@/lib/ecosystemViewModel";
+import { isLegacyEcosystemSlug } from "@/lib/ecosystemTypes";
 import { SectionHeader } from "@/app/_components/SectionHeader";
 import { EcosystemCta } from "@/app/_components/EcosystemCta";
 import { EcosystemCard, NotListedTile, ECOSYSTEM_MAILTO } from "@/app/_components/EcosystemCards";
+
+const GRADE_ORDER = ["A", "B", "C", "D", "F"] as const;
+
+/**
+ * Cards for DB-backed (self-serve) ecosystems that are public + listed, excluding
+ * the legacy six (they render as static ECOSYSTEMS cards with their bespoke pages).
+ * Stats are built the same way the generic page does — from visible entries joined
+ * to live grades — so a hub card never drifts from its /ecosystems/[slug] page.
+ */
+async function loadDbEcosystemCards(): Promise<Array<{ eco: Ecosystem; stats: EcosystemStats }>> {
+  const rows = (await listEcosystems({ listedOnly: true })).filter((e) => !isLegacyEcosystemSlug(e.slug));
+  return Promise.all(
+    rows.map(async (e) => {
+      const vms = buildEntryVMs(await loadGradedEntries(e.id, { visibleOnly: true }));
+      const graded = vms.filter((v) => v.grade);
+      const counts = GRADE_ORDER.map((g) => ({ g, n: graded.filter((v) => v.grade === g).length })).filter(
+        (c) => c.n > 0,
+      );
+      const lastRefreshed = graded
+        .map((v) => v.completedAt)
+        .filter((d): d is string => Boolean(d))
+        .reduce<string | null>((a, d) => (a && a > d ? a : d), null);
+      const stats: EcosystemStats = {
+        counts,
+        graded: graded.length,
+        summary: `${graded.length} graded · ${vms.length} tracked`,
+        lastRefreshed,
+      };
+      return {
+        eco: { slug: e.slug, href: `/ecosystems/${e.slug}`, name: e.name, blurb: e.blurb ?? "", loadStats: async () => stats },
+        stats,
+      };
+    }),
+  );
+}
 
 /**
  * The ecosystems hub — the full list of live per-network indexes plus the
@@ -75,8 +113,13 @@ const HOLDS = [
 ];
 
 export default async function EcosystemsPage() {
-  const stats = await Promise.all(ECOSYSTEMS.map((e) => e.loadStats()));
-  const totalGraded = stats.reduce((sum, s) => sum + s.graded, 0);
+  const [stats, dbCards] = await Promise.all([
+    Promise.all(ECOSYSTEMS.map((e) => e.loadStats())),
+    loadDbEcosystemCards(),
+  ]);
+  const totalGraded =
+    stats.reduce((sum, s) => sum + s.graded, 0) + dbCards.reduce((sum, c) => sum + c.stats.graded, 0);
+  const networkCount = ECOSYSTEMS.length + dbCards.length;
   // The most recent re-grade anywhere in the index — the "last refreshed" stamp the
   // § 05 CTA turns into its hook. Per-ecosystem dates (YYYY-MM-DD) already sort
   // lexicographically, so max() is the latest. null when nothing is graded yet.
@@ -134,12 +177,15 @@ export default async function EcosystemsPage() {
           </SectionHeader>
 
           <p className="mb-5 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint">
-            {totalGraded} live grades · {ECOSYSTEMS.length} networks
+            {totalGraded} live grades · {networkCount} networks
           </p>
 
           <div className="grid gap-4 md:grid-cols-2">
             {ECOSYSTEMS.map((e, i) => (
               <EcosystemCard key={e.slug} eco={e} stats={stats[i]} />
+            ))}
+            {dbCards.map((c) => (
+              <EcosystemCard key={c.eco.slug} eco={c.eco} stats={c.stats} />
             ))}
             <NotListedTile />
           </div>
