@@ -32,6 +32,12 @@ interface ServerComboboxProps {
   onSubmitFreeform: (normalized: string) => void;
   /** Comma list of grading kinds to restrict to (e.g. "npm,pypi"). */
   searchKind?: string;
+  /** Typeahead endpoint (returns { results: ComboboxResult[] }). Default is the
+   *  MCP catalog; the skill picker points this at /api/skills/search. */
+  searchUrl?: string;
+  /** How to canonicalize a free-typed value. Default npm-prefixes bare names;
+   *  the skill picker passes a github-skill-ref normalizer. */
+  normalize?: (raw: string) => string;
   placeholder?: string;
   disabled?: boolean;
   /** Verb on the synthetic free-form row. Default "Add". */
@@ -46,6 +52,8 @@ export function ServerCombobox({
   onSelectResult,
   onSubmitFreeform,
   searchKind,
+  searchUrl = "/api/catalog/search",
+  normalize = normalizeServerRef,
   placeholder = "@scope/name · pypi/name · https://…",
   disabled = false,
   freeformVerb = "Add",
@@ -58,7 +66,7 @@ export function ServerCombobox({
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const normalized = normalizeServerRef(value);
+  const normalized = normalize(value);
 
   // Debounced search while typing.
   useEffect(() => {
@@ -72,7 +80,7 @@ export function ServerCombobox({
       const params = new URLSearchParams({ q: value.trim() });
       if (searchKind) params.set("kind", searchKind);
       try {
-        const res = await fetch(`/api/catalog/search?${params.toString()}`);
+        const res = await fetch(`${searchUrl}?${params.toString()}`);
         const data = (await res.json()) as { results: ComboboxResult[] };
         setResults(data.results ?? []);
         setOpen(true);
@@ -84,7 +92,7 @@ export function ServerCombobox({
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [value, searchKind]);
+  }, [value, searchKind, searchUrl]);
 
   // Close on outside click.
   useEffect(() => {

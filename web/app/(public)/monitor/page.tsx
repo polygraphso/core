@@ -13,7 +13,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ServerRefParseError, parseServerRef, serverKey } from "@/lib/identity";
-import { decodeSkillRef } from "@/lib/skillGrades";
+import { decodeSkillRef, githubUrlToSkillRef } from "@/lib/skillGrades";
 import { getSession } from "@/lib/session";
 import { MonitorForm } from "./_components/MonitorForm";
 
@@ -36,11 +36,12 @@ type Resolution =
 
 function resolveServerRef(raw: string | undefined): Resolution {
   if (!raw || raw.length === 0 || raw.length > 512) return { kind: "none" };
-  // A '#' marks a skill ref (github/owner/repo#path); accept the slash-path form too.
-  if (raw.includes("#")) {
-    const canonical = decodeSkillRef(raw);
-    if (canonical && canonical.startsWith("github/") && canonical.includes("#")) {
-      return { kind: "ok", ref: canonical, targetKind: "skill" };
+  // A skill ref: the canonical github/owner/repo#path (or /skill slash form), or a
+  // full github.com blob/tree URL to a SKILL.md.
+  const skillCandidate = raw.includes("#") ? decodeSkillRef(raw) : githubUrlToSkillRef(raw);
+  if (skillCandidate) {
+    if (skillCandidate.startsWith("github/") && skillCandidate.includes("#")) {
+      return { kind: "ok", ref: skillCandidate, targetKind: "skill" };
     }
     return { kind: "unmonitorable" };
   }

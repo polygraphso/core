@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ServerCombobox, normalizeServerRef, type ComboboxResult } from "@/app/_components/ServerCombobox";
-import { decodeSkillRef } from "@/lib/skillGrades";
+import { normalizeSkillInput } from "@/lib/skillGrades";
 
 type Kind = "server" | "skill";
 
@@ -33,8 +33,8 @@ export function AddMonitorForm() {
     }
 
     // Queue a grade request for an ungraded SERVER so the monitor has something to
-    // alert on. Skills go through a different grading path (and the ones people
-    // monitor are already graded), so skip it for skills.
+    // alert on. Skills go through a different grading path (and the monitor engine
+    // grades a github target it's watching), so skip it for skills.
     if (!opts.isSkill && !opts.alreadyGraded) {
       await fetch("/api/grade-requests", {
         method: "POST",
@@ -60,18 +60,19 @@ export function AddMonitorForm() {
     submitRef(normalizeServerRef(value), { alreadyGraded: false, isSkill: false });
   }
 
-  function onSubmitSkill(e: React.FormEvent) {
-    e.preventDefault();
-    const raw = skillValue.trim();
-    if (!raw) return;
-    // Accept the canonical github/owner/repo#skill or a /skill URL path form.
-    const canonical = decodeSkillRef(raw);
-    if (!canonical || !canonical.startsWith("github/") || !canonical.includes("#")) {
+  function submitSkill(normalized: string) {
+    if (!normalized.startsWith("github/") || !normalized.includes("#")) {
       setStatus("error");
-      setMessage("Enter a skill ref like github/owner/repo#skill-name.");
+      setMessage("Pick a skill from the list, or paste github/owner/repo#skill or a SKILL.md URL.");
       return;
     }
-    submitRef(canonical, { alreadyGraded: true, isSkill: true });
+    submitRef(normalized, { alreadyGraded: false, isSkill: true });
+  }
+
+  function onSubmitSkill(e: React.FormEvent) {
+    e.preventDefault();
+    if (!skillValue.trim()) return;
+    submitSkill(normalizeSkillInput(skillValue));
   }
 
   const tab = (k: Kind, label: string) => (
@@ -84,6 +85,16 @@ export function AddMonitorForm() {
       }`}
     >
       {label}
+    </button>
+  );
+
+  const monitorButton = (formValue: string) => (
+    <button
+      type="submit"
+      disabled={status === "loading" || !formValue.trim()}
+      className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] bg-ink text-parchment px-4 py-2.5 hover:bg-oxblood transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      {status === "loading" ? "…" : "Monitor"}
     </button>
   );
 
@@ -113,13 +124,7 @@ export function AddMonitorForm() {
                 disabled={status === "loading"}
               />
             </div>
-            <button
-              type="submit"
-              disabled={status === "loading" || !value.trim()}
-              className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] bg-ink text-parchment px-4 py-2.5 hover:bg-oxblood transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {status === "loading" ? "…" : "Monitor"}
-            </button>
+            {monitorButton(value)}
           </div>
           <p className="mt-2 font-mono text-[10px] text-ink-faint">
             npm packages are prefixed automatically. Use <span className="text-ink">pypi/name</span> for PyPI, or{" "}
@@ -129,30 +134,26 @@ export function AddMonitorForm() {
       ) : (
         <form onSubmit={onSubmitSkill}>
           <div className="flex gap-2 items-start">
-            <input
-              type="text"
-              value={skillValue}
-              onChange={(e) => { setSkillValue(e.target.value); setStatus("idle"); setMessage(""); }}
-              placeholder="github/owner/repo#skill-name"
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              disabled={status === "loading"}
-              className="flex-1 min-w-0 bg-parchment border hairline px-3.5 py-2.5 font-mono text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={status === "loading" || !skillValue.trim()}
-              className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] bg-ink text-parchment px-4 py-2.5 hover:bg-oxblood transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {status === "loading" ? "…" : "Monitor"}
-            </button>
+            <div className="flex-1 min-w-0">
+              <ServerCombobox
+                value={skillValue}
+                onValueChange={(v) => { setSkillValue(v); setStatus("idle"); setMessage(""); }}
+                onSelectResult={(r: ComboboxResult) => submitRef(r.target, { alreadyGraded: r.graded, isSkill: true })}
+                onSubmitFreeform={(normalized) => submitSkill(normalized)}
+                searchUrl="/api/skills/search"
+                normalize={normalizeSkillInput}
+                placeholder="Search skills, or paste a github ref / SKILL.md URL"
+                freeformVerb="Monitor"
+                disabled={status === "loading"}
+              />
+            </div>
+            {monitorButton(skillValue)}
           </div>
           <p className="mt-2 font-mono text-[10px] text-ink-faint">
-            The skill&rsquo;s github path — find it on any{" "}
-            <a href="/skill" className="text-ink hover:text-oxblood underline decoration-dotted underline-offset-2">skill report</a>{" "}
-            or an ecosystem page like <a href="/bankr" className="text-ink hover:text-oxblood underline decoration-dotted underline-offset-2">/bankr</a>.
+            Search graded skills by name, or paste{" "}
+            <span className="text-ink">github/owner/repo#skill</span> or a full SKILL.md URL. Browse them on{" "}
+            <a href="/bankr" className="text-ink hover:text-oxblood underline decoration-dotted underline-offset-2">/bankr</a>{" "}
+            and other ecosystem pages.
           </p>
         </form>
       )}
