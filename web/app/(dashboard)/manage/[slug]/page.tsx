@@ -13,6 +13,7 @@ import { getSession } from "@/lib/session";
 import { getEcosystemRole, canManageEcosystem } from "@/lib/ecosystemAccess";
 import { loadGradedEntries, listMembers } from "@/lib/ecosystemData";
 import { buildEntryVMs } from "@/lib/ecosystemViewModel";
+import { ConsoleTabs, type ConsoleTab } from "./_components/ConsoleTabs";
 import { EntriesManager } from "./_components/EntriesManager";
 import { MembersManager } from "./_components/MembersManager";
 import { SettingsForm } from "./_components/SettingsForm";
@@ -69,24 +70,29 @@ export default async function ManageConsolePage({
         ) : null}
       </header>
 
-      <section className="mb-14">
-        <p className="section-label mb-4">Servers &amp; skills</p>
-        <EntriesManager slug={ecosystem.slug} entries={entries} />
-      </section>
-
-      {manage ? (
-        <section className="mb-14">
-          <p className="section-label mb-4">Members</p>
-          <MembersManager slug={ecosystem.slug} members={members} />
-        </section>
-      ) : null}
-
-      {manage ? (
-        <section className="mb-6">
-          <p className="section-label mb-4">Settings</p>
-          <SettingsForm slug={ecosystem.slug} ecosystem={ecosystem} />
-        </section>
-      ) : null}
+      <ConsoleTabs
+        tabs={[
+          {
+            id: "entries",
+            label: "MCPs & Skills",
+            panel: <EntriesManager slug={ecosystem.slug} entries={entries} />,
+          },
+          ...(manage
+            ? ([
+                {
+                  id: "members",
+                  label: "Members",
+                  panel: <MembersManager slug={ecosystem.slug} members={members} />,
+                },
+                {
+                  id: "settings",
+                  label: "Settings",
+                  panel: <SettingsForm slug={ecosystem.slug} ecosystem={ecosystem} />,
+                },
+              ] as ConsoleTab[])
+            : []),
+        ]}
+      />
     </main>
   );
 }

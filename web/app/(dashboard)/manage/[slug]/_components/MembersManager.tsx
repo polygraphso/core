@@ -57,7 +57,6 @@ function MemberRow({ slug, member, onChanged }: { slug: string; member: Ecosyste
 export function MembersManager({ slug, members }: { slug: string; members: EcosystemMemberRow[] }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "member">("member");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -69,7 +68,7 @@ export function MembersManager({ slug, members }: { slug: string; members: Ecosy
     const res = await fetch(`/api/manage/${slug}/members`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.trim(), role }),
+      body: JSON.stringify({ email: email.trim() }),
     });
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     setBusy(false);
@@ -78,7 +77,7 @@ export function MembersManager({ slug, members }: { slug: string; members: Ecosy
       return;
     }
     setEmail("");
-    setMessage("Invited. They'll be added when they next sign in.");
+    setMessage("Invited as a member. Promote to admin below once they've joined.");
     router.refresh();
   }
 
@@ -92,20 +91,12 @@ export function MembersManager({ slug, members }: { slug: string; members: Ecosy
           placeholder="teammate@company.com"
           className="flex-1 font-mono text-[12px] border border-rule rounded-[3px] bg-parchment-50 px-3 py-2 text-ink placeholder:text-ink-faint"
         />
-        <select
-          value={role}
-          onChange={(e) => setRole(e.target.value as "admin" | "member")}
-          className="font-mono text-[12px] border border-rule rounded-[3px] bg-parchment-50 px-2 py-2 text-ink"
-        >
-          <option value="member">member</option>
-          <option value="admin">admin</option>
-        </select>
         <button
           type="submit"
           disabled={busy}
           className="font-mono text-[11px] uppercase tracking-[0.14em] bg-ink text-parchment-50 rounded-[3px] px-4 py-2 hover:bg-oxblood transition-colors disabled:opacity-50"
         >
-          {busy ? "inviting…" : "Invite"}
+          {busy ? "inviting…" : "Invite member"}
         </button>
       </form>
       {message ? <p className="mb-3 font-mono text-[11px] text-ink-muted">{message}</p> : null}
