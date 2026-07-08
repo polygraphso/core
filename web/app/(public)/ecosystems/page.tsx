@@ -24,8 +24,12 @@ export const metadata: Metadata = {
     "Independent, continuously re-graded trust indexes for the MCP servers, agents, and skills a network ships. Live example indexes, and how per-network monitoring works.",
 };
 
-// Stats come from the live hosted_runs loaders; render per-request like /base & /bankr.
-export const dynamic = "force-dynamic";
+// Stats come from the live hosted_runs loaders. Cache with ISR like /base & /bankr
+// (both revalidate = 3600) rather than rendering per-request: the old force-dynamic
+// re-ran the full six-loader fan-out (~50 sequential Supabase round-trips, dominated
+// by loadBaseIndex) on EVERY request, uncached — the slow path users were hitting.
+// Grades change on a daily-ish cadence, so an hourly re-render is plenty fresh.
+export const revalidate = 3600;
 
 // The one ask this page exists to trigger. Shared by the hero CTA, the § 01
 // "not listed" tile, and (via its own subject) the closing EcosystemCta, so the

@@ -97,23 +97,27 @@ export interface GradedEntry extends VirtualsEntry {
   adoptionSignal: string | null;
 }
 
-/** Load every entry with its live grade (null when unconfigured/ungraded). */
+/** Load every entry with its live grade (null when unconfigured/ungraded).
+ *  Per-entry lookups run concurrently (same pattern as loadBaseIndex); output order
+ *  and shape are unchanged. */
 export async function loadVirtualsIndex(): Promise<GradedEntry[]> {
   const db = getSupabaseAdmin();
-  const out: GradedEntry[] = [];
-  for (const e of VIRTUALS_ENTRIES) {
-    const g = e.target ? await latestForTarget(db, e.target) : null;
-    const key = e.mcpRef ? decodeRef(e.mcpRef) : null;
-    const adoption = db && e.mcpRef ? await fetchAdoptionForServer(db, e.mcpRef) : null;
-    out.push({
-      ...e,
-      grade: g?.grade ?? null,
-      detail: g?.detail ?? null,
-      completedAt: g?.completedAt ?? null,
-      reportPath: key ? refToPath(key) : null,
-      adoptionScore: adoption ? Math.round(adoption.adoptionScore) : null,
-      adoptionSignal: adoption ? adoption.adoptionSignal : null,
-    });
-  }
-  return out;
+  return Promise.all(
+    VIRTUALS_ENTRIES.map(async (e) => {
+      const [g, adoption] = await Promise.all([
+        e.target ? latestForTarget(db, e.target) : null,
+        db && e.mcpRef ? fetchAdoptionForServer(db, e.mcpRef) : null,
+      ]);
+      const key = e.mcpRef ? decodeRef(e.mcpRef) : null;
+      return {
+        ...e,
+        grade: g?.grade ?? null,
+        detail: g?.detail ?? null,
+        completedAt: g?.completedAt ?? null,
+        reportPath: key ? refToPath(key) : null,
+        adoptionScore: adoption ? Math.round(adoption.adoptionScore) : null,
+        adoptionSignal: adoption ? adoption.adoptionSignal : null,
+      };
+    }),
+  );
 }

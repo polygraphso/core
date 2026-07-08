@@ -118,25 +118,30 @@ export interface GradedEntry extends BaseEntry {
   adoptionSignal: string | null;
 }
 
-/** Load every entry with its live grade (null when unconfigured/ungraded). */
+/** Load every entry with its live grade (null when unconfigured/ungraded).
+ *  The per-entry grade + adoption lookups are independent, so they run concurrently:
+ *  a serial await-in-loop turned ~50 Supabase round-trips into one long chain. Output
+ *  order and shape are unchanged (map preserves order). */
 export async function loadBaseIndex(): Promise<GradedEntry[]> {
   const db = getSupabaseAdmin();
-  const out: GradedEntry[] = [];
-  for (const e of BASE_ENTRIES) {
-    const g = e.target ? await latestForTarget(db, e.target) : null;
-    const key = e.mcpRef ? decodeRef(e.mcpRef) : null;
-    // Adoption is registry-only — fetchAdoptionForServer parses the ref and
-    // returns null for a remote URL or an untracked package.
-    const adoption = db && e.mcpRef ? await fetchAdoptionForServer(db, e.mcpRef) : null;
-    out.push({
-      ...e,
-      grade: g?.grade ?? null,
-      detail: g?.detail ?? null,
-      completedAt: g?.completedAt ?? null,
-      reportPath: key ? refToPath(key) : null,
-      adoptionScore: adoption ? Math.round(adoption.adoptionScore) : null,
-      adoptionSignal: adoption ? adoption.adoptionSignal : null,
-    });
-  }
-  return out;
+  return Promise.all(
+    BASE_ENTRIES.map(async (e) => {
+      // Adoption is registry-only — fetchAdoptionForServer parses the ref and
+      // returns null for a remote URL or an untracked package.
+      const [g, adoption] = await Promise.all([
+        e.target ? latestForTarget(db, e.target) : null,
+        db && e.mcpRef ? fetchAdoptionForServer(db, e.mcpRef) : null,
+      ]);
+      const key = e.mcpRef ? decodeRef(e.mcpRef) : null;
+      return {
+        ...e,
+        grade: g?.grade ?? null,
+        detail: g?.detail ?? null,
+        completedAt: g?.completedAt ?? null,
+        reportPath: key ? refToPath(key) : null,
+        adoptionScore: adoption ? Math.round(adoption.adoptionScore) : null,
+        adoptionSignal: adoption ? adoption.adoptionSignal : null,
+      };
+    }),
+  );
 }
