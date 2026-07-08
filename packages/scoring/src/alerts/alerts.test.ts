@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { runAlerts } from "./alerts.js";
+import { runAlerts, parseGithubTarget, type GithubTarget } from "./alerts.js";
 import type {
   AlertStore,
   ClaimDeliveryInput,
@@ -54,8 +54,10 @@ class FakeStore implements AlertStore {
   async hasInFlightMonitorRegrade(target: string) {
     return this.inFlight.has(target);
   }
-  async enqueueMonitorRegrade(target: string) {
+  enqueuedKinds: Array<{ target: string; kind: string }> = [];
+  async enqueueMonitorRegrade(target: string, kind: "registry_ref" | "skill") {
     this.enqueued.push(target);
+    this.enqueuedKinds.push({ target, kind });
     this.inFlight.add(target); // a real enqueue makes the next check see it in flight
   }
   async claimDelivery(input: ClaimDeliveryInput) {
@@ -87,6 +89,7 @@ function monitor(over: Partial<MonitorRecord> = {}): MonitorRecord {
   return {
     id: "m1",
     target: "npm/@scope/srv",
+    target_kind: "registry_ref",
     email: "dev@example.com",
     unsubscribe_token: "tok-1",
     last_notified_run_id: null,
@@ -142,19 +145,97 @@ describe("runAlerts — enqueue pass", () => {
     expect(store.enqueued).toEqual(["npm/@scope/srv"]);
   });
 
-  it("skips unmonitorable registries (e.g. a remote/github ref) without enqueuing", async () => {
-    const store = new FakeStore({ monitors: [monitor({ target: "github/owner/repo" })] });
-    const result = await runAlerts(store, { fetchLatestVersion: async () => "2.0.0" });
-    expect(store.enqueued).toEqual([]);
-    expect(result.skipped.some((s) => /unmonitorable/.test(s.reason))).toBe(true);
-  });
-
   it("respects the enqueue cap", async () => {
     const monitors = ["a", "b", "c"].map((n) => monitor({ id: n, target: `npm/${n}` }));
     const store = new FakeStore({ monitors });
     const result = await runAlerts(store, { fetchLatestVersion: async () => "1.0.0", maxEnqueue: 2 });
     expect(result.enqueued).toBe(2);
     expect(store.enqueued).toHaveLength(2);
+  });
+});
+
+describe("runAlerts — github commit stream (skills + github servers)", () => {
+  // Seed the watermark to the current grade so pass 2 (reconcile) is a no-op and
+  // these tests isolate the pass-1 commit-drift enqueue decision.
+  it("enqueues a github SERVER regrade when the live commit moved past the graded one", async () => {
+    const store = new FakeStore({
+      monitors: [monitor({ target: "github/owner/repo", last_notified_run_id: "run-1" })],
+      latest: { "github/owner/repo": { id: "run-1", resolved_version: "oldsha", grade: "A", commit_sha: "oldsha" } },
+    });
+    const result = await runAlerts(store, {
+      fetchLatestCommit: async () => ({ sha: "newsha", committedAt: "2026-07-08T00:00:00Z" }),
+    });
+    expect(store.enqueuedKinds).toEqual([{ target: "github/owner/repo", kind: "registry_ref" }]);
+    expect(result.enqueued).toBe(1);
+  });
+
+  it("does NOT enqueue when the live commit matches the graded commit_sha", async () => {
+    const store = new FakeStore({
+      monitors: [monitor({ target: "github/owner/repo", last_notified_run_id: "run-1" })],
+      latest: { "github/owner/repo": { id: "run-1", resolved_version: "abc", grade: "A", commit_sha: "abc" } },
+    });
+    await runAlerts(store, { fetchLatestCommit: async () => ({ sha: "abc", committedAt: null }) });
+    expect(store.enqueued).toEqual([]);
+  });
+
+  it("enqueues a SKILL regrade with kind 'skill', path-scoped to the skill subdir", async () => {
+    const seen: GithubTarget[] = [];
+    const store = new FakeStore({
+      monitors: [monitor({ target: "github/BankrBot/skills#pay", target_kind: "skill", last_notified_run_id: "run-1" })],
+      latest: { "github/BankrBot/skills#pay": { id: "run-1", resolved_version: "r", grade: "A", commit_sha: "old" } },
+    });
+    const result = await runAlerts(store, {
+      fetchLatestCommit: async (gh) => {
+        seen.push(gh);
+        return { sha: "new", committedAt: null };
+      },
+    });
+    expect(store.enqueuedKinds).toEqual([{ target: "github/BankrBot/skills#pay", kind: "skill" }]);
+    expect(seen).toEqual([{ owner: "BankrBot", repo: "skills", subPath: "pay" }]);
+    expect(result.enqueued).toBe(1);
+  });
+
+  it("self-heals a pre-anchor grade (null commit_sha) by enqueuing one baseline regrade", async () => {
+    const store = new FakeStore({
+      monitors: [monitor({ target: "github/owner/repo", last_notified_run_id: "run-1" })],
+      latest: { "github/owner/repo": { id: "run-1", resolved_version: "x", grade: "A" } }, // no commit_sha
+    });
+    await runAlerts(store, { fetchLatestCommit: async () => ({ sha: "y", committedAt: null }) });
+    expect(store.enqueued).toEqual(["github/owner/repo"]);
+  });
+
+  it("does NOT enqueue a github regrade already in flight", async () => {
+    const store = new FakeStore({
+      monitors: [monitor({ target: "github/owner/repo", last_notified_run_id: "run-1" })],
+      latest: { "github/owner/repo": { id: "run-1", resolved_version: "old", grade: "A", commit_sha: "old" } },
+      inFlight: ["github/owner/repo"],
+    });
+    await runAlerts(store, { fetchLatestCommit: async () => ({ sha: "new", committedAt: null }) });
+    expect(store.enqueued).toEqual([]);
+  });
+
+  it("skips a github target whose commit stream returns nothing (deleted/empty repo)", async () => {
+    const store = new FakeStore({ monitors: [monitor({ target: "github/owner/repo" })] });
+    const result = await runAlerts(store, { fetchLatestCommit: async () => null });
+    expect(store.enqueued).toEqual([]);
+    expect(result.skipped.some((s) => /no commit/.test(s.reason))).toBe(true);
+  });
+});
+
+describe("parseGithubTarget", () => {
+  it("parses a whole-repo server ref (no subPath)", () => {
+    expect(parseGithubTarget("github/owner/repo")).toEqual({ owner: "owner", repo: "repo", subPath: null });
+  });
+  it("parses a skill ref with a nested subPath", () => {
+    expect(parseGithubTarget("github/BankrBot/skills#a/b/c")).toEqual({
+      owner: "BankrBot",
+      repo: "skills",
+      subPath: "a/b/c",
+    });
+  });
+  it("returns null for non-github targets", () => {
+    expect(parseGithubTarget("npm/@scope/srv")).toBeNull();
+    expect(parseGithubTarget("pypi/foo")).toBeNull();
   });
 });
 

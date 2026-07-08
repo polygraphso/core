@@ -26,7 +26,8 @@
     "alerts": "node --env-file=../../.env --import tsx ./src/scripts/alerts.ts",
     "alerts:ci": "node --import tsx ./src/scripts/alerts.ts",
     "fulfill": "node --env-file=../../.env --import tsx ./src/scripts/fulfill-grade-requests.ts",
-    "fulfill:ci": "node --import tsx ./src/scripts/fulfill-grade-requests.ts"
+    "fulfill:ci": "node --import tsx ./src/scripts/fulfill-grade-requests.ts",
+    "backfill:commit-anchor": "node --env-file=../../.env --import tsx ./src/scripts/backfill-commit-anchor.ts"
   },
   "engines": {
     "node": ">=20.6.0"

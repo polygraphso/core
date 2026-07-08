@@ -193,7 +193,7 @@ export type AlertMinGrade = "C" | "D" | "F" | null;
 export interface MonitorRow {
   id: string;
   target: string;
-  target_kind: "registry_ref";
+  target_kind: "registry_ref" | "skill";
   email: string | null;
   user_id: string | null;
   unsubscribe_token: string;

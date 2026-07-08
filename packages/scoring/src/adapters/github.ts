@@ -104,6 +104,52 @@ function githubHeaders(token: string): Record<string, string> {
   };
 }
 
+export interface CommitInfo {
+  sha: string;
+  /** Committer date (ISO 8601) — when the commit landed. Null if absent. */
+  committedAt: string | null;
+}
+
+interface CommitListItem {
+  sha?: string;
+  commit?: { committer?: { date?: string | null } | null } | null;
+}
+
+/**
+ * Latest commit touching `subPath` (PATH-SCOPED), on branch/commit `ref` (the
+ * repo's default branch when omitted). This is the GitHub "version stream" the
+ * monitor watches for skills and GitHub servers: capture, backfill, and live
+ * monitoring all call this so the value stored at grade time is computed the
+ * same way it is compared later.
+ *
+ * Path-scoped is deliberate — a monorepo like BankrBot/skills holds many skills,
+ * so scoping to the graded subdirectory means an unrelated skill's commit does
+ * not look like a change to this one.
+ *
+ * Returns null when there is no such commit: 404 (missing repo/path), 409
+ * (empty repo), or an empty result set. Throws on other failures after retries.
+ */
+export async function latestCommitForPath(
+  owner: string,
+  repo: string,
+  ref?: string | null,
+  subPath?: string | null,
+): Promise<CommitInfo | null> {
+  const headers = githubHeaders(requireToken());
+  const params = new URLSearchParams({ per_page: "1" });
+  if (ref) params.set("sha", ref);
+  if (subPath) params.set("path", subPath);
+  const res = await fetchWithRetry(
+    `${API}/repos/${owner}/${repo}/commits?${params.toString()}`,
+    { label: LABEL, headers, passThroughStatuses: [404, 409] },
+  );
+  if (res.status === 404 || res.status === 409) return null;
+  const commits = (await res.json()) as CommitListItem[];
+  const top = Array.isArray(commits) ? commits[0] : undefined;
+  if (!top?.sha) return null;
+  return { sha: top.sha, committedAt: top.commit?.committer?.date ?? null };
+}
+
 export function parseContributorsCount(linkHeader: string | null): number {
   if (!linkHeader) return 1; // single-page response, exactly one page of contributors
   const match = linkHeader.match(/[?&]page=(\d+)>;\s*rel="last"/);

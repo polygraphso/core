@@ -80,6 +80,8 @@ function row(partial: Partial<SkillGradeRow>): SkillGradeRow {
     content_hash: "0xabc",
     evidence: { methodologyVersion: "litmus-skill-v2", categories: [] },
     completed_at: "2026-06-25T14:00:00Z",
+    commit_sha: null,
+    commit_at: null,
     ...partial,
   };
 }

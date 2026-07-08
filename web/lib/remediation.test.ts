@@ -31,7 +31,7 @@ function skillFinding(p: Partial<SkillFinding>): SkillFinding {
 }
 
 function skillDetail(grade: SkillDetail["grade"], categories: SkillCategory[]): SkillDetail {
-  return { grade, categories, content_hash: "0xabc", methodology_version: "litmus-skill-v2", computed_at: "2026-06-26T00:00:00Z" };
+  return { grade, categories, content_hash: "0xabc", methodology_version: "litmus-skill-v2", computed_at: "2026-06-26T00:00:00Z", commit_sha: null, commit_at: null };
 }
 
 describe("mcpFixItems", () => {
