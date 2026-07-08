@@ -243,17 +243,20 @@ export interface BankrAgent extends BankrAgentMeta {
 
 /**
  * Agents from bankr.bot/agents that ship their OWN MCP server. The ecosystem
- * standardizes on skills + x402 + ERC-8004, so connectable MCP servers are rare —
- * a deep sweep of all 68 curated agents surfaced these. nookplot and Blue Agent
- * publish a server litmus can launch from a bare npm ref (graded LIVE below); gitlawb,
- * Azzle, and VIGIL ship real servers that aren't gradeable as-published (target=null).
+ * standardizes on skills + x402 + ERC-8004, so connectable MCP servers stay rare:
+ * a 2026-07-08 sweep of the ~90-agent roster surfaced these seven. nookplot and
+ * Blue Agent publish a server litmus can launch from a bare npm ref (graded LIVE
+ * below); gitlawb, Azzle, Noelclaw, 1Claw, and VIGIL ship real servers that are not
+ * gradeable as-published (target=null, with the reason in each note).
  */
 export const BANKR_AGENTS_META: BankrAgentMeta[] = [
   { project: "nookplot", handle: "nookplot", mcpRef: "npm/@nookplot/mcp", target: "npm/@nookplot/mcp", note: "decentralized agent-coordination network" },
   { project: "Blue Agent", handle: "blockyagent", mcpRef: "npm/@blueagent/skill", target: "npm/@blueagent/skill", note: "50-tool stdio MCP server (security OS for agents)" },
-  { project: "gitlawb", handle: "Gitlawb", mcpRef: "stdio · gl mcp serve", target: null, note: "ships a standard stdio MCP server (24 git/identity tools), but the gl CLI installs only via the project's curl|sh installer — the same one its skill grades D — so not gradeable as-published" },
-  { project: "Azzle", handle: "dabusthebuilder", mcpRef: "npm/@azzle/agents", target: null, note: "ships a stdio MCP server (~10 azzle_* tools at agents/mcp/server.mjs), but the package's default entry isn't the server — not gradeable from a bare npm ref" },
-  { project: "VIGIL", handle: "vigilcodes", mcpRef: "https://mcp.vigil.codes", target: null, note: "ships an MCP server, but a non-standard transport (no MCP initialize handshake) — not gradeable as-is" },
+  { project: "gitlawb", handle: "Gitlawb", mcpRef: "stdio · gl mcp serve", target: null, note: "ships a standard stdio MCP server (24 git/identity tools), but the gl CLI is a precompiled static binary (published as per-platform @gitlawb/gl-linux-* packages) and the server sits behind a gl mcp serve subcommand; litmus launches declared bins bare and its sandbox builds only Node or Python sources, so it cannot reach the server" },
+  { project: "Azzle", handle: "dabusthebuilder", mcpRef: "npm/@azzle/agents", target: null, note: "ships a stdio MCP server (~10 azzle_* tools) inside @azzle/agents at mcp/server.mjs, but that file is a subpath, not the package's declared bin or main, so neither a bare npm ref nor litmus's github build (which derives its start command from the root package manifest) can launch it" },
+  { project: "Noelclaw", handle: "noelclaw", mcpRef: "npm/@noelclaw/mcp", target: null, note: "publishes a real 108-tool stdio MCP server, but it does not complete a litmus probe within the harness's 15-minute run budget (it stands up persistent memory, autonomous agents, and scheduled workflows on connect), so every run times out instead of producing a grade" },
+  { project: "1Claw", handle: "1clawAI", mcpRef: "npm/@1claw/mcp", target: null, note: "publishes a real stdio MCP server for its secrets vault, but the bin requires ONECLAW_* auth credentials at startup and exits before the MCP handshake without them, so it is not gradeable from a bare npm ref (there is no way to pass a vault key into a bare-ref grade)" },
+  { project: "VIGIL", handle: "vigilcodes", mcpRef: "https://mcp.vigil.codes", target: null, note: "ships a real MCP server, but it is an HTTP/x402 remote service (open source as a Python app at github.com/vigilcodes/vigil-mcp), so there is no stdio initialize handshake for litmus to grade; the live https://mcp.vigil.codes endpoint does not answer one either" },
 ];
 
 /** The agent rows joined to their LIVE grades from hosted_runs (any publish state),
