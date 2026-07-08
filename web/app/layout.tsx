@@ -24,11 +24,11 @@ const sourceSerif = Source_Serif_4({
 export const metadata: Metadata = {
   metadataBase: new URL("https://polygraph.so"),
   title: {
-    default: "polygraph.so — behavioral polygraphs for AI agents",
+    default: "polygraph.so: an independent trust layer for AI tools",
     template: "%s · polygraph.so",
   },
   description:
-    "We polygraph AI tools so you don't have to. A behavioral litmus test for MCP servers and a static safety scan for Agent Skills — a grade backed by evidence anyone can re-run. No graded party pays us. Free public polygraphs; CLI for sub-second checks.",
+    "An independent trust layer for the MCP servers, agents, and skills your ecosystem runs on. We grade AI tools behaviorally and publish evidence anyone can re-run, then keep the grade current with continuous, per-network monitoring. Free public grades; nobody can pay for a grade.",
   applicationName: "polygraph",
   keywords: [
     "MCP",
@@ -37,13 +37,14 @@ export const metadata: Metadata = {
     "agent security",
     "MCP server evaluation",
     "behavioral testing",
+    "ecosystem monitoring",
     "agent trust",
     "polygraph",
   ],
   openGraph: {
-    title: "polygraph.so — behavioral polygraphs for AI agents",
+    title: "polygraph.so: an independent trust layer for AI tools",
     description:
-      "We polygraph AI tools so you don't have to. A behavioral litmus test for MCP servers and a static safety scan for Agent Skills — a grade backed by evidence anyone can re-run.",
+      "Independent, continuously re-graded trust indexes for the MCP servers, agents, and skills a network ships. Behavioral grades backed by evidence anyone can re-run. Nobody can pay for a grade.",
     url: "https://polygraph.so",
     siteName: "polygraph.so",
     locale: "en_US",
@@ -53,7 +54,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "polygraph.so",
     description:
-      "Behavioral grades for MCP servers and static safety scans for Agent Skills — grades anyone can re-run. No graded party pays us.",
+      "An independent trust layer for AI tools: behavioral grades for MCP servers and skills, kept current with per-network monitoring. Grades anyone can re-run; nobody can pay for one.",
   },
   robots: { index: true, follow: true },
   verification: {
