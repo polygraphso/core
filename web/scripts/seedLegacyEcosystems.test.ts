@@ -29,14 +29,15 @@ describe("seed legacy ecosystems", () => {
       const db = createClient(url, key, { auth: { persistSession: false } });
 
       for (const eco of LEGACY_ECOSYSTEMS) {
-        // Legacy pages stay bespoke + noindex and the hub renders them from the
-        // static list, so keep the DB row unlisted (public so the console link works).
+        // Legacy pages stay bespoke + noindex, but they ARE listed on the /ecosystems
+        // hub (the hub honors is_listed for the static legacy cards too), so a member
+        // toggling "Listed" in Settings hides/shows the card as expected.
         const settings = {
           name: eco.name,
           blurb: eco.blurb,
           page_config: eco.page_config,
           is_public: true,
-          is_listed: false,
+          is_listed: true,
           noindex: true,
         };
 
