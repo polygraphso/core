@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 export interface MonitorEntry {
   id: string;
   target: string;
+  kind: "server" | "skill";
   unsubscribe_token: string;
   unsubscribed_at: string | null;
   created_at: string;
@@ -15,7 +16,15 @@ export interface MonitorEntry {
   alert_min_grade: "C" | "D" | "F" | null;
   currentGrade: string | null;
   currentVersion: string | null;
-  mcpPath: string;
+  /** The report link: /mcp/… for a server, /skill/… for a skill. */
+  reportHref: string;
+}
+
+/** Servers carry a package/commit version; a skill's "version" is a commit sha,
+ *  shown short. Returns the label to render next to the grade, or null. */
+function versionLabel(kind: "server" | "skill", version: string | null): string | null {
+  if (!version) return null;
+  return kind === "skill" ? version.slice(0, 7) : `v${version}`;
 }
 
 function GradePill({ grade }: { grade: string | null }) {
@@ -108,7 +117,7 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <a
-              href={`/mcp/${monitor.mcpPath}`}
+              href={monitor.reportHref}
               className="font-mono text-sm text-ink hover:text-oxblood transition-colors break-all"
             >
               {monitor.target}
@@ -121,9 +130,9 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
           </div>
           <div className="mt-2 flex items-center gap-3 flex-wrap">
             <GradePill grade={monitor.currentGrade} />
-            {monitor.currentVersion && (
+            {versionLabel(monitor.kind, monitor.currentVersion) && (
               <span className="font-mono text-[11px] text-ink-faint">
-                v{monitor.currentVersion}
+                {versionLabel(monitor.kind, monitor.currentVersion)}
               </span>
             )}
           </div>
@@ -156,8 +165,8 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
               {monitor.last_notified_grade && (
                 <span className="text-ink">{monitor.last_notified_grade}</span>
               )}{" "}
-              {monitor.last_notified_version && (
-                <>v{monitor.last_notified_version} · </>
+              {versionLabel(monitor.kind, monitor.last_notified_version) && (
+                <>{versionLabel(monitor.kind, monitor.last_notified_version)} · </>
               )}
               {new Date(monitor.last_notified_at).toLocaleDateString("en-US", {
                 month: "short",
@@ -198,10 +207,25 @@ export function MonitorsList({
   if (monitors.length === 0) {
     return (
       <p className="font-mono text-[11px] text-ink-faint mt-4">
-        No monitors yet. Enter a server above to get started.
+        No monitors yet. Add an MCP server or a skill above to get started.
       </p>
     );
   }
+
+  const servers = monitors.filter((m) => m.kind === "server");
+  const skills = monitors.filter((m) => m.kind === "skill");
+
+  const section = (label: string, rows: MonitorEntry[]) =>
+    rows.length === 0 ? null : (
+      <div className="grid gap-2">
+        <h3 className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint mt-2">
+          {label}
+        </h3>
+        {rows.map((m) => (
+          <MonitorRow key={m.id} monitor={m} onAction={() => setKey((k) => k + 1)} />
+        ))}
+      </div>
+    );
 
   return (
     <div className="grid gap-3">
@@ -212,10 +236,9 @@ export function MonitorsList({
             : `${quota.used} of ${quota.max} slot${quota.max !== 1 ? "s" : ""} used`}
         </p>
       </div>
-      <div key={key} className="grid gap-2">
-        {monitors.map((m) => (
-          <MonitorRow key={m.id} monitor={m} onAction={() => setKey((k) => k + 1)} />
-        ))}
+      <div key={key} className="grid gap-5">
+        {section("MCP servers", servers)}
+        {section("Skills", skills)}
       </div>
     </div>
   );
