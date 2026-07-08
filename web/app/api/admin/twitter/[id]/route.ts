@@ -6,9 +6,10 @@
  * getSupabaseAdmin(), return JSON. Tweets are saved as a whole ordered array.
  */
 import { getSupabaseAdmin } from "@/lib/supabase";
-import type { TwitterThreadStatus, TwitterThreadTweet } from "@/lib/twitterThreads";
+import type { TwitterAccount, TwitterThreadStatus, TwitterThreadTweet } from "@/lib/twitterThreads";
 
 const STATUSES: TwitterThreadStatus[] = ["draft", "scheduled", "posted"];
+const ACCOUNTS: TwitterAccount[] = ["personal", "product"];
 
 // Build a whitelisted update patch from the request body. Returns an error
 // string on the first invalid field, or the patch object.
@@ -34,6 +35,13 @@ function buildPatch(body: Record<string, unknown>): { patch: Record<string, unkn
       return { error: `status must be one of ${STATUSES.join(", ")}` };
     }
     patch.status = body.status;
+  }
+
+  if ("account" in body) {
+    if (!ACCOUNTS.includes(body.account as TwitterAccount)) {
+      return { error: `account must be one of ${ACCOUNTS.join(", ")}` };
+    }
+    patch.account = body.account;
   }
 
   for (const key of ["scheduled_at", "posted_at"] as const) {
