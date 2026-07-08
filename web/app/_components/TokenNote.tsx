@@ -1,6 +1,6 @@
 import { SectionHeader } from "./SectionHeader";
 
-// §05 — the funding note. Compact by design: the token is stated as fact
+// § 04 — the funding note. Compact by design: the token is stated as fact
 // and kept off the hero. The believer who wants it finds it; the
 // security reader who doesn't care scrolls past in one beat.
 //
@@ -13,7 +13,7 @@ const BANKR_URL =
 export function TokenNote() {
   return (
     <section id="funding" className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-      <SectionHeader number="§ 07" label="Funding" title="How polygraph gets funded.">
+      <SectionHeader number="§ 04" label="Funding" title="How polygraph gets funded.">
         Free to read, and not paid for by anyone we grade. Here&rsquo;s where
         the money comes from instead.
       </SectionHeader>
@@ -29,10 +29,10 @@ export function TokenNote() {
               The Bankr community launched{" "}
               <span className="font-mono text-[0.92em] text-ink">
                 $POLYGRAPH
-              </span>{" "}
-              &mdash; we didn&rsquo;t issue it. We claim the dev fees publicly
-              and use them to fund the work: the harness, the grades, and the
-              evidence stay free to read.
+              </span>
+              ; we didn&rsquo;t issue it. We claim the dev fees publicly and use
+              them to fund the work: the harness, the grades, and the evidence
+              stay free to read.
             </p>
             <p className="mt-4 font-serif text-lg md:text-xl text-ink leading-snug">
               Nobody can pay for a grade. No graded party gets review or
