@@ -183,7 +183,7 @@ pypi/mcp-server-fetch`}
     "c02": "pass",
     "c03": "pass",
     "tool_defs_fingerprint": "0x256a…66db6",
-    "methodology_version": "litmus-v15",
+    "methodology_version": "litmus-v16",
     "resolved_version": "1.4.0",
     "rationale": "All three categories passed.",
     "computed_at": "2026-06-11T14:14:04Z"
@@ -196,8 +196,8 @@ pypi/mcp-server-fetch`}
           <p className="text-sm">
             <span className="text-ink-faint">Note · </span>
             <Inline>polygraph</Inline> is one of <Inline>"A"</Inline>,{" "}
-            <Inline>"B"</Inline>, <Inline>"D"</Inline>, <Inline>"F"</Inline>{" "}
-            (there is no C — see the{" "}
+            <Inline>"B"</Inline>, <Inline>"C"</Inline>, <Inline>"D"</Inline>,{" "}
+            <Inline>"F"</Inline> (see the{" "}
             <a
               href="/methodology"
               className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
@@ -290,8 +290,8 @@ pypi/mcp-server-fetch`}
           </Code>
           <p className="text-sm">
             <Inline>polygraph</Inline> is one of <Inline>"A"</Inline>,{" "}
-            <Inline>"B"</Inline>, <Inline>"D"</Inline>, <Inline>"F"</Inline>{" "}
-            (there is no C — see the{" "}
+            <Inline>"B"</Inline>, <Inline>"C"</Inline>, <Inline>"D"</Inline>,{" "}
+            <Inline>"F"</Inline> (see the{" "}
             <a
               href="/methodology"
               className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"

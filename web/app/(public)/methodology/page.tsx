@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Methodology — litmus-v15",
+  title: "Methodology — litmus-v16",
   description:
-    "The litmus test, v15: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence. Plus litmus-skill-v2: a static safety scan of Agent Skills, graded A/B/D/F.",
+    "The litmus test, v16: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence. Plus litmus-skill-v2: a static safety scan of Agent Skills, graded A/B/D/F.",
   alternates: { canonical: "/methodology" },
 };
 
 // Faithful rendering of litmus-test.md (polygraphso/hosted-service repo) — the
-// authoritative methodologyVersion: "litmus-v15" spec. Content edits belong
+// authoritative methodologyVersion: "litmus-v16" spec. Content edits belong
 // in the spec first; this page mirrors it.
 
 function Section({
@@ -58,7 +58,7 @@ export default function MethodologyPage() {
       <article className="mx-auto max-w-3xl">
         <header className="mb-14">
           <p className="section-label mb-4">
-            Methodology · litmus-v15 · specification
+            Methodology · litmus-v16 · specification
           </p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             The litmus test
@@ -67,7 +67,7 @@ export default function MethodologyPage() {
             A behavioral evaluation of an MCP server — what it{" "}
             <em>does</em> when exercised the way an agent would, not what its
             README says. The string{" "}
-            <Inline>methodologyVersion: &quot;litmus-v15&quot;</Inline> travels
+            <Inline>methodologyVersion: &quot;litmus-v16&quot;</Inline> travels
             with every grade this spec produces. The same lab also grades{" "}
             <strong className="text-ink not-italic">Agent Skills</strong> under a
             separate static methodology, <Inline>litmus-skill-v2</Inline> —{" "}
@@ -101,7 +101,7 @@ export default function MethodologyPage() {
           <SubHead>What a passing grade does — and does not — claim</SubHead>
           <p>
             It <strong className="text-ink">does</strong> claim: against{" "}
-            <Inline>litmus-v15</Inline>, on the exact tool surface identified by
+            <Inline>litmus-v16</Inline>, on the exact tool surface identified by
             the fingerprint, the server did not exhibit the failure modes
             below, and the evidence is published and re-runnable.
           </p>
@@ -116,19 +116,25 @@ export default function MethodologyPage() {
 
         <Section num="02" label="Checks and probes" id="checks">
           <p>
-            Nine probes across four categories. Probe IDs are permanent and
+            Ten probes across four categories. Probe IDs are permanent and
             carry their family number; future probes extend a family without
             renumbering.
           </p>
 
-          <SubHead>C-01 — Tool-output injection · probes 1.1, 1.2, 1.3</SubHead>
+          <SubHead>C-01 — Tool-output injection · probes 1.1, 1.2, 1.3, 1.4</SubHead>
           <p>
             A server&rsquo;s tool descriptions and outputs flow straight into
             the calling agent&rsquo;s context — the documented &ldquo;tool
             poisoning&rdquo; attack class. <strong className="text-ink">Probe
             1.1</strong> pulls the full tool surface via{" "}
             <Inline>tools/list</Inline> and scans every name, description, and
-            input schema. <strong className="text-ink">Probe 1.2</strong>{" "}
+            input schema, including a tool-poisoning scanner that flags
+            agent-directed instructions hidden in the advertised surface: a
+            concealment directive (&ldquo;do not tell the user&rdquo;), an
+            imperative to read a known secret file (
+            <Inline>~/.ssh/id_rsa</Inline>, <Inline>.aws/credentials</Inline>),
+            or an exfiltration verb aimed at a sensitive object together with a
+            sink. <strong className="text-ink">Probe 1.2</strong>{" "}
             issues bait calls — benign-but-suggestive inputs designed to elicit
             injection-shaped echoes — and scans every output.{" "}
             <strong className="text-ink">Probe 1.3</strong> (second-order) feeds
@@ -147,6 +153,17 @@ export default function MethodologyPage() {
             exfiltration-shaped — a credential-named key, a long/high-entropy
             value, or an interpolation marker; an honest{" "}
             <Inline>?q=search</Inline> link is not flagged).
+          </p>
+          <p>
+            <strong className="text-ink">Probe 1.4</strong> (indirect /
+            passthrough injection) feeds harness-controlled, injection-laced
+            external content into content-fetching tools (a seeded file they
+            read, or a loopback URL they fetch) and grades the relay. A tool
+            that relays third-party content <em>verbatim</em> is disclosed as an
+            indirect-injection conduit, not failed: faithful relay is
+            legitimate, and the agent is expected to distrust tool output. Only
+            a tool that <em>amplifies</em> the content, emitting injection that
+            was not present in the payload, fails C-01.
           </p>
 
           <SubHead>C-02 — Permission overreach · probes 2.1, 2.2</SubHead>
@@ -297,13 +314,14 @@ export default function MethodologyPage() {
         <Section num="04" label="Grading rubric" id="rubric">
           <p>
             A single letter A&ndash;F, always accompanied by a rationale
-            string — never a bare grade. Only four grades are reachable: C is
-            reserved (no condition maps to it), and the scale skips E, as
-            letter grades conventionally do.
+            string, never a bare grade. Five grades are reachable; the scale
+            skips E, as letter grades conventionally do. C became a live grade
+            in <Inline>litmus-v16</Inline> (see the rubric below), so it is no
+            longer a reserved letter.
           </p>
           <figure className="border hairline bg-parchment-50 mt-2">
             <figcaption className="px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-              Grade rubric · litmus-v15 §5
+              Grade rubric · litmus-v16 §5
             </figcaption>
             <table className="w-full text-left text-sm">
               <thead>
@@ -325,11 +343,13 @@ export default function MethodologyPage() {
                     capped by design.
                   </td>
                 </tr>
-                <tr className="border-b hairline align-top opacity-60">
+                <tr className="border-b hairline align-top">
                   <td className="px-4 py-3 font-serif text-xl text-grade-c">C</td>
                   <td className="px-4 py-3">
-                    Reserved — no litmus-v15 condition maps to it. Future probe
-                    categories may claim it.
+                    A powerful server the harness could neither sandbox nor
+                    exercise: an unexercised destructive or value-moving tool
+                    together with a category (typically egress) left unverified.
+                    Refused by the default agent gate.
                   </td>
                 </tr>
                 <tr className="border-b hairline align-top">
@@ -356,8 +376,12 @@ export default function MethodologyPage() {
             read-only lie) or a C-04 failure (a crash, an internals-leak, or
             jailbreak amplification) is serious but not proven exfiltration or
             harm, so it caps at D. The B tier keeps the no-sandbox path usable
-            while stating honestly that egress was not verified. Every grade
-            carries its reasons in the evidence bundle.
+            while stating honestly that egress was not verified. C is emitted
+            only under the coverage cap: an unexercised destructive or
+            value-moving tool plus an unverified category (typically egress).
+            That coverage is too thin to clear as B, so the default agent gate
+            refuses a C rather than trust an unexercised powerful surface. Every
+            grade carries its reasons in the evidence bundle.
           </p>
         </Section>
 
@@ -368,7 +392,7 @@ export default function MethodologyPage() {
           <ul className="list-none space-y-3">
             <li>
               <strong className="text-ink">Deterministic harness.</strong>{" "}
-              Same server version + same <Inline>litmus-v15</Inline> harness →
+              Same server version + same <Inline>litmus-v16</Inline> harness →
               same findings. The bait, jailbreak, and malformed batteries are
               varied but fixed — no randomness in probe verdicts; timestamps
               and environment are recorded, not baked in.
@@ -390,7 +414,7 @@ export default function MethodologyPage() {
             <li>
               <strong className="text-ink">Re-runnable.</strong> Anyone — a
               skeptic, a counterparty, a future independent verifier — can
-              re-run <Inline>litmus-v15</Inline> against the same server and
+              re-run <Inline>litmus-v16</Inline> against the same server and
               compare fingerprint and grade. A false grade is falsifiable, not
               merely disputable.
             </li>
@@ -458,18 +482,43 @@ export default function MethodologyPage() {
 
         <Section num="07" label="Versioning" id="versioning">
           <p>
-            This page documents <Inline>litmus-v15</Inline>. Probes evolve as
+            This page documents <Inline>litmus-v16</Inline>. Probes evolve as
             agents do; new failure modes get new probe IDs within their
             family. A change that alters pass/fail semantics bumps the
             methodology version. Every evidence bundle and every attestation
             embeds the methodology version that produced it, so a grade is
             always tied to the spec it was measured against — earlier{" "}
-            <Inline>litmus-v1</Inline>…<Inline>v14</Inline>{" "}
+            <Inline>litmus-v1</Inline>…<Inline>v15</Inline>{" "}
             grades stay valid as
             their own version&rsquo;s results.
           </p>
           <p className="text-sm">
             <span className="text-ink-faint">Changelog · </span>
+            <Inline>litmus-v16</Inline>{" "}
+            exercises write-capable tools inside the network-isolated sandbox by
+            default, so a server that can move state earns A on the same terms as
+            a read-only one (write access is not itself a demerit). The coverage
+            cap now fires only where a call would hit a live backend (the host
+            path or a remote https target): one high-risk tool left unexercised
+            caps at B, and an unambiguously destructive or value-moving tool left
+            unexercised together with an unverified category (typically egress)
+            compounds to C. C is now a live grade rather than a reserved letter,
+            marking a powerful server the harness could neither sandbox nor
+            exercise; the default agent gate refuses it. The release also adds a
+            tool-poisoning scanner to C-01 probe 1.1 (concealment directives,
+            secret-file reads, exfil-to-sink), a new probe 1.4 for indirect /
+            passthrough injection (a tool that relays injection-laced third-party
+            content verbatim is disclosed as a conduit, not failed; only
+            server-generated amplification fails), wider jailbreak, malformed, and
+            runtime-crash corpora with provider-shaped canaries (AWS, GitHub,
+            JWT), and an opt-in advisory LLM injection judge surfaced in the run
+            summary only, which never affects the letter grade and is never part
+            of the minted evidence bundle. It is the first change that is not
+            purely monotonic: unlike the v9 through v15 precision fixes, v16 can
+            move a verdict down as well as up. Older attestations stay valid,
+            because <Inline>methodologyVersion</Inline> is a string the agent gate
+            does not branch on, and each grade is read against the spec that
+            produced it.{" "}
             <Inline>litmus-v15</Inline>{" "}
             adds public package-registry infrastructure (<Inline>pypi.org</Inline>,{" "}
             <Inline>files.pythonhosted.org</Inline>,{" "}
