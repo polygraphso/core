@@ -345,7 +345,46 @@ export interface EcosystemRow {
   is_public: boolean;
   is_listed: boolean;
   noindex: boolean;
+  /** Monitoring price override in USD/month. null = app default; 0 = comped. */
+  monthly_price_usd: number | null;
   created_by: string | null;
+  created_at: string;
+}
+
+export type EcosystemPaymentStatus = "active" | "canceled" | "ended";
+
+/** Monitoring price when ecosystems.monthly_price_usd is null. 0 there = comped. */
+export const DEFAULT_MONTHLY_PRICE_USD = 199;
+
+/**
+ * One verified monitoring payment: a Sablier Lockup stream of $POLYGRAPH to the
+ * polygraph treasury. Mirrors the `ecosystem_payments` table. Inserted by the
+ * web verify route after an onchain getStream check; `status` flips off 'active'
+ * when a lazy onchain re-check observes cancellation or the end date passes.
+ */
+export interface EcosystemPaymentRow {
+  id: string;
+  ecosystem_id: string;
+  chain_id: number;
+  sablier_contract: string;
+  stream_id: number;
+  tx_hash: string | null;
+  token: string;
+  token_decimals: number;
+  /**
+   * Raw token units (uint128). Exact in Postgres (numeric, written as a bigint
+   * string); reads may lose precision past 2^53 — treat as display-only.
+   */
+  deposit_amount: number;
+  usd_monthly: number;
+  usd_total: number;
+  token_usd_rate: number;
+  payer_address: string;
+  start_at: string;
+  end_at: string;
+  status: EcosystemPaymentStatus;
+  verified_at: string;
+  last_checked_at: string;
   created_at: string;
 }
 

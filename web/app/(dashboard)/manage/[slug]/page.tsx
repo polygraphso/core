@@ -11,6 +11,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getEcosystemRole, canManageEcosystem } from "@/lib/ecosystemAccess";
+import { getPaymentGate } from "@/lib/ecosystemPayments";
 import { loadGradedEntries, listMembers } from "@/lib/ecosystemData";
 import { buildEntryVMs } from "@/lib/ecosystemViewModel";
 import { loadEcosystemAdvisories } from "@/lib/cveData";
@@ -44,6 +45,11 @@ export default async function ManageConsolePage({
   if (!access) redirect("/manage");
   const { ecosystem, role } = access;
   const manage = canManageEcosystem(role);
+
+  // Monitoring is paid: without a live POLYGRAPH stream (or a comp), the whole
+  // console defers to the activation page.
+  const gate = await getPaymentGate(ecosystem);
+  if (gate.status !== "active") redirect(`/manage/${slug}/activate`);
 
   const [graded, members, advisories, alertSettings, recipients] = await Promise.all([
     loadGradedEntries(ecosystem.id),

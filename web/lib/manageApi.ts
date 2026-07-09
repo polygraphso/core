@@ -14,6 +14,7 @@ import {
   canManageEcosystem,
   type EcosystemAccess,
 } from "@/lib/ecosystemAccess";
+import { getPaymentGate } from "@/lib/ecosystemPayments";
 import { hostedRunnerConfig, postGrade, runnerKindFor } from "@/lib/hostedRunner";
 import type { EcosystemEntryKind } from "@/lib/ecosystemTypes";
 
@@ -26,10 +27,14 @@ export interface Guarded {
  * Resolve the caller's access to `slug`, or return the Response to send. Routes do
  * `const g = await guardManage(slug); if (g instanceof Response) return g;`.
  * `requireManage` additionally demands admin/app-admin (members → 403).
+ *
+ * Monitoring is paid: every manage route is 402-gated on the ecosystem's payment
+ * (a live POLYGRAPH stream, or comped) unless it opts out with
+ * `requirePaid: false` — which only the payment routes themselves do.
  */
 export async function guardManage(
   slug: string,
-  opts: { requireManage?: boolean } = {},
+  opts: { requireManage?: boolean; requirePaid?: boolean } = {},
 ): Promise<Guarded | Response> {
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
@@ -37,6 +42,12 @@ export async function guardManage(
   if (!access) return Response.json({ error: "Forbidden" }, { status: 403 });
   if (opts.requireManage && !canManageEcosystem(access.role)) {
     return Response.json({ error: "Admins only" }, { status: 403 });
+  }
+  if (opts.requirePaid !== false) {
+    const gate = await getPaymentGate(access.ecosystem);
+    if (gate.status !== "active") {
+      return Response.json({ error: "Payment required" }, { status: 402 });
+    }
   }
   return { session, access };
 }

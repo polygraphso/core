@@ -13,6 +13,7 @@
  * Store-seam design keeps it unit-testable with a fake store.
  */
 
+import { DEFAULT_MONTHLY_PRICE_USD } from "@polygraph/core";
 import { normalizeTargetKey } from "../advisories/ingest.js";
 import { buildEcosystemDigestEmail, type EcosystemCveItem, type EcosystemGradeItem, type EmailSender } from "./email.js";
 import { gradeDropped } from "./grades.js";
@@ -101,6 +102,14 @@ export async function runEcosystemAlerts(
 
   for (const eco of due) {
     try {
+      // The digest is the paid product: skip ecosystems that are neither comped
+      // (monthly_price_usd = 0) nor backed by a live verified payment. The
+      // period watermark is NOT advanced, so paying mid-week resumes delivery.
+      const priced = (eco.monthly_price_usd ?? DEFAULT_MONTHLY_PRICE_USD) !== 0;
+      if (priced && !(await store.hasActivePayment(eco.ecosystem_id))) {
+        result.skipped.push({ ecosystem: eco.slug, reason: "unpaid" });
+        continue;
+      }
       await processEcosystem(store, deps, eco, periodKey, result, log);
       result.processed += 1;
     } catch (err) {
