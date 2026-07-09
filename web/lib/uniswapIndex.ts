@@ -14,14 +14,14 @@ import "server-only";
  * wins) via the shared loader — the same grade-only read /bankr uses.
  */
 
-import { loadSkillCohort, type GradedSkill, type SkillMeta } from "@/lib/skillEcosystem";
+import { loadSkillCohort, legacySkillMetas, type GradedSkill, type SkillMeta } from "@/lib/skillEcosystem";
 
 const BANKR_SKILLS_REPO = "github/BankrBot/skills";
 const UNISWAP_AI = "github/Uniswap/uniswap-ai"; // Uniswap Labs' official agent-skills monorepo
 
 /** Uniswap builder skills: the official Uniswap/uniswap-ai set, community skills, and
  *  the community "build on Uniswap" skills carried in the Bankr library. */
-const UNISWAP_SKILLS: SkillMeta[] = [
+export const UNISWAP_SKILLS: SkillMeta[] = [
   // Official — Uniswap Labs' uniswap-ai plugins.
   { name: "v4-hook-generator", target: `${UNISWAP_AI}#packages/plugins/uniswap-hooks/skills/v4-hook-generator`, cohort: "official", featured: true },
   { name: "v4-security-foundations", target: `${UNISWAP_AI}#packages/plugins/uniswap-hooks/skills/v4-security-foundations`, cohort: "official" },
@@ -55,5 +55,5 @@ export const UNISWAP_COHORT_LABEL: Record<string, string> = {
 };
 
 export async function loadUniswapSkills(): Promise<GradedSkill[]> {
-  return loadSkillCohort(UNISWAP_SKILLS);
+  return loadSkillCohort(await legacySkillMetas("uniswap", UNISWAP_SKILLS));
 }

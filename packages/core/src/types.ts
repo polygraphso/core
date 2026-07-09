@@ -276,6 +276,118 @@ export interface TwitterThreadRow {
   updated_at: string;
 }
 
+// ── Ecosystems ───────────────────────────────────────────────────────────────
+
+export type EcosystemMemberRole = "admin" | "member";
+export type EcosystemMemberStatus = "invited" | "active";
+export type EcosystemEntryKind = "registry_ref" | "remote_url" | "skill";
+
+/**
+ * Editorial + presentation for an ecosystem's public page, carried in
+ * `ecosystems.page_config` (jsonb). The DB twin of the code-side
+ * SkillEcosystemConfig: `footer`/`methodologyNote` are plain strings here (the
+ * generic renderer wraps them), not ReactNode. All optional so a brand-new
+ * ecosystem renders with sensible defaults before it is configured.
+ */
+export interface EcosystemPageConfig {
+  /** Cohort keys in display order (must match entries' `cohort`). */
+  cohortOrder?: string[];
+  /** Cohort key → section heading. */
+  cohortLabel?: Record<string, string>;
+  /** Methodology tag for the private banner (e.g. "litmus-v14", "litmus-skill-v3"). */
+  methodologyLabel?: string;
+  cta?: { heading: string; body: string; mailtoSubject: string };
+  /** Bordered methodology / caveat block above the table. */
+  methodologyNote?: string;
+  /** Mono footer note (source links etc.). */
+  footer?: string;
+}
+
+/**
+ * Per-index display fields for one entry, carried in `ecosystem_entries.metadata`
+ * (jsonb). One bag covers every index's shape: skill cohorts use `name`; the Base
+ * / Virtuals MCP indices use `project`/`handle`/`category`/`party`/`ownMcp`/
+ * `mcpRef`/`pending`; Bankr uses `section` to split skills from agents. All
+ * optional — the renderer reads what its ecosystem populates.
+ */
+export interface EcosystemEntryMetadata {
+  /** Display name for a skill entry (slug or `<repo>`/`<repo>/<sub>`). */
+  name?: string;
+  project?: string;
+  /** X handle without the leading @. */
+  handle?: string;
+  category?: string;
+  /** Built by the protocol itself ("first") vs a community wrapper ("third"). */
+  party?: "first" | "third";
+  /** Does the project ship its own standalone MCP server? */
+  ownMcp?: boolean;
+  /** The MCP ref/endpoint for display, even when not graded. */
+  mcpRef?: string | null;
+  /** If it has an MCP but isn't graded yet, why. */
+  pending?: "free-key" | "api-key" | "clone-build" | null;
+  /** One-line editorial note. */
+  note?: string;
+  /** Sub-grouping within an ecosystem (e.g. Bankr "skills" vs "agents"). */
+  section?: string;
+}
+
+/**
+ * One ecosystem index. Mirrors the `ecosystems` table. Provisioned by a global
+ * app admin; managed by its `ecosystem_members`. Grades are never stored on the
+ * ecosystem — they join live from hosted_runs through the entries' targets.
+ */
+export interface EcosystemRow {
+  id: string;
+  slug: string;
+  name: string;
+  blurb: string | null;
+  page_config: EcosystemPageConfig;
+  is_public: boolean;
+  is_listed: boolean;
+  noindex: boolean;
+  created_by: string | null;
+  created_at: string;
+}
+
+/**
+ * A person who manages an ecosystem, or a pending email invite. Mirrors the
+ * `ecosystem_members` table. `user_id` is null while `status` is 'invited' and
+ * binds to the account on first sign-in (resolve_ecosystem_invites).
+ */
+export interface EcosystemMemberRow {
+  id: string;
+  ecosystem_id: string;
+  email: string;
+  user_id: string | null;
+  role: EcosystemMemberRole;
+  status: EcosystemMemberStatus;
+  invited_by: string | null;
+  invited_at: string;
+  joined_at: string | null;
+}
+
+/**
+ * A tracked MCP server / skill. Mirrors the `ecosystem_entries` table. `target`
+ * is the canonical hosted_runs ref the grade join keys on (nullable for a
+ * tracked-only row with no gradeable MCP). Display fields live in `metadata`;
+ * `last_grade_*` track an in-flight immediate-grade job.
+ */
+export interface EcosystemEntryRow {
+  id: string;
+  ecosystem_id: string;
+  target: string | null;
+  target_kind: EcosystemEntryKind;
+  cohort: string | null;
+  visible: boolean;
+  featured: boolean;
+  position: number;
+  metadata: EcosystemEntryMetadata;
+  last_grade_run_id: string | null;
+  last_grade_status: string | null;
+  added_by: string | null;
+  added_at: string;
+}
+
 // ── LISTEN/NOTIFY payloads ───────────────────────────────────────────────────
 
 export interface VersionDetectedPayload {

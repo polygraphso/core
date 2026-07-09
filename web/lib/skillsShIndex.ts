@@ -14,7 +14,7 @@ import "server-only";
  * "remotion-best-practices" at skills/remotion) — resolved during sourcing.
  */
 
-import { loadSkillCohort, type GradedSkill, type SkillMeta } from "@/lib/skillEcosystem";
+import { loadSkillCohort, legacySkillMetas, type GradedSkill, type SkillMeta } from "@/lib/skillEcosystem";
 
 export const SKILLS_SH_COHORT_ORDER = [
   "vercel",
@@ -37,7 +37,7 @@ export const SKILLS_SH_COHORT_LABEL: Record<string, string> = {
   domain: "Domain skills",
 };
 
-const SKILLS_SH_SKILLS: SkillMeta[] = [
+export const SKILLS_SH_SKILLS: SkillMeta[] = [
   // Vercel-authored
   { name: "find-skills", target: "github/vercel-labs/skills#skills/find-skills", cohort: "vercel", featured: true },
   { name: "react-best-practices", target: "github/vercel-labs/agent-skills#skills/react-best-practices", cohort: "vercel" },
@@ -83,5 +83,5 @@ const SKILLS_SH_SKILLS: SkillMeta[] = [
 ];
 
 export async function loadSkillsShSkills(): Promise<GradedSkill[]> {
-  return loadSkillCohort(SKILLS_SH_SKILLS);
+  return loadSkillCohort(await legacySkillMetas("skills-sh", SKILLS_SH_SKILLS));
 }

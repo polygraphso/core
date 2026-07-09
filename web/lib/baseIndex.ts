@@ -17,11 +17,13 @@ import "server-only";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { decodeRef, refToPath } from "@/lib/badgeData";
 import { fetchAdoptionForServer } from "@/lib/rankings";
+import { loadEntriesForEcosystem } from "@/lib/ecosystemData";
 import {
   latestForTarget,
   type LitmusGrade,
   type PolygraphDetail,
 } from "@/lib/hostedGrades";
+import type { EcosystemEntryRow } from "@/lib/ecosystemTypes";
 
 /** Display cohort. */
 export type Group = "base-plugins" | "defi" | "data-infra" | "coinbase";
@@ -118,14 +120,39 @@ export interface GradedEntry extends BaseEntry {
   adoptionSignal: string | null;
 }
 
+/** Reconstruct BaseEntry rows from seeded ecosystem_entries: the whole original
+ *  object lives in `metadata`, with visible/cohort overlaid from the curation
+ *  columns. Hidden rows are dropped; ordering follows position. */
+function rowsToBaseEntries(rows: EcosystemEntryRow[]): BaseEntry[] {
+  return rows
+    .filter((r) => r.visible)
+    .map((r) => {
+      const m = r.metadata as Partial<BaseEntry> & { group?: Group };
+      return {
+        project: m.project ?? "",
+        handle: m.handle ?? "",
+        category: m.category ?? "",
+        group: (r.cohort ?? m.group ?? "base-plugins") as Group,
+        party: (m.party ?? "first") as Party,
+        ownMcp: Boolean(m.ownMcp),
+        mcpRef: m.mcpRef ?? null,
+        target: r.target,
+        pending: (m.pending ?? null) as Pending,
+        note: m.note,
+      };
+    });
+}
+
 /** Load every entry with its live grade (null when unconfigured/ungraded).
- *  The per-entry grade + adoption lookups are independent, so they run concurrently:
- *  a serial await-in-loop turned ~50 Supabase round-trips into one long chain. Output
- *  order and shape are unchanged (map preserves order). */
+ *  Seeded ecosystem → DB is the source (dashboard curation shows here); until then
+ *  the hardcoded BASE_ENTRIES keep the page working. The per-entry grade + adoption
+ *  lookups are independent, so they run concurrently (map preserves order). */
 export async function loadBaseIndex(): Promise<GradedEntry[]> {
   const db = getSupabaseAdmin();
+  const rows = await loadEntriesForEcosystem("base");
+  const source = rows ? rowsToBaseEntries(rows) : BASE_ENTRIES;
   return Promise.all(
-    BASE_ENTRIES.map(async (e) => {
+    source.map(async (e) => {
       // Adoption is registry-only — fetchAdoptionForServer parses the ref and
       // returns null for a remote URL or an untracked package.
       const [g, adoption] = await Promise.all([

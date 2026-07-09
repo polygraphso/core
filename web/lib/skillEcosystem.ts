@@ -16,6 +16,7 @@ import "server-only";
  */
 
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { loadEntriesForEcosystem } from "@/lib/ecosystemData";
 
 /** Static skill-safety grade (litmus-skill-v2): skills resolve to A/B/D/F (no C). */
 export type SkillGrade = "A" | "B" | "D" | "F";
@@ -101,6 +102,31 @@ async function fetchSkillGradeMap(
     });
   }
   return map;
+}
+
+/**
+ * The curated skill members for a legacy skill-ecosystem slug (/uniswap, /clawhub,
+ * /skills-sh), read from the DB when it has been seeded, else the page's hardcoded
+ * `fallback` array. Reconstructs each SkillMeta from the seeded entry's metadata,
+ * overlaying the curation columns (visible filters the row out, featured/cohort win
+ * over the seeded values), so dashboard edits show on the public page. Zero
+ * regression: an unseeded ecosystem returns the fallback unchanged.
+ */
+export async function legacySkillMetas(slug: string, fallback: SkillMeta[]): Promise<SkillMeta[]> {
+  const rows = await loadEntriesForEcosystem(slug);
+  if (!rows) return fallback;
+  return rows
+    .filter((r) => r.visible && r.target)
+    .map((r) => {
+      const m = r.metadata as Partial<SkillMeta>;
+      return {
+        name: m.name ?? r.target!,
+        target: r.target!,
+        cohort: r.cohort ?? m.cohort ?? "",
+        featured: r.featured || Boolean(m.featured),
+        note: m.note,
+      };
+    });
 }
 
 /** Join a curated member list to its LIVE grades. Ungraded members → grade null (the

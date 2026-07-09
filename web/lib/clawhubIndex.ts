@@ -14,7 +14,7 @@ import "server-only";
  * loader. The malware skills are graded by a STATIC scan (no execution) — safe to run.
  */
 
-import { loadSkillCohort, type GradedSkill, type SkillMeta } from "@/lib/skillEcosystem";
+import { loadSkillCohort, legacySkillMetas, type GradedSkill, type SkillMeta } from "@/lib/skillEcosystem";
 
 export const CLAWHUB_COHORT_ORDER = ["malware", "popular", "dev", "research"];
 export const CLAWHUB_COHORT_LABEL: Record<string, string> = {
@@ -24,7 +24,7 @@ export const CLAWHUB_COHORT_LABEL: Record<string, string> = {
   research: "Research & science",
 };
 
-const CLAWHUB_SKILLS: SkillMeta[] = [
+export const CLAWHUB_SKILLS: SkillMeta[] = [
   // Known-bad — the security hook. Each ships a fake "Prerequisites" step that runs a
   // base64-decoded curl|bash + fetches a password-protected archive (Snyk ToxicSkills).
   { name: "whatsapp-mgv", target: "github/aztr0nutzs/NET_NiNjA.v1.2#skills/skills-folders/whatsapp-mgv", cohort: "malware", note: "fake WhatsApp skill — base64 curl|bash in the SKILL.md body (Snyk ToxicSkills, actor aztr0nutzs)" },
@@ -69,5 +69,5 @@ const CLAWHUB_SKILLS: SkillMeta[] = [
 ];
 
 export async function loadClawhubSkills(): Promise<GradedSkill[]> {
-  return loadSkillCohort(CLAWHUB_SKILLS);
+  return loadSkillCohort(await legacySkillMetas("clawhub", CLAWHUB_SKILLS));
 }
