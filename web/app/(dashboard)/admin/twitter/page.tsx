@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import type { TwitterThreadRow } from "@/lib/twitterThreads";
+import type { TwitterAccount, TwitterThreadRow } from "@/lib/twitterThreads";
 import { NewThreadButton } from "./_components/NewThreadButton";
 import { CopyThreadButton } from "./_components/CopyThreadButton";
 
@@ -12,6 +12,22 @@ const STATUS_STYLE: Record<TwitterThreadRow["status"], string> = {
   posted: "text-oxblood border-oxblood/40",
 };
 
+const ACCOUNT_STYLE: Record<TwitterAccount, string> = {
+  product: "text-ink border-ink/40",
+  personal: "text-ink/50 border-rule",
+};
+
+const ACCOUNT_LABEL: Record<TwitterAccount, string> = {
+  product: "@polygraphso",
+  personal: "personal",
+};
+
+const ACCOUNT_FILTERS: { value: TwitterAccount | null; label: string }[] = [
+  { value: null, label: "All" },
+  { value: "product", label: "@polygraphso" },
+  { value: "personal", label: "Personal" },
+];
+
 /** ISO → "2026-07-06 09:00" (UTC), or "—". */
 function fmt(iso: string | null): string {
   if (!iso) return "—";
@@ -19,15 +35,26 @@ function fmt(iso: string | null): string {
   return m ? `${m[1]} ${m[2]}` : iso.slice(0, 16);
 }
 
-export default async function AdminTwitterPage() {
+export default async function AdminTwitterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ account?: string }>;
+}) {
   const db = getSupabaseAdmin();
   if (!db) return <main className="px-8 py-12 font-mono text-sm">Database not configured.</main>;
 
-  const { data, error } = await db
+  const params = await searchParams;
+  const account: TwitterAccount | null =
+    params.account === "product" || params.account === "personal" ? params.account : null;
+
+  let query = db
     .from("twitter_threads")
     .select("*")
     .order("scheduled_at", { ascending: true, nullsFirst: false })
     .order("updated_at", { ascending: false });
+  if (account) query = query.eq("account", account);
+
+  const { data, error } = await query;
 
   const rows = (data ?? []) as TwitterThreadRow[];
 
@@ -38,11 +65,28 @@ export default async function AdminTwitterPage() {
           <p className="section-label mb-1">Internal</p>
           <h1 className="font-serif text-3xl mb-1">Twitter threads</h1>
           <p className="font-mono text-[11px] text-ink/60">
-            Launch &amp; announcement threads for @polygraphso — {rows.length} thread
+            Launch &amp; announcement threads — {rows.length} thread
             {rows.length === 1 ? "" : "s"}. Edited here; the DB is the source of truth.
           </p>
         </div>
         <NewThreadButton />
+      </div>
+
+      <div className="flex items-center gap-2 mb-4">
+        {ACCOUNT_FILTERS.map((f) => {
+          const active = f.value === account;
+          return (
+            <Link
+              key={f.label}
+              href={f.value ? `/admin/twitter?account=${f.value}` : "/admin/twitter"}
+              className={`font-mono text-[11px] border px-2 py-1 ${
+                active ? "bg-ink/5 border-ink/40 text-ink" : "text-ink/50 hover:bg-ink/5"
+              }`}
+            >
+              {f.label}
+            </Link>
+          );
+        })}
       </div>
 
       {error && (
@@ -56,6 +100,7 @@ export default async function AdminTwitterPage() {
           <thead>
             <tr className="text-left border-b hairline font-mono text-[11px] uppercase tracking-wide">
               <th className="py-2 pr-3">Title</th>
+              <th className="py-2 pr-3">Account</th>
               <th className="py-2 pr-3">Status</th>
               <th className="py-2 pr-3">Scheduled</th>
               <th className="py-2 pr-3 text-right">Tweets</th>
@@ -74,6 +119,13 @@ export default async function AdminTwitterPage() {
                     {r.title}
                   </Link>
                   <span className="font-mono text-[11px] text-ink/40">{r.slug}</span>
+                </td>
+                <td className="py-2 pr-3">
+                  <span
+                    className={`inline-block border px-2 py-0.5 rounded-sm font-mono text-[10px] tracking-wide ${ACCOUNT_STYLE[r.account]}`}
+                  >
+                    {ACCOUNT_LABEL[r.account]}
+                  </span>
                 </td>
                 <td className="py-2 pr-3">
                   <span
