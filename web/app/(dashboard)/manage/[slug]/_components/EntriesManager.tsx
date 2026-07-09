@@ -1,10 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import type { EcosystemEntryVM } from "@/lib/ecosystemTypes";
+import {
+  ENTRIES_PAGE_SIZE,
+  filterEntries,
+  isFiltering,
+  pageItems,
+  type EntryGradeFilter,
+  type EntryTypeFilter,
+  type EntryVisFilter,
+} from "@/lib/manageEntries";
 
 /** Job statuses that mean "still grading" — anything else is terminal. */
 const IN_FLIGHT = new Set(["queued", "running", "pending", "in_progress"]);
@@ -304,6 +313,32 @@ export function EntriesManager({ slug, entries }: { slug: string; entries: Ecosy
     return () => clearInterval(timer);
   }, [watch, slug, refresh]);
 
+  // ── Search / filter / pagination (client-side; every entry is already loaded) ──
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<EntryTypeFilter>("all");
+  const [gradeFilter, setGradeFilter] = useState<EntryGradeFilter>("all");
+  const [visFilter, setVisFilter] = useState<EntryVisFilter>("all");
+  const [page, setPage] = useState(1);
+
+  const filters = useMemo(
+    () => ({ search, type: typeFilter, grade: gradeFilter, vis: visFilter }),
+    [search, typeFilter, gradeFilter, visFilter],
+  );
+  const filtered = useMemo(() => filterEntries(entries, filters), [entries, filters]);
+
+  // Any change to the result set jumps back to the first page.
+  useEffect(() => setPage(1), [search, typeFilter, gradeFilter, visFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / ENTRIES_PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageEntries = filtered.slice((safePage - 1) * ENTRIES_PAGE_SIZE, safePage * ENTRIES_PAGE_SIZE);
+  const filtering = isFiltering(filters);
+
+  const selectCls =
+    "font-mono text-[12px] border border-rule rounded-[3px] bg-parchment-50 px-2 py-2 text-ink";
+  const pageBtnCls =
+    "px-2 py-1 uppercase tracking-[0.12em] text-ink-muted transition-colors hover:text-oxblood disabled:opacity-40 disabled:hover:text-ink-muted";
+
   return (
     <div>
       <AddEntryForm slug={slug} onAdded={watchEntry} />
@@ -311,9 +346,103 @@ export function EntriesManager({ slug, entries }: { slug: string; entries: Ecosy
         <p className="text-ink-muted text-[14px] py-4">No servers or skills yet. Add one above.</p>
       ) : (
         <div>
-          {entries.map((vm) => (
-            <EntryRow key={vm.id} slug={slug} vm={vm} onChanged={refresh} onGradeFired={watchEntry} />
-          ))}
+          <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name or target…"
+              aria-label="Search entries"
+              className="flex-1 font-mono text-[12px] border border-rule rounded-[3px] bg-parchment-50 px-3 py-2 text-ink placeholder:text-ink-faint"
+            />
+            <div className="flex gap-2">
+              <select
+                aria-label="Filter by type"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as EntryTypeFilter)}
+                className={selectCls}
+              >
+                <option value="all">All types</option>
+                <option value="mcp">MCP</option>
+                <option value="skill">Skill</option>
+              </select>
+              <select
+                aria-label="Filter by grade"
+                value={gradeFilter}
+                onChange={(e) => setGradeFilter(e.target.value as EntryGradeFilter)}
+                className={selectCls}
+              >
+                <option value="all">All grades</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="F">F</option>
+                <option value="ungraded">Ungraded</option>
+              </select>
+              <select
+                aria-label="Filter by visibility"
+                value={visFilter}
+                onChange={(e) => setVisFilter(e.target.value as EntryVisFilter)}
+                className={selectCls}
+              >
+                <option value="all">Shown &amp; hidden</option>
+                <option value="shown">Shown</option>
+                <option value="hidden">Hidden</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+            {filtering
+              ? `${filtered.length} of ${entries.length}`
+              : `${entries.length} ${entries.length === 1 ? "entry" : "entries"}`}
+          </div>
+
+          {filtered.length === 0 ? (
+            <p className="text-ink-muted text-[14px] py-4">No entries match these filters.</p>
+          ) : (
+            <div>
+              {pageEntries.map((vm) => (
+                <EntryRow key={vm.id} slug={slug} vm={vm} onChanged={refresh} onGradeFired={watchEntry} />
+              ))}
+            </div>
+          )}
+
+          {pageCount > 1 ? (
+            <nav
+              className="mt-5 flex items-center justify-center gap-1 font-mono text-[11px]"
+              aria-label="Pagination"
+            >
+              <button onClick={() => setPage(safePage - 1)} disabled={safePage <= 1} className={pageBtnCls}>
+                ‹ Prev
+              </button>
+              {pageItems(safePage, pageCount).map((it, i) =>
+                it === "…" ? (
+                  <span key={`gap-${i}`} className="px-1.5 text-ink-faint">
+                    …
+                  </span>
+                ) : (
+                  <button
+                    key={it}
+                    onClick={() => setPage(it)}
+                    aria-current={it === safePage ? "page" : undefined}
+                    className={`h-7 min-w-7 rounded-[3px] px-1.5 transition-colors ${
+                      it === safePage ? "bg-ink text-parchment-50" : "text-ink-muted hover:text-oxblood"
+                    }`}
+                  >
+                    {it}
+                  </button>
+                )
+              )}
+              <button
+                onClick={() => setPage(safePage + 1)}
+                disabled={safePage >= pageCount}
+                className={pageBtnCls}
+              >
+                Next ›
+              </button>
+            </nav>
+          ) : null}
         </div>
       )}
     </div>
