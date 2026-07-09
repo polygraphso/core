@@ -2,10 +2,14 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import type { TwitterThreadRow, TwitterThreadStatus } from "@/lib/twitterThreads";
+import type { TwitterAccount, TwitterThreadRow, TwitterThreadStatus } from "@/lib/twitterThreads";
 import { xWeightedLength, TWEET_TARGET, TWEET_HARD_MAX } from "./charCount";
 
 const STATUSES: TwitterThreadStatus[] = ["draft", "scheduled", "posted"];
+const ACCOUNT_LABELS: Record<TwitterAccount, string> = {
+  product: "@polygraphso",
+  personal: "personal",
+};
 
 type EditTweet = { text: string; url: string; posted: boolean };
 
@@ -46,6 +50,7 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
   const [title, setTitle] = useState(thread.title);
   const [slug, setSlug] = useState(thread.slug);
   const [status, setStatus] = useState<TwitterThreadStatus>(thread.status);
+  const [account, setAccount] = useState<TwitterAccount>(thread.account);
   const [scheduledAt, setScheduledAt] = useState(toLocalInput(thread.scheduled_at));
   const [tweets, setTweets] = useState<EditTweet[]>(
     thread.tweets?.length
@@ -112,6 +117,7 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
           title,
           slug,
           status,
+          account,
           scheduled_at: scheduledAt ? `${scheduledAt}:00Z` : null,
           tweets: tweets.map((t) => ({
             text: t.text,
@@ -232,9 +238,22 @@ export function ThreadEditor({ thread }: { thread: TwitterThreadRow }) {
         className="w-full bg-transparent font-serif text-2xl text-ink mb-6 focus:outline-none border-b hairline pb-1"
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
         <Field label="Slug">
           <input value={slug} onChange={(e) => setSlug(e.target.value)} className={inputCls} />
+        </Field>
+        <Field label="Account">
+          <select
+            value={account}
+            onChange={(e) => setAccount(e.target.value as TwitterAccount)}
+            className={inputCls}
+          >
+            {(Object.keys(ACCOUNT_LABELS) as TwitterAccount[]).map((a) => (
+              <option key={a} value={a}>
+                {ACCOUNT_LABELS[a]}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Status">
           <select
