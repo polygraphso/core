@@ -25,3 +25,19 @@ export function gradeMeetsThreshold(
   if (g === undefined || m === undefined) return true;
   return g >= m;
 }
+
+/**
+ * Did the grade get WORSE from `prev` to `next` (e.g. B → D)? Used by the
+ * ecosystem digest's grade-drop section. Returns false when either grade is
+ * unknown/unrankable — a first grade (no prior) is not a "drop", and we never
+ * fabricate a drop from a grade we can't order.
+ */
+export function gradeDropped(
+  prev: string | null | undefined,
+  next: string | null | undefined,
+): boolean {
+  const p = ORDER[(prev ?? "").toUpperCase()];
+  const n = ORDER[(next ?? "").toUpperCase()];
+  if (p === undefined || n === undefined) return false;
+  return n > p;
+}

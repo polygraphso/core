@@ -93,26 +93,75 @@ function defaultFetchLatestCommit(gh: GithubTarget): Promise<CommitInfo | null> 
   return latestCommitForPath(gh.owner, gh.repo, undefined, gh.subPath);
 }
 
-/** npm/pypi enqueue branch: enqueue a regrade when the latest registry version
- *  has no published grade and none is in flight. Returns the version it enqueued
- *  (for logging), or null when it skipped. Mutates `result` like the main loop. */
-async function enqueueByVersion(
+/** The production drift fetchers (npm/pypi versions + github commit stream), so
+ *  the ecosystem digest job reuses the exact freshness machinery runAlerts uses. */
+export const defaultDriftDeps: DriftEnqueueDeps = {
+  fetchLatestVersion: defaultFetchLatestVersion,
+  fetchLatestCommit: defaultFetchLatestCommit,
+};
+
+export interface DriftEnqueueDeps {
+  fetchLatestVersion: (parsed: ParsedServerRef) => Promise<string | null>;
+  fetchLatestCommit: (gh: GithubTarget) => Promise<CommitInfo | null>;
+}
+
+export interface DriftEnqueueOutcome {
+  /** True when a regrade was enqueued for this target. */
+  enqueued: boolean;
+  /** A reason to record as skipped (caller pushes to result.skipped). */
+  skipReason?: string;
+  /** Detail for the "enqueued regrade" log line (version or short commit). */
+  logDetail?: string;
+}
+
+/**
+ * Detect whether a monitored target's stream has moved past its published grade
+ * and, if so, enqueue a free regrade. npm/pypi move by registry version; skills +
+ * github servers move by their path-scoped commit. Never throws — a fetch/parse
+ * failure comes back as `{ enqueued: false, skipReason }`.
+ *
+ * Extracted from runAlerts's pass 1 so the ecosystem digest job can reuse the
+ * exact regrade-freshness machinery (same store methods, no new tables).
+ */
+export async function enqueueRegradeIfDrifted(
   store: AlertStore,
   target: string,
-  parsed: ParsedServerRef,
-  fetchLatest: (parsed: ParsedServerRef) => Promise<string | null>,
-  result: AlertsResult,
-): Promise<string | null> {
-  const latest = await fetchLatest(parsed);
-  if (!latest) {
-    result.skipped.push({ target, reason: "no latest version from registry" });
-    return null;
+  kind: "registry_ref" | "skill",
+  deps: DriftEnqueueDeps,
+): Promise<DriftEnqueueOutcome> {
+  try {
+    // Skills are always github + path-scoped; a registry_ref may be npm/pypi
+    // (version stream) or a github server (commit stream).
+    let github = kind === "skill";
+    if (!github) {
+      const parsed = parseServerRef(target);
+      if (parsed.registry === "npm" || parsed.registry === "pypi") {
+        const latest = await deps.fetchLatestVersion(parsed);
+        if (!latest) return { enqueued: false, skipReason: "no latest version from registry" };
+        if (await store.hasPublishedGradeForVersion(target, latest)) return { enqueued: false };
+        if (await store.hasInFlightMonitorRegrade(target)) return { enqueued: false };
+        await store.enqueueMonitorRegrade(target, "registry_ref");
+        return { enqueued: true, logDetail: `latest ${latest}` };
+      }
+      if (parsed.registry === "github") github = true;
+      else return { enqueued: false, skipReason: `unmonitorable registry: ${parsed.registry}` };
+    }
+
+    const gh = parseGithubTarget(target);
+    if (!gh) return { enqueued: false, skipReason: "unparseable github target" };
+    const live = await deps.fetchLatestCommit(gh);
+    if (!live) return { enqueued: false, skipReason: "no commit from github" };
+    const published = await store.latestPublishedGrade(target);
+    // Compare the path-scoped commit, never resolved_version. A null stored
+    // commit_sha (never graded, or a pre-anchor grade not yet backfilled) is
+    // treated as drift so one regrade establishes the baseline (self-heal).
+    if (published?.commit_sha && published.commit_sha === live.sha) return { enqueued: false };
+    if (await store.hasInFlightMonitorRegrade(target)) return { enqueued: false };
+    await store.enqueueMonitorRegrade(target, kind);
+    return { enqueued: true, logDetail: `commit ${live.sha.slice(0, 8)}` };
+  } catch (err) {
+    return { enqueued: false, skipReason: err instanceof Error ? err.message : String(err) };
   }
-  if (await store.hasPublishedGradeForVersion(target, latest)) return null; // graded; pass 2 notifies
-  if (await store.hasInFlightMonitorRegrade(target)) return null; // already queued/running
-  await store.enqueueMonitorRegrade(target, "registry_ref");
-  result.enqueued += 1;
-  return latest;
 }
 
 export async function runAlerts(store: AlertStore, deps: AlertsDeps = {}): Promise<AlertsResult> {
@@ -140,56 +189,22 @@ export async function runAlerts(store: AlertStore, deps: AlertsDeps = {}): Promi
   const targets = [...targetKinds.keys()];
   result.targets = targets.length;
 
+  const driftDeps: DriftEnqueueDeps = {
+    fetchLatestVersion: fetchLatest,
+    fetchLatestCommit: fetchLatestCommitFn,
+  };
   for (const target of targets) {
     if (result.enqueued >= maxEnqueue) {
       log(`[alerts] enqueue cap (${maxEnqueue}) reached — deferring remaining targets to next run`);
       break;
     }
-    try {
-      const kind = targetKinds.get(target) ?? "registry_ref";
-      // Skills are always github + path-scoped; a registry_ref may be npm/pypi
-      // (version stream) or a github server (commit stream).
-      let github = kind === "skill";
-      if (!github) {
-        const parsed = parseServerRef(target);
-        if (parsed.registry === "npm" || parsed.registry === "pypi") {
-          const enq = await enqueueByVersion(store, target, parsed, fetchLatest, result);
-          if (enq) log(`[alerts] enqueued regrade ${target} (latest ${enq})`);
-          continue;
-        }
-        if (parsed.registry === "github") {
-          github = true;
-        } else {
-          result.skipped.push({ target, reason: `unmonitorable registry: ${parsed.registry}` });
-          continue;
-        }
-      }
-
-      const gh = parseGithubTarget(target);
-      if (!gh) {
-        result.skipped.push({ target, reason: "unparseable github target" });
-        continue;
-      }
-      const live = await fetchLatestCommitFn(gh);
-      if (!live) {
-        result.skipped.push({ target, reason: "no commit from github" });
-        continue;
-      }
-      const published = await store.latestPublishedGrade(target);
-      // Compare the path-scoped commit, never resolved_version. A null stored
-      // commit_sha (never graded, or a pre-anchor grade not yet backfilled) is
-      // treated as drift so one regrade establishes the baseline (self-heal).
-      if (published?.commit_sha && published.commit_sha === live.sha) {
-        continue; // up to date — reconcile (pass 2) notifies if a new grade landed
-      }
-      if (await store.hasInFlightMonitorRegrade(target)) {
-        continue; // a regrade is already queued/running; don't duplicate
-      }
-      await store.enqueueMonitorRegrade(target, kind);
+    const kind = targetKinds.get(target) ?? "registry_ref";
+    const outcome = await enqueueRegradeIfDrifted(store, target, kind, driftDeps);
+    if (outcome.enqueued) {
       result.enqueued += 1;
-      log(`[alerts] enqueued regrade ${target} (commit ${live.sha.slice(0, 8)})`);
-    } catch (err) {
-      result.skipped.push({ target, reason: err instanceof Error ? err.message : String(err) });
+      if (outcome.logDetail) log(`[alerts] enqueued regrade ${target} (${outcome.logDetail})`);
+    } else if (outcome.skipReason) {
+      result.skipped.push({ target, reason: outcome.skipReason });
     }
   }
 

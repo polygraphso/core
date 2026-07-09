@@ -388,6 +388,127 @@ export interface EcosystemEntryRow {
   added_at: string;
 }
 
+// ── Advisories (CVE store) ───────────────────────────────────────────────────
+
+export type AdvisorySeverity = "CRITICAL" | "HIGH" | "MODERATE" | "LOW";
+export type AdvisorySource = "depsdev" | "github" | "osv";
+export type AdvisoryEcosystem = "npm" | "pypi" | "github";
+
+/**
+ * One security advisory, keyed by GHSA id. Mirrors the `advisories` table.
+ * Persisted daily by the ingest job so an ecosystem admin can see the real
+ * "CVEs to fix" list; `cve_ids` are the CVE aliases, `withdrawn_at` marks a
+ * rescinded advisory (suppressed at read time).
+ */
+export interface AdvisoryRow {
+  id: string;
+  ghsa_id: string;
+  source: AdvisorySource;
+  cve_ids: string[];
+  severity: AdvisorySeverity | null;
+  cvss: number | null;
+  cvss_vector: string | null;
+  summary: string | null;
+  url: string | null;
+  published_at: string | null;
+  withdrawn_at: string | null;
+  first_seen_at: string;
+  last_seen_at: string;
+}
+
+/**
+ * Which package(-version) an advisory affects. Mirrors the `advisory_targets`
+ * table. `package_key` is the versionless target form an ecosystem entry keys on
+ * (npm/@scope/pkg | pypi/pkg | github/owner/repo), so the CVE join is equality.
+ * `is_current_affected` snapshots whether the evaluated `current_version` falls
+ * in `affected_range` — the "to fix" filter.
+ */
+export interface AdvisoryTargetRow {
+  id: string;
+  advisory_id: string;
+  package_key: string;
+  ecosystem: AdvisoryEcosystem;
+  affected_range: string | null;
+  fixed_version: string | null;
+  current_version: string | null;
+  is_current_affected: boolean;
+  first_seen_at: string;
+  last_seen_at: string;
+}
+
+// ── Ecosystem alerts ─────────────────────────────────────────────────────────
+
+export type EcosystemAlertFrequency = "weekly" | "off";
+export type EcosystemAlertRecipientsMode = "admins" | "members" | "explicit";
+
+/**
+ * The per-ecosystem monitoring strategy. Mirrors the `ecosystem_alert_settings`
+ * table (one row per ecosystem). An absent row means defaults; the web layer
+ * upserts on first save. Each category toggles independently; `frequency: 'off'`
+ * mutes the digest without losing the toggles.
+ */
+export interface EcosystemAlertSettingsRow {
+  ecosystem_id: string;
+  cve_enabled: boolean;
+  cve_min_severity: AdvisorySeverity;
+  grade_drop_enabled: boolean;
+  new_version_enabled: boolean;
+  frequency: EcosystemAlertFrequency;
+  recipients_mode: EcosystemAlertRecipientsMode;
+  last_cve_sent_at: string | null;
+  last_digest_period: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * One digest recipient for an ecosystem. Mirrors the `ecosystem_alert_recipients`
+ * table. `source: 'auto'` rows mirror the resolved admins/members set (minted to
+ * carry a stable unsubscribe token); `'explicit'` rows are hand-added addresses.
+ */
+export interface EcosystemAlertRecipientRow {
+  id: string;
+  ecosystem_id: string;
+  email: string;
+  user_id: string | null;
+  unsubscribe_token: string;
+  unsubscribed_at: string | null;
+  source: "auto" | "explicit";
+  created_at: string;
+}
+
+/**
+ * Grade-drop / new-version watermark for one entry. Mirrors the
+ * `ecosystem_entry_alert_state` table. Advances only after a digest reporting the
+ * change is sent, so each change surfaces exactly once.
+ */
+export interface EcosystemEntryAlertStateRow {
+  entry_id: string;
+  last_seen_run_id: string | null;
+  last_seen_grade: string | null;
+  last_seen_version: string | null;
+  updated_at: string;
+}
+
+/**
+ * One weekly-digest send attempt. Mirrors the `ecosystem_alert_deliveries` table.
+ * The `(recipient_id, period_key)` unique constraint is the weekly dedup — at
+ * most one digest per recipient per ISO week (claim_ecosystem_delivery).
+ */
+export interface EcosystemAlertDeliveryRow {
+  id: string;
+  ecosystem_id: string;
+  recipient_id: string;
+  period_key: string;
+  kind: string;
+  email: string;
+  status: AlertDeliveryStatus;
+  resend_message_id: string | null;
+  error: string | null;
+  created_at: string;
+  sent_at: string | null;
+}
+
 // ── LISTEN/NOTIFY payloads ───────────────────────────────────────────────────
 
 export interface VersionDetectedPayload {
