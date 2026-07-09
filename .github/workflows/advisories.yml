@@ -1,0 +1,32 @@
+# .github/workflows/advisories.yml
+name: advisory-ingest
+
+on:
+  schedule:
+    - cron: "47 5 * * *" # daily 05:47 UTC (offset from the 06:17 score run)
+  workflow_dispatch: {}
+
+concurrency:
+  group: advisory-ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          # 22+: @supabase/supabase-js needs a global WebSocket on Node < 22.
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Ingest advisories (deps.dev + OSV + GitHub Security Advisories)
+        run: pnpm --filter @polygraph/scoring advisories:ci
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # deps.dev + OSV need no key; GitHub Security Advisories do.
+          GITHUB_TOKEN: ${{ secrets.SCORING_GITHUB_TOKEN }}

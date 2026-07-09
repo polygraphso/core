@@ -85,7 +85,7 @@ interface ReleaseResponse {
   published_at?: string | null;
 }
 
-function requireToken(): string {
+export function requireToken(): string {
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
     throw new Error(
@@ -96,7 +96,7 @@ function requireToken(): string {
   return token;
 }
 
-function githubHeaders(token: string): Record<string, string> {
+export function githubHeaders(token: string): Record<string, string> {
   return {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",

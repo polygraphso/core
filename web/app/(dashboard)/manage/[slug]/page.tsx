@@ -13,8 +13,14 @@ import { getSession } from "@/lib/session";
 import { getEcosystemRole, canManageEcosystem } from "@/lib/ecosystemAccess";
 import { loadGradedEntries, listMembers } from "@/lib/ecosystemData";
 import { buildEntryVMs } from "@/lib/ecosystemViewModel";
+import { loadEcosystemAdvisories } from "@/lib/cveData";
+import { buildCveGroups } from "@/lib/cveViewModel";
+import { loadAlertSettings, listAlertRecipients } from "@/lib/ecosystemAlerts";
+import { DEFAULT_ALERT_SETTINGS } from "@/lib/ecosystemAlertTypes";
 import { ConsoleTabs, type ConsoleTab } from "./_components/ConsoleTabs";
 import { EntriesManager } from "./_components/EntriesManager";
+import { CvesManager } from "./_components/CvesManager";
+import { AlertSettingsForm } from "./_components/AlertSettingsForm";
 import { MembersManager } from "./_components/MembersManager";
 import { SettingsForm } from "./_components/SettingsForm";
 
@@ -39,11 +45,15 @@ export default async function ManageConsolePage({
   const { ecosystem, role } = access;
   const manage = canManageEcosystem(role);
 
-  const [graded, members] = await Promise.all([
+  const [graded, members, advisories, alertSettings, recipients] = await Promise.all([
     loadGradedEntries(ecosystem.id),
     manage ? listMembers(ecosystem.id) : Promise.resolve([]),
+    loadEcosystemAdvisories(ecosystem.id),
+    manage ? loadAlertSettings(ecosystem.id) : Promise.resolve(DEFAULT_ALERT_SETTINGS),
+    manage ? listAlertRecipients(ecosystem.id) : Promise.resolve([]),
   ]);
   const entries = buildEntryVMs(graded);
+  const cveGroups = buildCveGroups(advisories);
 
   return (
     <main className="px-6 sm:px-10 py-12 max-w-4xl">
@@ -77,8 +87,24 @@ export default async function ManageConsolePage({
             label: "MCPs & Skills",
             panel: <EntriesManager slug={ecosystem.slug} entries={entries} />,
           },
+          {
+            id: "cves",
+            label: "CVEs",
+            panel: <CvesManager groups={cveGroups} />,
+          },
           ...(manage
             ? ([
+                {
+                  id: "alerts",
+                  label: "Alerts",
+                  panel: (
+                    <AlertSettingsForm
+                      slug={ecosystem.slug}
+                      settings={alertSettings}
+                      recipients={recipients}
+                    />
+                  ),
+                },
                 {
                   id: "members",
                   label: "Members",

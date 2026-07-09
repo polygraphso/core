@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { gradeMeetsThreshold } from "./grades.js";
+import { gradeMeetsThreshold, gradeDropped } from "./grades.js";
 
 describe("gradeMeetsThreshold", () => {
   it("null threshold always emails (the 'every regrade' default)", () => {
@@ -36,5 +36,28 @@ describe("gradeMeetsThreshold", () => {
 
   it("fails open on an unrecognized threshold value", () => {
     expect(gradeMeetsThreshold("A", "Z")).toBe(true);
+  });
+});
+
+describe("gradeDropped", () => {
+  it("is true only when the grade gets worse", () => {
+    expect(gradeDropped("A", "B")).toBe(true);
+    expect(gradeDropped("B", "D")).toBe(true);
+    expect(gradeDropped("A", "F")).toBe(true);
+  });
+  it("is false when the grade holds or improves", () => {
+    expect(gradeDropped("B", "B")).toBe(false);
+    expect(gradeDropped("D", "A")).toBe(false);
+    expect(gradeDropped("F", "C")).toBe(false);
+  });
+  it("never fabricates a drop from an unknown grade (no baseline)", () => {
+    expect(gradeDropped(null, "F")).toBe(false);
+    expect(gradeDropped(undefined, "F")).toBe(false);
+    expect(gradeDropped("A", null)).toBe(false);
+    expect(gradeDropped("A", "E")).toBe(false); // no such grade
+  });
+  it("is case-insensitive", () => {
+    expect(gradeDropped("a", "b")).toBe(true);
+    expect(gradeDropped("B", "a")).toBe(false);
   });
 });

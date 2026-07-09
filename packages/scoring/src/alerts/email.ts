@@ -228,6 +228,187 @@ export function buildAlertEmail(input: AlertEmailInput): ComposedEmail {
   return buildDigestEmail({ changes: [change], siteUrl });
 }
 
+// ── Ecosystem weekly digest ──────────────────────────────────────────────────
+
+/** One CVE to fix, as the ecosystem digest renders it. */
+export interface EcosystemCveItem {
+  /** Versionless target of the affected entry (report path + display). */
+  target: string;
+  /** Display name of the entry. */
+  name: string;
+  advisories: Array<{
+    ghsa: string;
+    cveIds: string[];
+    severity: string | null;
+    fixedVersion: string | null;
+    url: string | null;
+  }>;
+}
+
+/** One grade-drop / new-version line in the ecosystem digest. */
+export interface EcosystemGradeItem {
+  target: string;
+  name: string;
+  grade: string;
+  priorGrade: string | null;
+  version: string | null;
+}
+
+export interface EcosystemDigestInput {
+  ecosystemName: string;
+  ecosystemSlug: string;
+  cveItems: EcosystemCveItem[];
+  gradeDrops: EcosystemGradeItem[];
+  newVersions: EcosystemGradeItem[];
+  /** Per-recipient one-click unsubscribe token (RFC 8058). */
+  unsubscribeToken: string;
+  siteUrl?: string;
+}
+
+function cveCount(items: EcosystemCveItem[]): number {
+  return items.reduce((n, i) => n + i.advisories.length, 0);
+}
+
+/** Section heading row for the digest table. */
+function sectionHeadingHtml(text: string): string {
+  return `<tr><td style="padding:22px 28px 0 28px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8a7d63;">${escapeHtml(text)}</td></tr>`;
+}
+
+/**
+ * Compose one ecosystem weekly digest for a single recipient. Renders only the
+ * sections that have content (CVEs to fix / grade drops / new-version regrades).
+ * Pure — no env, no I/O. Reuses resolveSite / escapeHtml / displayName so the
+ * voice + brand match the per-server digest.
+ */
+export function buildEcosystemDigestEmail(input: EcosystemDigestInput): ComposedEmail {
+  const site = resolveSite(input.siteUrl);
+  const { cveItems, gradeDrops, newVersions } = input;
+  const cves = cveCount(cveItems);
+  if (cveItems.length === 0 && gradeDrops.length === 0 && newVersions.length === 0) {
+    throw new Error("buildEcosystemDigestEmail: nothing to report");
+  }
+
+  const subjParts: string[] = [];
+  if (cves > 0) subjParts.push(`${cves} CVE${cves === 1 ? "" : "s"} to fix`);
+  if (gradeDrops.length) subjParts.push(`${gradeDrops.length} grade drop${gradeDrops.length === 1 ? "" : "s"}`);
+  if (newVersions.length) subjParts.push(`${newVersions.length} regrade${newVersions.length === 1 ? "" : "s"}`);
+  const subject = `polygraph · ${input.ecosystemName}: ${subjParts.join(", ")}`;
+
+  const manageUrl = `${site}/manage/${input.ecosystemSlug}`;
+
+  // ── Text ──
+  const text: string[] = [
+    `Weekly monitoring digest for ${input.ecosystemName}.`,
+  ];
+  if (cveItems.length) {
+    text.push(``, `CVEs TO FIX`);
+    for (const item of cveItems) {
+      text.push(`- ${displayName(item.target)}`);
+      for (const a of item.advisories) {
+        const sev = a.severity ? `[${a.severity}] ` : "";
+        const fix = a.fixedVersion ? ` — fixed in ${a.fixedVersion}` : " — no fixed version yet";
+        const ids = [a.ghsa, ...a.cveIds].join(" / ");
+        text.push(`    ${sev}${ids}${fix}${a.url ? ` — ${a.url}` : ""}`);
+      }
+    }
+  }
+  if (gradeDrops.length) {
+    text.push(``, `GRADE DROPS`);
+    for (const g of gradeDrops) {
+      text.push(`- ${displayName(g.target)}: ${g.priorGrade ?? "?"} → ${g.grade} (${site}/mcp/${g.target})`);
+    }
+  }
+  if (newVersions.length) {
+    text.push(``, `NEW-VERSION REGRADES`);
+    for (const g of newVersions) {
+      const v = g.version ? `v${g.version}` : "new version";
+      text.push(`- ${displayName(g.target)} ${v}: graded ${g.grade} (${site}/mcp/${g.target})`);
+    }
+  }
+  text.push(
+    ``,
+    `The grades are reproducible — the harness is open, so you can re-run it and check any result yourself.`,
+    ``,
+    `—`,
+    `Manage this ecosystem's alert strategy: ${manageUrl}`,
+  );
+
+  // ── HTML sections ──
+  const rows: string[] = [];
+
+  if (cveItems.length) {
+    rows.push(sectionHeadingHtml("CVEs to fix"));
+    for (const item of cveItems) {
+      rows.push(
+        `<tr><td style="padding:12px 28px 0 28px;font-family:Georgia,'Source Serif 4',serif;font-size:15px;color:#23201a;"><strong>${escapeHtml(item.name)}</strong> <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a7d63;">${escapeHtml(item.target)}</span></td></tr>`,
+      );
+      for (const a of item.advisories) {
+        const sev = a.severity
+          ? `<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#7c2b22;">${escapeHtml(a.severity)}</span> `
+          : "";
+        const ids = escapeHtml([a.ghsa, ...a.cveIds].join(" / "));
+        const fix = a.fixedVersion
+          ? ` — fixed in <span style="color:#7c2b22;">${escapeHtml(a.fixedVersion)}</span>`
+          : " — no fixed version yet";
+        const link = a.url
+          ? ` &nbsp;<a href="${a.url}" style="color:#8a7d63;">advisory ↗</a>`
+          : "";
+        rows.push(
+          `<tr><td style="padding:4px 28px 0 40px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:12px;color:#3b362c;">${sev}${ids}${fix}${link}</td></tr>`,
+        );
+      }
+    }
+  }
+
+  const gradeSection = (heading: string, items: EcosystemGradeItem[], newVersion: boolean): void => {
+    if (!items.length) return;
+    rows.push(sectionHeadingHtml(heading));
+    for (const g of items) {
+      const reportUrl = `${site}/mcp/${g.target}`;
+      const line = newVersion
+        ? `<strong>${escapeHtml(g.name)}</strong> ${escapeHtml(g.version ? `v${g.version}` : "new version")}: graded ${escapeHtml(g.grade)}`
+        : `<strong>${escapeHtml(g.name)}</strong>: ${escapeHtml(g.priorGrade ?? "?")} → ${escapeHtml(g.grade)}`;
+      rows.push(
+        `<tr><td style="padding:10px 28px 0 28px;font-family:Georgia,'Source Serif 4',serif;font-size:15px;color:#23201a;">${line} &nbsp;<a href="${reportUrl}" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a7d63;">report ↗</a></td></tr>`,
+      );
+    }
+  };
+  gradeSection("Grade drops", gradeDrops, false);
+  gradeSection("New-version regrades", newVersions, true);
+
+  const html = `<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f5efe3;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5efe3;">
+      <tr><td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#fbf7ee;border:1px solid #e2d8c4;border-radius:6px;">
+          <tr><td style="padding:28px 28px 4px 28px;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#8a7d63;">
+            polygraph · weekly digest
+          </td></tr>
+          <tr><td style="padding:4px 28px 0 28px;font-family:Georgia,'Source Serif 4',serif;font-size:20px;line-height:1.35;color:#23201a;">
+            ${escapeHtml(input.ecosystemName)}
+          </td></tr>
+          ${rows.join("\n")}
+          <tr><td style="padding:22px 28px 0 28px;font-family:Georgia,'Source Serif 4',serif;font-size:13px;line-height:1.6;color:#6b6353;">
+            The grades are reproducible — the harness is open, so you can re-run it and check any result yourself.
+          </td></tr>
+          <tr><td style="padding:24px 28px 28px 28px;border-top:1px solid #e2d8c4;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:11px;line-height:1.7;color:#8a7d63;">
+            <a href="${manageUrl}" style="color:#8a7d63;">Manage this ecosystem's alert strategy</a>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </body>
+</html>`;
+
+  const headers: Record<string, string> = {
+    "List-Unsubscribe": `<${site}/api/ecosystem-alert/unsubscribe?token=${input.unsubscribeToken}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  };
+
+  return { subject, html, text: text.filter((l) => l !== null).join("\n"), headers };
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, "&amp;")
