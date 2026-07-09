@@ -9,7 +9,7 @@ type Probe = {
   state: "live" | "deferred"; // shipped in the current methodology, or deferred
 };
 
-// Source of truth: litmus-test.md (litmus-v14).
+// Source of truth: litmus-test.md (litmus-v15).
 // Live = probes 1.1, 1.2, 1.3, 2.1, 2.2, 3.1, 3.2, 4.1, 4.2 — nine probes across four categories.
 const probes: Probe[] = [
   {
@@ -82,7 +82,7 @@ export function HowWeTest() {
                     isDeferred ? "text-ink-faint" : "text-grade-a"
                   }`}
                 >
-                  {isDeferred ? "deferred" : "litmus-v14 · live"}
+                  {isDeferred ? "deferred" : "litmus-v15 · live"}
                 </span>
               </div>
               <div className="md:col-span-4">
