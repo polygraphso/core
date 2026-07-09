@@ -1,0 +1,35 @@
+# .github/workflows/ecosystem-alerts.yml
+name: ecosystem-alerts
+
+on:
+  schedule:
+    - cron: "0 13 * * 1" # weekly, Monday 13:00 UTC
+  workflow_dispatch: {}
+
+concurrency:
+  group: ecosystem-alerts
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          # 22+: @supabase/supabase-js needs a global WebSocket on Node < 22.
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Send the weekly ecosystem monitoring digests
+        run: pnpm --filter @polygraph/scoring ecosystem-alerts:ci
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          # New-version freshness enqueue resolves github targets via the GitHub API.
+          GITHUB_TOKEN: ${{ secrets.SCORING_GITHUB_TOKEN }}
+          ALERT_FROM_EMAIL: ${{ vars.ALERT_FROM_EMAIL }}
+          POLYGRAPH_SITE_URL: ${{ vars.POLYGRAPH_SITE_URL }}

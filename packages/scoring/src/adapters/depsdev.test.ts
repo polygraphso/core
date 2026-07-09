@@ -75,6 +75,11 @@ describe("fetchDepsDev", () => {
       advisory_count: 3,
       max_advisory_severity: "CRITICAL",
       advisory_severities: ["CRITICAL", "HIGH", "LOW"],
+      advisories: [
+        { ghsa_id: "GHSA-crit", version: "4.17.21" },
+        { ghsa_id: "GHSA-high", version: "4.17.21" },
+        { ghsa_id: "GHSA-low", version: "4.17.21" },
+      ],
       has_slsa_provenance: true,
       license_detected: "MIT",
     });

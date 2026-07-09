@@ -31,6 +31,12 @@ const SEVERITY_RANK: Record<AdvisorySeverity, number> = {
   LOW: 1,
 };
 
+/** A GHSA advisory id on the default version, with the version it was read from. */
+export interface DepsDevAdvisoryRef {
+  ghsa_id: string;
+  version: string;
+}
+
 export interface DepsDevAdapterData {
   ecosystem: DepsDevEcosystem;
   package_name: string;
@@ -45,6 +51,13 @@ export interface DepsDevAdapterData {
    * Empty when advisory_count is 0 or when the per-advisory fetches failed.
    */
   advisory_severities: AdvisorySeverity[];
+  /**
+   * The GHSA ids behind advisory_count, with the default version they were read
+   * from. Consumed by the CVE-ingest job to pull per-advisory detail from OSV;
+   * the scoring path ignores it. Optional so existing constructors (tests, the
+   * component snapshot) need not set it; fetchDepsDev always populates it.
+   */
+  advisories?: DepsDevAdvisoryRef[];
   has_slsa_provenance: boolean;
   license_detected: string | null;
 }
@@ -167,6 +180,7 @@ export async function fetchDepsDev(
     advisory_count: advisoryIds.length,
     max_advisory_severity: advisorySeverities[0] ?? null,
     advisory_severities: advisorySeverities,
+    advisories: advisoryIds.map((id) => ({ ghsa_id: id, version })),
     has_slsa_provenance: (verJson.slsaProvenances?.length ?? 0) > 0,
     license_detected: verJson.licenses?.[0] ?? null,
   };
