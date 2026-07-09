@@ -166,12 +166,20 @@ export function CvesManager({ groups }: { groups: EcosystemCveGroupVM[] }) {
 
   return (
     <div>
-      <p className="mb-4 text-[12px] leading-relaxed text-ink-faint">
-        Known CVEs for this ecosystem&rsquo;s npm / pypi packages (deps.dev + OSV) and its GitHub
-        repos&rsquo; published advisories. Repo coverage is the maintainer&rsquo;s disclosed
-        advisories, not the full dependency tree; remote endpoints aren&rsquo;t covered. Refreshed
-        daily.
-      </p>
+      <div className="mb-4 space-y-2">
+        <p className="text-[13px] leading-relaxed text-ink-muted">
+          A <strong className="text-ink">CVE</strong> (Common Vulnerabilities and Exposures) is a
+          publicly disclosed security flaw in a software package, each with a unique identifier and a
+          severity from low to critical. Fixing one usually means upgrading to the patched version
+          listed. Advisories without a CVE assigned are shown by their GHSA id.
+        </p>
+        <p className="text-[12px] leading-relaxed text-ink-faint">
+          These are the known CVEs affecting this ecosystem&rsquo;s npm / pypi packages (via deps.dev
+          + OSV) and its GitHub repos&rsquo; published advisories. Coverage is each package&rsquo;s
+          own disclosed advisories, not its full dependency tree; remote endpoints aren&rsquo;t
+          covered. Refreshed daily.
+        </p>
+      </div>
 
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
         <input
