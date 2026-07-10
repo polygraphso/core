@@ -55,6 +55,9 @@ export function PriceForm({
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && dirty && !saving) void save();
+        }}
         placeholder="199"
         inputMode="decimal"
         title="USD/month · blank = default · 0 = comped"
