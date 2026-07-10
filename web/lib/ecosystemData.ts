@@ -116,6 +116,45 @@ export async function listMembers(ecosystemId: string): Promise<EcosystemMemberR
   return (data as EcosystemMemberRow[] | null) ?? [];
 }
 
+/**
+ * Entry (target) counts keyed by ecosystem id for a set of ecosystems — one
+ * round-trip tallied in memory rather than a count query per ecosystem. Powers
+ * the /manage landing register; ids with no entries are simply absent from the
+ * map (callers default to 0).
+ */
+export async function countEntriesByEcosystem(
+  ids: string[],
+): Promise<Record<string, number>> {
+  const db = getSupabaseAdmin();
+  if (!db || ids.length === 0) return {};
+  const { data } = await db
+    .from("ecosystem_entries")
+    .select("ecosystem_id")
+    .in("ecosystem_id", ids);
+  const counts: Record<string, number> = {};
+  for (const r of (data as { ecosystem_id: string }[] | null) ?? []) {
+    counts[r.ecosystem_id] = (counts[r.ecosystem_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
+/** Member-roster counts keyed by ecosystem id (all statuses). See countEntriesByEcosystem. */
+export async function countMembersByEcosystem(
+  ids: string[],
+): Promise<Record<string, number>> {
+  const db = getSupabaseAdmin();
+  if (!db || ids.length === 0) return {};
+  const { data } = await db
+    .from("ecosystem_members")
+    .select("ecosystem_id")
+    .in("ecosystem_id", ids);
+  const counts: Record<string, number> = {};
+  for (const r of (data as { ecosystem_id: string }[] | null) ?? []) {
+    counts[r.ecosystem_id] = (counts[r.ecosystem_id] ?? 0) + 1;
+  }
+  return counts;
+}
+
 // ── Graded entries (entry joined to its live grade) ──────────────────────────
 
 /**

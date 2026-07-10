@@ -3,8 +3,15 @@
 /**
  * The "get $POLYGRAPH" step: LI.FI's swap widget pinned to $POLYGRAPH-on-Base as
  * the destination, so a member can pay in whatever they hold (any token, any
- * major chain) without leaving the page. Renders as its own wallet tree,
- * deliberately outside the pay step's wagmi provider (see ActivateFlow).
+ * major chain) without leaving the page.
+ *
+ * External wallet management, per LI.FI's official Reown pattern: the widget
+ * sits inside the SAME WagmiProvider as the pay step (AppKit's adapter config),
+ * carries NO EthereumProvider of its own, and its connect buttons open the
+ * AppKit modal via walletConfig.onConnect — one wallet connection powers both
+ * the swap and the stream. (Passing EthereumProvider alongside an external
+ * wagmi config runs two connector managers on one config; that fight was the
+ * "connector.getProvider is not a function" crash.)
  *
  * Drawer variant on purpose: the widget hard-autofocuses its token-search input
  * on internal navigation, and in inline flow that focus scrolls the DOCUMENT
@@ -14,7 +21,7 @@
 
 import { useEffect, useRef } from "react";
 import { LiFiWidget, type WidgetConfig, type WidgetDrawer } from "@lifi/widget";
-import { EthereumProvider } from "@lifi/widget-provider-ethereum";
+import { useAppKit } from "@reown/appkit/react";
 import {
   PAYMENT_CHAIN_ID,
   POLYGRAPH_TOKEN_ADDRESS,
@@ -46,7 +53,6 @@ if (typeof window !== "undefined" && !window.__lifiFocusPatched) {
 const widgetConfig: WidgetConfig = {
   integrator: "polygraph.so",
   variant: "drawer",
-  providers: [EthereumProvider()],
   toChain: PAYMENT_CHAIN_ID,
   toToken: POLYGRAPH_TOKEN_ADDRESS,
   disabledUI: { toToken: true },
@@ -69,6 +75,7 @@ const widgetConfig: WidgetConfig = {
 
 export function SwapWidget() {
   const drawerRef = useRef<WidgetDrawer>(null);
+  const { open } = useAppKit();
   const pin = useRef<{ y: number; sawOpen: boolean; timer: number; stop: () => void } | null>(null);
 
   // Belt over the braces above: even with preventScroll, Chromium natively
@@ -116,7 +123,16 @@ export function SwapWidget() {
       >
         + need {POLYGRAPH_TOKEN_SYMBOL}? swap any token
       </button>
-      <LiFiWidget ref={drawerRef} integrator="polygraph.so" config={widgetConfig} />
+      <LiFiWidget
+        ref={drawerRef}
+        integrator="polygraph.so"
+        config={{
+          ...widgetConfig,
+          // The widget's connect buttons open the shared AppKit modal — one
+          // wallet session for swap and stream alike.
+          walletConfig: { onConnect: () => void open() },
+        }}
+      />
     </>
   );
 }
