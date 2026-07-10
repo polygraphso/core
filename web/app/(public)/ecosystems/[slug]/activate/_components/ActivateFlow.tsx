@@ -74,7 +74,21 @@ export interface ActivateFlowProps {
 
 type VerifyState = { id: "idle" } | { id: "verifying" } | { id: "done" } | { id: "error"; message: string };
 
-export function ActivateFlow({ slug, consoleHref }: ActivateFlowProps) {
+export function ActivateFlow(props: ActivateFlowProps) {
+  return (
+    // ONE wagmi tree (AppKit's adapter config) around the whole flow — the
+    // LI.FI widget detects it and reuses the same wallet session as the pay
+    // step (external wallet management; see SwapWidget). No reconnectOnMount:
+    // a payment page shouldn't poke wallet extensions on load.
+    <WagmiProvider config={wagmiAdapter.wagmiConfig} reconnectOnMount={false}>
+      <QueryClientProvider client={queryClient}>
+        <ActivateFlowInner {...props} />
+      </QueryClientProvider>
+    </WagmiProvider>
+  );
+}
+
+function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
   const [quote, setQuote] = useState<PaymentQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [manualTxHash, setManualTxHash] = useState("");
@@ -161,18 +175,14 @@ export function ActivateFlow({ slug, consoleHref }: ActivateFlowProps) {
 
       {/* Step 1 — get the token. The button + LI.FI drawer live in SwapWidget
           (drawer on purpose: inline, the widget's autofocus scrolls the page —
-          see that file). Own tree: no wagmi context above it, so LI.FI manages
-          wallets independently of the pay step. */}
+          see that file). Shares this flow's wagmi tree, so the wallet connected
+          for the stream works in the swap too. */}
       <div className="mb-6">
         <SwapWidget />
       </div>
 
-      {/* Step 2 — connect and stream (the only wagmi tree on the page). */}
-      <WagmiProvider config={wagmiAdapter.wagmiConfig} reconnectOnMount={false}>
-        <QueryClientProvider client={queryClient}>
-          <PayStep slug={slug} consoleHref={consoleHref} quote={quote} verify={verify} />
-        </QueryClientProvider>
-      </WagmiProvider>
+      {/* Step 2 — connect and stream. */}
+      <PayStep slug={slug} consoleHref={consoleHref} quote={quote} verify={verify} />
 
       {/* Recovery: a payment made here whose verify never ran (tab closed
           mid-flow, network blip). Takes the creation TRANSACTION, not a stream
