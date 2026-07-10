@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 const CONFIG: SkillEcosystemConfig = {
+  slug: "clawhub",
   methodologyLabel: "litmus-skill-v3",
   title: "ClawHub skills index",
   blurb:

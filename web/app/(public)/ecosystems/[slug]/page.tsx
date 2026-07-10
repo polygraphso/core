@@ -14,6 +14,7 @@ import { isLegacyEcosystemSlug } from "@/lib/ecosystemTypes";
 import type { EcosystemEntryVM } from "@/lib/ecosystemTypes";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import { EcosystemCta } from "@/app/_components/EcosystemCta";
+import { MonitoredBadge } from "@/app/_components/MonitoredBadge";
 
 export const revalidate = 300;
 
@@ -127,6 +128,7 @@ export default async function GenericEcosystemPage({ params }: { params: Promise
         <p className="section-label mb-4">
           Ecosystem index{cfg.methodologyLabel ? ` · ${cfg.methodologyLabel}` : ""}
         </p>
+        <MonitoredBadge slug={ecosystem.slug} className="mb-3" />
         <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">{ecosystem.name}</h1>
         {ecosystem.blurb ? (
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
