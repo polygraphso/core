@@ -27,7 +27,7 @@ We originally planned a weekly buyback: a fixed share of gross monitoring revenu
 
 Every subscription is a market buy, made by the client at the moment they convert into $POLYGRAPH to pay. There is no weekly conversion step for us to run or skip, because the revenue arrives already in the token. Demand for $POLYGRAPH becomes a direct function of monitoring adoption: priced in dollars, a subscription buys more tokens when the price is low and fewer when it is high, and it repeats monthly for as long as the client stays.
 
-What the treasury receives, it holds. The flow is one-directional: subscribe, stream, hold. We are not routing tokens back out to anyone, and we are explicitly **not** using [glidepath](https://docs.bankr.bot/token-launching/glidepath) or any other sell mechanism. Glidepath is a sell schedule; it lets a builder exit an allocation gradually. This points the other way: steady, adoption-driven buy pressure, and a treasury that accumulates.
+What the treasury receives, it holds. The flow is one-directional: subscribe, stream, hold.
 
 ## How you'll verify it
 
