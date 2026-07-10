@@ -103,8 +103,7 @@ export default async function ManageLandingPage() {
               <div className="mb-0.5 flex items-baseline justify-between gap-4">
                 <p className={MICRO_LABEL}>Managed ecosystems</p>
                 <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint tabular">
-                  {total}
-                  {session.isAdmin ? " · app admin" : ""}
+                  {total} total
                 </span>
               </div>
 
@@ -208,10 +207,10 @@ export default async function ManageLandingPage() {
                   Public directory ↗
                 </a>
                 <a
-                  href={session.isAdmin ? "/admin/monitors" : "/dashboard"}
+                  href="/dashboard"
                   className="block font-mono text-[11px] tracking-[0.06em] text-ink-muted py-1 hover:text-oxblood transition-colors"
                 >
-                  {session.isAdmin ? "All monitors ↗" : "Your monitors ↗"}
+                  Your monitors ↗
                 </a>
               </div>
             </aside>

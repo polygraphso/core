@@ -92,7 +92,7 @@ export function AddMonitorForm() {
     <button
       type="submit"
       disabled={status === "loading" || !formValue.trim()}
-      className="mt-2 w-full font-mono text-[11px] uppercase tracking-[0.14em] bg-ink text-parchment rounded-[3px] px-4 py-2.5 hover:bg-oxblood transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] bg-ink text-parchment rounded-[3px] px-4 py-2.5 hover:bg-oxblood transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
     >
       {status === "loading" ? "…" : "Monitor"}
     </button>
@@ -112,16 +112,20 @@ export function AddMonitorForm() {
 
       {kind === "server" ? (
         <form onSubmit={onSubmitServer}>
-          <ServerCombobox
-            value={value}
-            onValueChange={(v) => { setValue(v); setStatus("idle"); setMessage(""); }}
-            onSelectResult={(r: ComboboxResult) => submitRef(r.target, { alreadyGraded: r.graded, isSkill: false })}
-            onSubmitFreeform={(normalized) => submitRef(normalized, { alreadyGraded: false, isSkill: false })}
-            searchKind="npm,pypi"
-            placeholder="@scope/name or pypi/name"
-            disabled={status === "loading"}
-          />
-          {monitorButton(value)}
+          <div className="flex gap-2 items-start">
+            <div className="flex-1 min-w-0">
+              <ServerCombobox
+                value={value}
+                onValueChange={(v) => { setValue(v); setStatus("idle"); setMessage(""); }}
+                onSelectResult={(r: ComboboxResult) => submitRef(r.target, { alreadyGraded: r.graded, isSkill: false })}
+                onSubmitFreeform={(normalized) => submitRef(normalized, { alreadyGraded: false, isSkill: false })}
+                searchKind="npm,pypi"
+                placeholder="@scope/name or pypi/name"
+                disabled={status === "loading"}
+              />
+            </div>
+            {monitorButton(value)}
+          </div>
           <p className="mt-2 font-mono text-[10px] text-ink-faint">
             npm packages are prefixed automatically. Use <span className="text-ink">pypi/name</span> for PyPI, or{" "}
             <span className="text-ink">github/owner/repo</span> for a github server.
@@ -129,18 +133,22 @@ export function AddMonitorForm() {
         </form>
       ) : (
         <form onSubmit={onSubmitSkill}>
-          <ServerCombobox
-            value={skillValue}
-            onValueChange={(v) => { setSkillValue(v); setStatus("idle"); setMessage(""); }}
-            onSelectResult={(r: ComboboxResult) => submitRef(r.target, { alreadyGraded: r.graded, isSkill: true })}
-            onSubmitFreeform={(normalized) => submitSkill(normalized)}
-            searchUrl="/api/skills/search"
-            normalize={normalizeSkillInput}
-            placeholder="Search skills, or paste a github ref / SKILL.md URL"
-            freeformVerb="Monitor"
-            disabled={status === "loading"}
-          />
-          {monitorButton(skillValue)}
+          <div className="flex gap-2 items-start">
+            <div className="flex-1 min-w-0">
+              <ServerCombobox
+                value={skillValue}
+                onValueChange={(v) => { setSkillValue(v); setStatus("idle"); setMessage(""); }}
+                onSelectResult={(r: ComboboxResult) => submitRef(r.target, { alreadyGraded: r.graded, isSkill: true })}
+                onSubmitFreeform={(normalized) => submitSkill(normalized)}
+                searchUrl="/api/skills/search"
+                normalize={normalizeSkillInput}
+                placeholder="Search skills, or paste a github ref / SKILL.md URL"
+                freeformVerb="Monitor"
+                disabled={status === "loading"}
+              />
+            </div>
+            {monitorButton(skillValue)}
+          </div>
           <p className="mt-2 font-mono text-[10px] text-ink-faint">
             Search graded skills by name, or paste{" "}
             <span className="text-ink">github/owner/repo#skill</span> or a full SKILL.md URL. Browse them on{" "}
