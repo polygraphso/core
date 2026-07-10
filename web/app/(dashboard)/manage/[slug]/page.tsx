@@ -47,9 +47,9 @@ export default async function ManageConsolePage({
   const manage = canManageEcosystem(role);
 
   // Monitoring is paid: without a live POLYGRAPH stream (or a comp), the whole
-  // console defers to the activation page.
+  // console defers to the (public) activation page.
   const gate = await getPaymentGate(ecosystem);
-  if (gate.status !== "active") redirect(`/manage/${slug}/activate`);
+  if (gate.status !== "active") redirect(`/ecosystems/${slug}/activate`);
 
   const [graded, members, advisories, alertSettings, recipients] = await Promise.all([
     loadGradedEntries(ecosystem.id),

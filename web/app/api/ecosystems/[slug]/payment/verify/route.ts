@@ -1,24 +1,25 @@
 /**
- * POST /api/manage/[slug]/payment/verify — attach a Sablier stream to the
+ * POST /api/ecosystems/[slug]/payment/verify — attach a Sablier stream to the
  * ecosystem as its monitoring payment.
  *
  * Body: { streamId: number, txHash?: string }
  *
- * The stream is the proof: the route reads it onchain and requires the right
- * token, the treasury as recipient, a ~12-month term, and a deposit covering
- * the USD-pegged price at the current rate (5% tolerance). Nothing client-side
- * is trusted beyond the pointer. requirePaid: false — this IS the payment path;
- * idempotent for the stream already attached to this ecosystem.
+ * PUBLIC — a client can pay before they ever have an account; the wallet is
+ * the identity. Safe without auth because the stream is the proof: the route
+ * reads it onchain and requires the right token, the treasury as recipient, a
+ * ~12-month term, and a deposit covering the USD-pegged price at the current
+ * rate (5% tolerance). The only thing an unauthenticated caller can do is pay
+ * for someone's monitoring. Idempotent for a stream already attached to this
+ * ecosystem; a stream can back only one ecosystem.
  */
 
-import { guardManage } from "@/lib/manageApi";
+import { getEcosystemBySlug } from "@/lib/ecosystemData";
 import { verifyStreamPayment } from "@/lib/ecosystemPayments";
 
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const guard = await guardManage(slug, { requirePaid: false });
-  if (guard instanceof Response) return guard;
-  const { access } = guard;
+  const ecosystem = await getEcosystemBySlug(slug);
+  if (!ecosystem) return Response.json({ error: "Unknown ecosystem" }, { status: 404 });
 
   let body: { streamId?: unknown; txHash?: unknown };
   try {
@@ -36,7 +37,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       ? body.txHash
       : null;
 
-  const result = await verifyStreamPayment(access.ecosystem, streamId, txHash);
+  const result = await verifyStreamPayment(ecosystem, streamId, txHash);
   if (!result.ok) return Response.json({ error: result.reason }, { status: 422 });
   return Response.json({
     ok: true,

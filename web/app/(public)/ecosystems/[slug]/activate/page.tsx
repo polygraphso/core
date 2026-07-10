@@ -1,18 +1,23 @@
 /**
- * /manage/[slug]/activate — the activation ("lock") page an unpaid ecosystem's
- * console redirects to. Pitches what a monitored ecosystem gets, shows the
- * USD-pegged price in $POLYGRAPH, and walks the member through paying: swap
- * anything into $POLYGRAPH (embedded LI.FI widget), then stream it to the
- * polygraph treasury for 12 months via Sablier. The server verifies the stream
- * onchain; the console unlocks the moment it checks out.
+ * /ecosystems/[slug]/activate — the PUBLIC activation page for one ecosystem:
+ * the link sent to a prospective client. Pitches what monitored means, shows
+ * the ecosystem's USD-pegged price in $POLYGRAPH, and takes the payment right
+ * there: swap anything into $POLYGRAPH (embedded LI.FI widget), then stream it
+ * to the polygraph treasury for 12 months via Sablier.
  *
- * Any member of the ecosystem can view and pay. An already-active ecosystem is
- * bounced back to its console.
+ * No account needed — payment is wallet-based and the server verifies the
+ * stream onchain, so a client can pay before they ever sign in. An unpaid
+ * ecosystem's private console (/manage/[slug]) redirects here; a signed-in
+ * member who pays is bounced straight back to the console.
+ *
+ * Always noindex: it names a per-ecosystem price, and it's a link to send,
+ * not a page to rank.
  */
 
-import { redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getEcosystemRole } from "@/lib/ecosystemAccess";
+import { getEcosystemBySlug } from "@/lib/ecosystemData";
 import { getPaymentGate } from "@/lib/ecosystemPayments";
 import { DEFAULT_MONTHLY_PRICE_USD, TERM_MONTHS } from "@/lib/paymentConfig";
 import { ActivateFlow } from "./_components/ActivateFlow";
@@ -21,7 +26,11 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  return { title: `Activate monitoring · ${slug} · polygraph`, robots: { index: false } };
+  const ecosystem = await getEcosystemBySlug(slug);
+  return {
+    title: `Activate monitoring · ${ecosystem?.name ?? slug} · polygraph`,
+    robots: { index: false, follow: false },
+  };
 }
 
 const BENEFITS = [
@@ -57,39 +66,56 @@ export default async function ActivatePage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const session = await getSession();
-  if (!session) redirect(`/login?next=/manage/${slug}/activate`);
-
-  const access = await getEcosystemRole(session, slug);
-  if (!access) redirect("/manage");
-  const { ecosystem } = access;
+  const ecosystem = await getEcosystemBySlug(slug);
+  if (!ecosystem) notFound();
 
   const gate = await getPaymentGate(ecosystem);
-  if (gate.status === "active") redirect(`/manage/${slug}`);
+
+  // A signed-in member lands back in the console after paying; a client with
+  // no account gets an inline success state instead.
+  const session = await getSession();
+  const access = session ? await getEcosystemRole(session, slug) : null;
+  const consoleHref = access ? `/manage/${slug}` : null;
 
   const usdMonthly = ecosystem.monthly_price_usd ?? DEFAULT_MONTHLY_PRICE_USD;
   const usdTotal = usdMonthly * TERM_MONTHS;
 
   return (
-    <main className="px-6 sm:px-10 py-12 max-w-4xl">
+    <main className="px-6 sm:px-10 py-12 max-w-4xl mx-auto">
       <header className="mb-12">
-        <a
-          href="/manage"
-          className="section-label mb-3 inline-block hover:text-oxblood transition-colors"
-        >
-          ← Ecosystems
-        </a>
         <p className="section-label mb-4">Activate monitoring</p>
         <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight leading-[1.1]">
-          {ecosystem.name} is set up — monitoring isn&rsquo;t running yet.
+          {gate.status === "active"
+            ? `${ecosystem.name} is monitored.`
+            : `${ecosystem.name} is set up — monitoring isn’t running yet.`}
         </h1>
-        <p className="mt-4 text-ink-muted text-[15px] leading-relaxed max-w-2xl">
-          Continuous monitoring is what keeps an index honest: the same open test, re-run on a
-          clock, with alerts when something moves. It starts when your ecosystem commits{" "}
-          <span className="text-ink">${usdTotal.toLocaleString("en-US")} in $POLYGRAPH</span>,
-          streamed to the polygraph treasury over {TERM_MONTHS} months. Cancel the stream anytime —
-          the unstreamed remainder returns to the payer and monitoring stops.
-        </p>
+        {gate.status === "active" ? (
+          <p className="mt-4 text-ink-muted text-[15px] leading-relaxed max-w-2xl">
+            Continuous monitoring is active
+            {gate.payment ? (
+              <> until <span className="text-ink">{gate.payment.end_at.slice(0, 10)}</span></>
+            ) : null}
+            . Members manage entries and alerts from the{" "}
+            <a href={`/manage/${slug}`} className="underline decoration-dotted hover:text-oxblood">
+              console
+            </a>
+            ; if your team needs access, email{" "}
+            <a href="mailto:hello@polygraph.so" className="underline decoration-dotted hover:text-oxblood">
+              hello@polygraph.so
+            </a>
+            .
+          </p>
+        ) : (
+          <p className="mt-4 text-ink-muted text-[15px] leading-relaxed max-w-2xl">
+            Continuous monitoring is what keeps an index honest: the same open test, re-run on a
+            clock, with alerts when something moves. It starts when your ecosystem commits{" "}
+            <span className="text-ink">${usdTotal.toLocaleString("en-US")} in $POLYGRAPH</span>,
+            streamed to the polygraph treasury (
+            <span className="font-mono text-[13px]">polygraph.base.eth</span>) over {TERM_MONTHS}{" "}
+            months. Cancel the stream anytime — the unstreamed remainder returns to the payer and
+            monitoring stops. No account needed to pay.
+          </p>
+        )}
       </header>
 
       {/* What a monitored ecosystem gets. */}
@@ -116,7 +142,7 @@ export default async function ActivatePage({
       </section>
 
       {/* The payment flow (client island: wallet + swap + stream). */}
-      <ActivateFlow slug={slug} ecosystemName={ecosystem.name} usdMonthly={usdMonthly} />
+      {gate.status !== "active" ? <ActivateFlow slug={slug} consoleHref={consoleHref} /> : null}
     </main>
   );
 }

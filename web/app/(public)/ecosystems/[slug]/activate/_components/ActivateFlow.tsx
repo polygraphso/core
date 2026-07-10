@@ -43,7 +43,13 @@ const SwapWidget = dynamic(() => import("./SwapWidget").then((m) => m.SwapWidget
 
 const queryClient = new QueryClient();
 
-export function ActivateFlow(props: { slug: string; ecosystemName: string; usdMonthly: number }) {
+export interface ActivateFlowProps {
+  slug: string;
+  /** Console URL when the visitor is a signed-in member; null for a client with no account. */
+  consoleHref: string | null;
+}
+
+export function ActivateFlow(props: ActivateFlowProps) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
@@ -61,7 +67,7 @@ type Step =
   | { id: "done" }
   | { id: "error"; message: string };
 
-function ActivateFlowInner({ slug }: { slug: string; ecosystemName: string; usdMonthly: number }) {
+function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
   const config = useConfig();
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors, isPending: connecting } = useConnect();
@@ -78,7 +84,7 @@ function ActivateFlowInner({ slug }: { slug: string; ecosystemName: string; usdM
   const fetchQuote = useCallback(async () => {
     setQuoteError(null);
     try {
-      const res = await fetch(`/api/manage/${slug}/payment/quote`, { cache: "no-store" });
+      const res = await fetch(`/api/ecosystems/${slug}/payment/quote`, { cache: "no-store" });
       const body = (await res.json()) as PaymentQuote & { error?: string };
       if (!res.ok) throw new Error(body.error ?? `quote failed (${res.status})`);
       setQuote(body);
@@ -101,7 +107,7 @@ function ActivateFlowInner({ slug }: { slug: string; ecosystemName: string; usdM
   const verify = useCallback(
     async (streamId: number, txHash: string | null) => {
       setStep({ id: "verifying" });
-      const res = await fetch(`/api/manage/${slug}/payment/verify`, {
+      const res = await fetch(`/api/ecosystems/${slug}/payment/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ streamId, txHash }),
@@ -112,10 +118,11 @@ function ActivateFlowInner({ slug }: { slug: string; ecosystemName: string; usdM
         return;
       }
       setStep({ id: "done" });
-      // Full navigation so the server gate re-evaluates and the console loads.
-      window.location.assign(`/manage/${slug}`);
+      // Members go straight back to the console (full navigation so the server
+      // gate re-evaluates); a client with no account gets the inline success.
+      if (consoleHref) window.location.assign(consoleHref);
     },
-    [slug],
+    [slug, consoleHref],
   );
 
   const pay = useCallback(async () => {
@@ -267,7 +274,7 @@ function ActivateFlowInner({ slug }: { slug: string; ecosystemName: string; usdM
               onClick={() => connect({ connector: c })}
               className="inline-flex items-center gap-2 rounded-[3px] bg-ink px-5 py-3 font-mono text-sm tracking-wide text-parchment transition-colors hover:bg-oxblood disabled:opacity-50"
             >
-              Connect {c.name}
+              Connect {c.name === "Injected" ? "browser wallet" : c.name}
             </button>
           ))}
         </div>
@@ -296,7 +303,9 @@ function ActivateFlowInner({ slug }: { slug: string; ecosystemName: string; usdM
                 : step.id === "verifying"
                   ? "Verifying onchain…"
                   : step.id === "done"
-                    ? "Active — opening console…"
+                    ? consoleHref
+                      ? "Active — opening console…"
+                      : "Monitoring active"
                     : `Stream ${POLYGRAPH_TOKEN_SYMBOL} for ${TERM_MONTHS} months`}
           </button>
           <p className="mt-3 text-[13px] leading-relaxed text-ink-faint max-w-xl">
@@ -306,6 +315,19 @@ function ActivateFlowInner({ slug }: { slug: string; ecosystemName: string; usdM
           </p>
         </div>
       )}
+
+      {step.id === "done" && !consoleHref ? (
+        <div className="mt-5 border-l-2 pl-4" style={{ borderColor: "var(--color-oxblood)" }}>
+          <p className="text-[15px] leading-relaxed text-ink">
+            The stream checked out — monitoring is active. Email{" "}
+            <a href="mailto:hello@polygraph.so" className="underline decoration-dotted hover:text-oxblood">
+              hello@polygraph.so
+            </a>{" "}
+            with your team&rsquo;s addresses and we&rsquo;ll invite them to the management console
+            (entries, alert strategy, weekly CVE digest).
+          </p>
+        </div>
+      ) : null}
 
       {step.id === "error" ? (
         <div className="mt-5 border-l-2 pl-4" style={{ borderColor: "var(--color-oxblood)" }}>

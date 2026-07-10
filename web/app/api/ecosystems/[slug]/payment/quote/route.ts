@@ -1,22 +1,22 @@
 /**
- * GET /api/manage/[slug]/payment/quote — the live activation quote: the
+ * GET /api/ecosystems/[slug]/payment/quote — the live activation quote: the
  * ecosystem's USD-pegged price converted to $POLYGRAPH at the current
  * DexScreener rate, plus the addresses the create tx needs.
  *
- * Any member of the ecosystem may fetch it (requirePaid: false — this IS the
- * payment path). The quote is advisory: the verify route re-prices the deposit,
- * so nothing here is trusted later.
+ * PUBLIC — the activation page is a link sent to prospective clients who may
+ * have no account, and paying needs no session (the payment is wallet-based).
+ * The quote is advisory: the verify route re-prices the deposit onchain, so
+ * nothing here is trusted later.
  */
 
-import { guardManage } from "@/lib/manageApi";
+import { getEcosystemBySlug } from "@/lib/ecosystemData";
 import { buildPaymentQuote, getPaymentGate } from "@/lib/ecosystemPayments";
 import { TREASURY_ADDRESS } from "@/lib/paymentConfig";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const guard = await guardManage(slug, { requirePaid: false });
-  if (guard instanceof Response) return guard;
-  const { access } = guard;
+  const ecosystem = await getEcosystemBySlug(slug);
+  if (!ecosystem) return Response.json({ error: "Unknown ecosystem" }, { status: 404 });
 
   if (!TREASURY_ADDRESS) {
     return Response.json(
@@ -25,16 +25,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     );
   }
 
-  const gate = await getPaymentGate(access.ecosystem);
+  const gate = await getPaymentGate(ecosystem);
   if (gate.status === "active") {
     return Response.json({ error: "Monitoring is already active." }, { status: 409 });
   }
 
   try {
-    const quote = await buildPaymentQuote(access.ecosystem);
+    const quote = await buildPaymentQuote(ecosystem);
     return Response.json(quote);
   } catch (e) {
-    console.error("[manage/payment] quote failed:", e);
+    console.error("[ecosystems/payment] quote failed:", e);
     return Response.json(
       { error: "Couldn't price $POLYGRAPH right now. Retry shortly." },
       { status: 503 },
