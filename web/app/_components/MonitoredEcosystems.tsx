@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { listEcosystems } from "@/lib/ecosystemData";
-import { getPaymentGate } from "@/lib/ecosystemPayments";
+import { listMonitoredEcosystems } from "@/lib/monitoredEcosystems";
 import { isLegacyEcosystemSlug } from "@/lib/ecosystemTypes";
 
 /**
@@ -12,10 +11,7 @@ import { isLegacyEcosystemSlug } from "@/lib/ecosystemTypes";
  * there are no active clients (no empty section on a young page).
  */
 export async function MonitoredEcosystems() {
-  const all = await listEcosystems();
-  const candidates = all.filter((e) => e.is_public && e.is_listed);
-  const gates = await Promise.all(candidates.map((e) => getPaymentGate(e)));
-  const monitored = candidates.filter((_, i) => gates[i]!.status === "active");
+  const monitored = await listMonitoredEcosystems();
   if (monitored.length === 0) return null;
 
   return (

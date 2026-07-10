@@ -18,6 +18,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 const CONFIG: SkillEcosystemConfig = {
+  slug: "uniswap",
   methodologyLabel: "litmus-skill-v3",
   title: "Uniswap builder skills",
   blurb:

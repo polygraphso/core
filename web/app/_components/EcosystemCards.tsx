@@ -41,13 +41,32 @@ export function Distribution({ stats }: { stats: EcosystemStats }) {
 }
 
 /** One ecosystem's card — links to its per-network page, stats read live. */
-export function EcosystemCard({ eco, stats }: { eco: Ecosystem; stats: EcosystemStats }) {
+export function EcosystemCard({
+  eco,
+  stats,
+  monitored = false,
+}: {
+  eco: Ecosystem;
+  stats: EcosystemStats;
+  /** Active client: oxblood top rule + chip — the same primary-mark the hero uses. */
+  monitored?: boolean;
+}) {
   return (
     <Link
       href={eco.href}
-      className="group flex min-w-0 flex-col rounded-[5px] border hairline bg-parchment-50 px-5 py-5 transition-colors hover:bg-[#efe8d6]"
+      className={`group flex min-w-0 flex-col rounded-[5px] border hairline bg-parchment-50 px-5 py-5 transition-colors hover:bg-[#efe8d6] ${
+        monitored ? "border-t-2" : ""
+      }`}
+      style={monitored ? { borderTopColor: "var(--color-oxblood)" } : undefined}
     >
-      <h3 className="font-serif text-2xl text-ink tracking-tight">{eco.name}</h3>
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="font-serif text-2xl text-ink tracking-tight">{eco.name}</h3>
+        {monitored ? (
+          <span className="mt-1 shrink-0 font-mono text-[9.5px] uppercase tracking-[0.14em] text-oxblood border border-oxblood/40 rounded-full px-2 py-0.5">
+            monitored
+          </span>
+        ) : null}
+      </div>
       <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">{eco.blurb}</p>
       <div className="mt-4">
         <Distribution stats={stats} />

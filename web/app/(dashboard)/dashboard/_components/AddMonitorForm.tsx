@@ -80,8 +80,8 @@ export function AddMonitorForm() {
       type="button"
       onClick={() => { setKind(k); setStatus("idle"); setMessage(""); }}
       aria-pressed={kind === k}
-      className={`font-mono text-[10px] uppercase tracking-[0.14em] px-3 py-1.5 border hairline transition-colors ${
-        kind === k ? "bg-ink text-parchment" : "bg-parchment text-ink-muted hover:text-ink"
+      className={`font-mono text-[10px] uppercase tracking-[0.14em] px-3 py-1.5 border border-rule rounded-[3px] transition-colors ${
+        kind === k ? "bg-ink border-ink text-parchment" : "bg-parchment-50 text-ink-muted hover:text-ink"
       }`}
     >
       {label}
@@ -92,14 +92,14 @@ export function AddMonitorForm() {
     <button
       type="submit"
       disabled={status === "loading" || !formValue.trim()}
-      className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] bg-ink text-parchment px-4 py-2.5 hover:bg-oxblood transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+      className="shrink-0 font-mono text-[11px] uppercase tracking-[0.14em] bg-ink text-parchment rounded-[3px] px-4 py-2.5 hover:bg-oxblood transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
     >
       {status === "loading" ? "…" : "Monitor"}
     </button>
   );
 
   return (
-    <div className="border hairline bg-parchment-50 p-5">
+    <div className="border border-rule rounded-[4px] px-5 py-4 mb-8">
       <div className="flex items-center justify-between gap-3 mb-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
           Add a monitor

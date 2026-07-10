@@ -3,6 +3,7 @@ import Link from "next/link";
 import { skillRefToPath } from "@/lib/skillGrades";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import { EcosystemCta } from "@/app/_components/EcosystemCta";
+import { MonitoredBadge } from "@/app/_components/MonitoredBadge";
 import type { GradedSkill, SkillGrade } from "@/lib/skillEcosystem";
 
 /**
@@ -17,6 +18,8 @@ import type { GradedSkill, SkillGrade } from "@/lib/skillEcosystem";
  */
 
 export interface SkillEcosystemConfig {
+  /** Ecosystem slug — shows the "continuously monitored" badge when its payment gate is active. */
+  slug?: string;
   /** Short methodology tag for the private-banner section label (e.g. "litmus-skill-v2"). */
   methodologyLabel: string;
   title: string;
@@ -125,6 +128,7 @@ export function SkillEcosystemTable({ config, skills }: { config: SkillEcosystem
     <article>
       <header className="mb-9">
         <p className="section-label mb-4">Private · {config.methodologyLabel}</p>
+        {config.slug ? <MonitoredBadge slug={config.slug} className="mb-3" /> : null}
         <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">{config.title}</h1>
         <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">{config.blurb}</p>
       </header>

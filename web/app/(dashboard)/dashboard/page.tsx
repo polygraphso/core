@@ -181,32 +181,24 @@ export default async function DashboardPage() {
           quota={{ used: activeCount, max: session.isAdmin ? null : 1 }}
         />
 
-        {/* Alert history */}
+        {/* Alert history — the paper trail, as a quiet hairline register. */}
         {deliveries.length > 0 && (
           <section className="mt-14">
-            <div className="border-t hairline pt-6 mb-6">
-              <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-                Recent alerts
-              </h2>
-            </div>
-            <div className="grid gap-2">
+            <p className="section-label mb-3">Recent alerts</p>
+            <div className="border-b hairline">
               {deliveries.map((d) => (
                 <div
                   key={d.id}
-                  className="flex items-center justify-between gap-3 border hairline bg-parchment-50 px-4 py-3"
+                  className="flex items-baseline justify-between gap-4 border-t hairline py-2.5"
                 >
-                  <div className="min-w-0">
-                    <p className="font-mono text-sm text-ink truncate">{d.target}</p>
-                    {d.version && (
-                      <p className="font-mono text-[11px] text-ink-faint mt-0.5">
-                        v{d.version}
-                        {d.grade && (
-                          <span className="ml-2 text-ink">→ {d.grade}</span>
-                        )}
-                      </p>
-                    )}
-                  </div>
-                  <p className="shrink-0 font-mono text-[11px] text-ink-faint">
+                  <p className="min-w-0 font-mono text-[13px] text-ink truncate">
+                    {d.target}
+                    {d.version ? (
+                      <span className="text-ink-faint"> · v{d.version}</span>
+                    ) : null}
+                    {d.grade ? <span className="text-ink-muted"> → {d.grade}</span> : null}
+                  </p>
+                  <p className="shrink-0 font-mono text-[11px] text-ink-faint tabular">
                     {new Date(d.sent_at ?? d.created_at).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
@@ -220,12 +212,8 @@ export default async function DashboardPage() {
 
         {/* Account */}
         <section className="mt-14">
-          <div className="border-t hairline pt-6 mb-4">
-            <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">
-              Account
-            </h2>
-          </div>
-          <p className="font-mono text-sm text-ink">{session.email}</p>
+          <p className="section-label mb-3">Account</p>
+          <p className="font-mono text-[13px] text-ink">{session.email}</p>
         </section>
       </div>
     </main>
