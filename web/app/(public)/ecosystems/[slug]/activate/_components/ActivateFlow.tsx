@@ -15,7 +15,8 @@
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { WagmiProvider, useAccount, useConfig, useConnect, useDisconnect } from "wagmi";
+import { createAppKit, useAppKit } from "@reown/appkit/react";
+import { WagmiProvider, useAccount, useConfig, useDisconnect } from "wagmi";
 import {
   readContract,
   switchChain,
@@ -32,7 +33,23 @@ import {
   SABLIER_LOCKUP_ABI,
   type PaymentQuote,
 } from "@/lib/paymentConfig";
-import { wagmiConfig } from "./wagmiConfig";
+import { appkitMetadata, appkitNetworks, reownProjectId, wagmiAdapter } from "./appkitConfig";
+
+// Module level per the AppKit pattern — runs once on import, never per render.
+if (reownProjectId) {
+  createAppKit({
+    adapters: [wagmiAdapter],
+    networks: appkitNetworks,
+    projectId: reownProjectId,
+    metadata: appkitMetadata,
+    features: { analytics: false, email: false, socials: false },
+    themeMode: "light",
+    themeVariables: {
+      "--w3m-accent": "#7a1f2b",
+      "--w3m-font-family": "'IBM Plex Sans', system-ui, sans-serif",
+    },
+  });
+}
 
 const SwapWidget = dynamic(() => import("./SwapWidget").then((m) => m.SwapWidget), {
   ssr: false,
@@ -53,8 +70,8 @@ export function ActivateFlow(props: ActivateFlowProps) {
   return (
     // No reconnectOnMount: a payment page shouldn't poke wallet extensions on
     // load (locked/stale extensions reject and trip the dev overlay) — the
-    // visitor connects explicitly.
-    <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
+    // visitor connects explicitly through the AppKit modal.
+    <WagmiProvider config={wagmiAdapter.wagmiConfig} reconnectOnMount={false}>
       <QueryClientProvider client={queryClient}>
         <ActivateFlowInner {...props} />
       </QueryClientProvider>
@@ -73,7 +90,7 @@ type Step =
 function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
   const config = useConfig();
   const { address, isConnected, chainId } = useAccount();
-  const { connect, connectors, isPending: connecting } = useConnect();
+  const { open } = useAppKit();
   const { disconnect } = useDisconnect();
 
   const [quote, setQuote] = useState<PaymentQuote | null>(null);
@@ -256,18 +273,12 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
 
       {/* Step 2 — connect and stream. */}
       {!isConnected ? (
-        <div className="flex flex-wrap items-center gap-3">
-          {connectors.map((c) => (
-            <button
-              key={c.uid}
-              disabled={connecting}
-              onClick={() => connect({ connector: c })}
-              className="inline-flex items-center gap-2 rounded-[3px] bg-ink px-5 py-3 font-mono text-sm tracking-wide text-parchment transition-colors hover:bg-oxblood disabled:opacity-50"
-            >
-              Connect {c.name === "Injected" ? "browser wallet" : c.name}
-            </button>
-          ))}
-        </div>
+        <button
+          onClick={() => void open()}
+          className="inline-flex items-center gap-2 rounded-[3px] bg-ink px-6 py-3.5 font-mono text-sm tracking-wide text-parchment transition-colors hover:bg-oxblood"
+        >
+          Connect wallet
+        </button>
       ) : (
         <div>
           <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[12px] text-ink-muted">
