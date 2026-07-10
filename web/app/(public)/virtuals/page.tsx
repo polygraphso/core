@@ -10,6 +10,7 @@ import { GRADE_HEX } from "@/lib/gradeColors";
 import type { LitmusGrade } from "@/lib/hostedGrades";
 import { InfoTip } from "@/app/_components/InfoTip";
 import { EcosystemCta } from "@/app/_components/EcosystemCta";
+import { MonitoredBadge } from "@/app/_components/MonitoredBadge";
 
 /**
  * UNLISTED Virtuals-Protocol MCP index. Not linked from nav/footer, not in any
@@ -226,6 +227,7 @@ export default async function VirtualsIndexPage() {
     <article>
       <header className="mb-9">
         <p className="section-label mb-4">Private · unpublished · {methodology}</p>
+        <MonitoredBadge slug="virtuals" className="mb-3" />
         <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">Virtuals-Protocol MCP index</h1>
         <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
           Independent, reproducible behavioral grades for the MCP surface of the Virtuals ecosystem —

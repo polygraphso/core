@@ -17,6 +17,7 @@ export const metadata: Metadata = {
 export const revalidate = 3600;
 
 const CONFIG: SkillEcosystemConfig = {
+  slug: "skills-sh",
   methodologyLabel: "litmus-skill-v3",
   title: "skills.sh index",
   blurb:

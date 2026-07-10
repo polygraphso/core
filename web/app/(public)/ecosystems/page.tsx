@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ECOSYSTEMS, type Ecosystem, type EcosystemStats } from "@/lib/ecosystems";
 import { listEcosystems, loadGradedEntries } from "@/lib/ecosystemData";
 import { buildEntryVMs } from "@/lib/ecosystemViewModel";
+import { monitoredSlugSet } from "@/lib/monitoredEcosystems";
 import { isLegacyEcosystemSlug, type EcosystemRow } from "@/lib/ecosystemTypes";
 import { SectionHeader } from "@/app/_components/SectionHeader";
 import { EcosystemCta } from "@/app/_components/EcosystemCta";
@@ -124,10 +125,18 @@ export default async function EcosystemsPage() {
     (e) => !allDb.some((d) => d.slug === e.slug) || listedSlugs.has(e.slug),
   );
 
-  const [stats, dbCards] = await Promise.all([
+  const [stats, dbCards, monitored] = await Promise.all([
     Promise.all(shownLegacy.map((e) => e.loadStats())),
     buildEcosystemCards(listed.filter((e) => !isLegacyEcosystemSlug(e.slug))),
+    monitoredSlugSet(),
   ]);
+
+  // Monitored ecosystems (active clients) lead § 01 — their place at the top
+  // is part of what monitoring buys; the free public indexes follow.
+  const allCards = [
+    ...shownLegacy.map((e, i) => ({ eco: e, stats: stats[i]!, monitored: monitored.has(e.slug) })),
+    ...dbCards.map((c) => ({ ...c, monitored: monitored.has(c.eco.slug) })),
+  ].sort((a, b) => Number(b.monitored) - Number(a.monitored));
   const totalGraded =
     stats.reduce((sum, s) => sum + s.graded, 0) + dbCards.reduce((sum, c) => sum + c.stats.graded, 0);
   const networkCount = shownLegacy.length + dbCards.length;
@@ -192,11 +201,8 @@ export default async function EcosystemsPage() {
           </p>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {shownLegacy.map((e, i) => (
-              <EcosystemCard key={e.slug} eco={e} stats={stats[i]} />
-            ))}
-            {dbCards.map((c) => (
-              <EcosystemCard key={c.eco.slug} eco={c.eco} stats={c.stats} />
+            {allCards.map((c) => (
+              <EcosystemCard key={c.eco.slug} eco={c.eco} stats={c.stats} monitored={c.monitored} />
             ))}
             <NotListedTile />
           </div>

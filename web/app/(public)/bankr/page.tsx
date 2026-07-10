@@ -13,6 +13,7 @@ import { refToPath } from "@/lib/badgeData";
 import { skillRefToPath } from "@/lib/skillGrades";
 import { GRADE_HEX } from "@/lib/gradeColors";
 import { EcosystemCta } from "@/app/_components/EcosystemCta";
+import { MonitoredBadge } from "@/app/_components/MonitoredBadge";
 
 /**
  * UNLISTED Bankr ecosystem trust index. Not linked from nav/footer, not in any
@@ -141,6 +142,7 @@ export default async function BankrIndexPage() {
       <article>
         <header className="mb-9">
           <p className="section-label mb-4">Private · litmus-skill-v2</p>
+          <MonitoredBadge slug="bankr" className="mb-3" />
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">Bankr ecosystem</h1>
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
             Static safety grades for the Bankr skill library, and behavioral grades for the agents that
