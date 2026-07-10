@@ -58,7 +58,9 @@ if (reownProjectId) {
 const SwapWidget = dynamic(() => import("./SwapWidget").then((m) => m.SwapWidget), {
   ssr: false,
   loading: () => (
-    <p className="font-mono text-[12px] text-ink-faint py-8 text-center">Loading swap…</p>
+    <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink-faint">
+      loading swap…
+    </p>
   ),
 });
 
@@ -75,7 +77,6 @@ type VerifyState = { id: "idle" } | { id: "verifying" } | { id: "done" } | { id:
 export function ActivateFlow({ slug, consoleHref }: ActivateFlowProps) {
   const [quote, setQuote] = useState<PaymentQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [showSwap, setShowSwap] = useState(false);
   const [manualTxHash, setManualTxHash] = useState("");
   const [manualState, setManualState] = useState<VerifyState>({ id: "idle" });
 
@@ -158,20 +159,12 @@ export function ActivateFlow({ slug, consoleHref }: ActivateFlowProps) {
         )}
       </div>
 
-      {/* Step 1 — get the token (optional, collapsed by default). Own tree: no
-          wagmi context above it, so LI.FI manages wallets independently. */}
+      {/* Step 1 — get the token. The button + LI.FI drawer live in SwapWidget
+          (drawer on purpose: inline, the widget's autofocus scrolls the page —
+          see that file). Own tree: no wagmi context above it, so LI.FI manages
+          wallets independently of the pay step. */}
       <div className="mb-6">
-        <button
-          onClick={() => setShowSwap((s) => !s)}
-          className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink-muted border-b hairline border-dotted pb-0.5 hover:text-oxblood transition-colors"
-        >
-          {showSwap ? "− hide swap" : `+ need ${POLYGRAPH_TOKEN_SYMBOL}? swap any token`}
-        </button>
-        {showSwap ? (
-          <div className="mt-4 max-w-md">
-            <SwapWidget />
-          </div>
-        ) : null}
+        <SwapWidget />
       </div>
 
       {/* Step 2 — connect and stream (the only wagmi tree on the page). */}
