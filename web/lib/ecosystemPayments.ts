@@ -25,6 +25,7 @@ import {
   MIN_STREAM_SECONDS,
   MONTH_SECONDS,
   PAYMENT_CHAIN_ID,
+  paymentShapeTag,
   POLYGRAPH_TOKEN_ADDRESS,
   POLYGRAPH_TOKEN_DECIMALS,
   SABLIER_LOCKUP_ABI,
@@ -224,24 +225,118 @@ export type VerifyResult =
   | { ok: false; reason: string };
 
 /**
- * Read the stream the client says it created and, when it checks out, record it
- * as this ecosystem's payment. Stateless with respect to the quote: the price is
- * re-fetched here and the deposit must cover ≥95% of the USD-pegged amount, so a
+ * Verify a payment from its CREATION TRANSACTION and, when it checks out,
+ * record it as this ecosystem's payment. The stream is derived from the tx's
+ * CreateLockupLinearStream event — never from a client-supplied id — and the
+ * event's `shape` must carry this ecosystem's tag (paymentShapeTag, written by
+ * our create flow). That binding is what stops someone pasting another
+ * client's fresh, not-yet-verified stream and claiming it for their own
+ * ecosystem: the tag names the ecosystem it was created for.
+ *
+ * Stateless with respect to the quote: the price is re-fetched here and the
+ * deposit must cover ≥95% of the monthly price × the stream's duration, so a
  * quote can't be replayed after the token moves.
  */
 export async function verifyStreamPayment(
-  ecosystem: Pick<EcosystemRow, "id" | "monthly_price_usd">,
-  streamId: number,
-  txHash: string | null,
+  ecosystem: Pick<EcosystemRow, "id" | "slug" | "monthly_price_usd">,
+  txHash: string,
 ): Promise<VerifyResult> {
   const db = getSupabaseAdmin();
   if (!db) return { ok: false, reason: "storage unconfigured" };
   if (!TREASURY_ADDRESS) return { ok: false, reason: "treasury address unconfigured" };
-  if (!Number.isInteger(streamId) || streamId < 0) {
-    return { ok: false, reason: "invalid stream id" };
+
+  // The immutable facts come from the creation event; only the two mutable
+  // ones (canceled / depleted) need state reads. Sequential on purpose: the
+  // default public Base RPC rate-limits parallel call bursts (observed live).
+  let onchain: {
+    streamId: bigint;
+    token: string;
+    recipient: string;
+    sender: string;
+    deposited: bigint;
+    startTime: number;
+    endTime: number;
+    shape: string;
+    canceled: boolean;
+    depleted: boolean;
+  };
+  try {
+    const rpc = process.env.BASE_RPC_URL?.trim() || "https://mainnet.base.org";
+    const provider = new ethers.JsonRpcProvider(rpc);
+    const receipt = await provider.getTransactionReceipt(txHash);
+    if (!receipt) {
+      return { ok: false, reason: "transaction not found on Base — still confirming?" };
+    }
+    if (receipt.status !== 1) return { ok: false, reason: "transaction reverted" };
+
+    const iface = new ethers.Interface(SABLIER_LOCKUP_ABI);
+    let created: ethers.LogDescription | null = null;
+    for (const log of receipt.logs) {
+      if (log.address.toLowerCase() !== SABLIER_LOCKUP_ADDRESS.toLowerCase()) continue;
+      let parsed: ethers.LogDescription | null = null;
+      try {
+        parsed = iface.parseLog({ topics: [...log.topics], data: log.data });
+      } catch {
+        continue;
+      }
+      if (parsed?.name === "CreateLockupLinearStream") {
+        created = parsed;
+        break;
+      }
+    }
+    if (!created) {
+      return { ok: false, reason: "transaction did not create a Sablier stream on this contract" };
+    }
+    const cp = created.args.commonParams;
+    const streamId = BigInt(created.args.streamId);
+
+    const lockup = lockupContract();
+    const canceled = await lockup.wasCanceled(streamId);
+    const depleted = await lockup.isDepleted(streamId);
+
+    onchain = {
+      streamId,
+      token: String(cp.token),
+      recipient: String(cp.recipient),
+      sender: String(cp.sender),
+      deposited: BigInt(cp.depositAmount),
+      startTime: Number(cp.timestamps.start),
+      endTime: Number(cp.timestamps.end),
+      shape: String(cp.shape),
+      canceled: Boolean(canceled),
+      depleted: Boolean(depleted),
+    };
+  } catch (e) {
+    console.error("[payments] stream read failed", e);
+    return { ok: false, reason: "could not read the transaction onchain" };
   }
 
-  // Idempotent re-verify; a stream can back only one ecosystem.
+  const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+  if (onchain.shape !== paymentShapeTag(ecosystem.slug)) {
+    return {
+      ok: false,
+      reason:
+        "this stream wasn't created for this ecosystem — pay on this page, or email hello@polygraph.so to attach a stream created elsewhere",
+    };
+  }
+  if (!same(onchain.token, POLYGRAPH_TOKEN_ADDRESS)) {
+    return { ok: false, reason: "stream token is not $POLYGRAPH" };
+  }
+  if (!same(onchain.recipient, TREASURY_ADDRESS)) {
+    return { ok: false, reason: "stream recipient is not the polygraph treasury" };
+  }
+  if (onchain.canceled) return { ok: false, reason: "stream was canceled" };
+  if (onchain.depleted) return { ok: false, reason: "stream is depleted" };
+  if (onchain.endTime * 1000 <= Date.now()) return { ok: false, reason: "stream has ended" };
+  const durationSeconds = onchain.endTime - onchain.startTime;
+  if (durationSeconds < MIN_STREAM_SECONDS) {
+    return { ok: false, reason: "stream is shorter than one month" };
+  }
+
+  const streamId = Number(onchain.streamId);
+
+  // Idempotent re-verify; a stream can back only one ecosystem. (The shape tag
+  // already binds it, but the unique row keeps history honest.)
   const { data: existing } = await db
     .from("ecosystem_payments")
     .select(PAYMENT_COLUMNS)
@@ -257,58 +352,6 @@ export async function verifyStreamPayment(
     return prior.status === "active"
       ? { ok: true, payment: prior }
       : { ok: false, reason: `stream already recorded as ${prior.status}` };
-  }
-
-  let onchain: {
-    token: string;
-    recipient: string;
-    sender: string;
-    deposited: bigint;
-    startTime: number;
-    endTime: number;
-    canceled: boolean;
-    depleted: boolean;
-  };
-  try {
-    const lockup = lockupContract();
-    // Sequential on purpose: the default public Base RPC rate-limits a parallel
-    // burst of eth_calls (observed live); a one-shot verify can afford ~1s.
-    const token = await lockup.getUnderlyingToken(streamId);
-    const recipient = await lockup.getRecipient(streamId);
-    const sender = await lockup.getSender(streamId);
-    const deposited = await lockup.getDepositedAmount(streamId);
-    const startTime = await lockup.getStartTime(streamId);
-    const endTime = await lockup.getEndTime(streamId);
-    const canceled = await lockup.wasCanceled(streamId);
-    const depleted = await lockup.isDepleted(streamId);
-    onchain = {
-      token: String(token),
-      recipient: String(recipient),
-      sender: String(sender),
-      deposited: BigInt(deposited),
-      startTime: Number(startTime),
-      endTime: Number(endTime),
-      canceled: Boolean(canceled),
-      depleted: Boolean(depleted),
-    };
-  } catch (e) {
-    console.error("[payments] stream read failed", e);
-    return { ok: false, reason: "could not read the stream onchain" };
-  }
-
-  const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-  if (!same(onchain.token, POLYGRAPH_TOKEN_ADDRESS)) {
-    return { ok: false, reason: "stream token is not $POLYGRAPH" };
-  }
-  if (!same(onchain.recipient, TREASURY_ADDRESS)) {
-    return { ok: false, reason: "stream recipient is not the polygraph treasury" };
-  }
-  if (onchain.canceled) return { ok: false, reason: "stream was canceled" };
-  if (onchain.depleted) return { ok: false, reason: "stream is depleted" };
-  if (onchain.endTime * 1000 <= Date.now()) return { ok: false, reason: "stream has ended" };
-  const durationSeconds = onchain.endTime - onchain.startTime;
-  if (durationSeconds < MIN_STREAM_SECONDS) {
-    return { ok: false, reason: "stream is shorter than one month" };
   }
 
   // Rate-based: the deposit must cover the monthly price for however long the
@@ -337,7 +380,7 @@ export async function verifyStreamPayment(
     chain_id: PAYMENT_CHAIN_ID,
     sablier_contract: SABLIER_LOCKUP_ADDRESS,
     stream_id: streamId,
-    tx_hash: txHash,
+    tx_hash: txHash.toLowerCase(),
     token: POLYGRAPH_TOKEN_ADDRESS,
     token_decimals: POLYGRAPH_TOKEN_DECIMALS,
     deposit_amount: onchain.deposited.toString(),

@@ -12,7 +12,7 @@
  * onchain and re-prices the deposit.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { WagmiProvider, useAccount, useConfig, useConnect, useDisconnect } from "wagmi";
@@ -22,11 +22,11 @@ import {
   waitForTransactionReceipt,
   writeContract,
 } from "@wagmi/core";
-import { parseEventLogs } from "viem";
 import {
   ERC20_ABI,
   MONTH_SECONDS,
   PAYMENT_CHAIN_ID,
+  paymentShapeTag,
   POLYGRAPH_TOKEN_ADDRESS,
   POLYGRAPH_TOKEN_SYMBOL,
   SABLIER_LOCKUP_ABI,
@@ -51,7 +51,10 @@ export interface ActivateFlowProps {
 
 export function ActivateFlow(props: ActivateFlowProps) {
   return (
-    <WagmiProvider config={wagmiConfig}>
+    // No reconnectOnMount: a payment page shouldn't poke wallet extensions on
+    // load (locked/stale extensions reject and trip the dev overlay) — the
+    // visitor connects explicitly.
+    <WagmiProvider config={wagmiConfig} reconnectOnMount={false}>
       <QueryClientProvider client={queryClient}>
         <ActivateFlowInner {...props} />
       </QueryClientProvider>
@@ -77,7 +80,7 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>({ id: "idle" });
   const [showSwap, setShowSwap] = useState(false);
-  const [manualStreamId, setManualStreamId] = useState("");
+  const [manualTxHash, setManualTxHash] = useState("");
 
   const busy = step.id === "approving" || step.id === "streaming" || step.id === "verifying";
 
@@ -105,12 +108,12 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
   }, [quote, fetchQuote]);
 
   const verify = useCallback(
-    async (streamId: number, txHash: string | null) => {
+    async (txHash: string) => {
       setStep({ id: "verifying" });
       const res = await fetch(`/api/ecosystems/${slug}/payment/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ streamId, txHash }),
+        body: JSON.stringify({ txHash }),
       });
       const body = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok || !body.ok) {
@@ -180,7 +183,9 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
             token,
             cancelable: true,
             transferable: false,
-            shape: "",
+            // Binds the stream to THIS ecosystem; the verify route requires it
+            // back from the creation event.
+            shape: paymentShapeTag(slug),
           },
           { start: BigInt(0), cliff: BigInt(0) },
           0, // granularity: 0 is Sablier's sentinel for per-second streaming
@@ -189,27 +194,13 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
         value: BigInt(0),
         chainId: PAYMENT_CHAIN_ID,
       });
-      const receipt = await waitForTransactionReceipt(config, { hash: createHash });
-      const created = parseEventLogs({
-        abi: SABLIER_LOCKUP_ABI,
-        logs: receipt.logs,
-        eventName: "CreateLockupLinearStream",
-      });
-      const streamId = created[0]?.args.streamId;
-      if (streamId === undefined) {
-        setStep({
-          id: "error",
-          message:
-            "The stream transaction landed but its id couldn't be read from the receipt. Paste the stream id below to finish.",
-        });
-        return;
-      }
-      await verify(Number(streamId), createHash);
+      await waitForTransactionReceipt(config, { hash: createHash });
+      await verify(createHash);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setStep({ id: "error", message: shortenTxError(message) });
     }
-  }, [address, chainId, config, quote, verify]);
+  }, [address, chainId, config, quote, slug, verify]);
 
   return (
     <section id="activate" className="mb-16">
@@ -342,22 +333,25 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
         </div>
       ) : null}
 
-      {/* Recovery: a stream that exists but was never verified (tab closed, etc.). */}
+      {/* Recovery: a payment made here whose verify never ran (tab closed
+          mid-flow, network blip). Takes the creation TRANSACTION, not a stream
+          id — the server derives the stream from it and requires this
+          ecosystem's tag, so someone else's stream can't be claimed here. */}
       <div className="mt-10 border-t hairline pt-5">
         <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint mb-2">
-          Already created a stream?
+          Paid here but it didn&rsquo;t register?
         </p>
         <div className="flex flex-wrap items-center gap-3">
           <input
-            value={manualStreamId}
-            onChange={(e) => setManualStreamId(e.target.value)}
-            placeholder="Sablier stream id"
-            inputMode="numeric"
-            className="w-44 rounded-[3px] border border-rule bg-parchment-50 px-3 py-2 font-mono text-[13px] text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink"
+            value={manualTxHash}
+            onChange={(e) => setManualTxHash(e.target.value)}
+            placeholder="stream creation tx hash (0x…)"
+            spellCheck={false}
+            className="w-96 max-w-full rounded-[3px] border border-rule bg-parchment-50 px-3 py-2 font-mono text-[13px] text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink"
           />
           <button
-            disabled={busy || !/^\d+$/.test(manualStreamId.trim())}
-            onClick={() => void verify(Number(manualStreamId.trim()), null)}
+            disabled={busy || !/^0x[0-9a-fA-F]{64}$/.test(manualTxHash.trim())}
+            onClick={() => void verify(manualTxHash.trim())}
             className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-muted border border-rule rounded-[3px] px-4 py-2 hover:text-oxblood hover:border-oxblood/40 transition-colors disabled:opacity-50"
           >
             verify it

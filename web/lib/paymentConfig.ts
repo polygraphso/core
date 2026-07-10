@@ -36,6 +36,17 @@ export const SABLIER_LOCKUP_ADDRESS =
  */
 export const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_POLYGRAPH_TREASURY_ADDRESS ?? "";
 
+/**
+ * The onchain tag binding a stream to its ecosystem, written into Sablier's
+ * free-form `shape` field at creation and required back by the verify route.
+ * Without it, a freshly created (not-yet-verified) stream could be claimed by
+ * anyone who saw it onchain and pasted it for a different ecosystem. Sablier
+ * caps shape at 32 bytes; slugs are ASCII ([a-z0-9-]), so slice is byte-safe.
+ */
+export function paymentShapeTag(slug: string): string {
+  return `pg:${slug}`.slice(0, 32);
+}
+
 export const DEFAULT_MONTHLY_PRICE_USD = 199;
 /** One billing month of streaming. */
 export const MONTH_SECONDS = 30 * 24 * 60 * 60;
