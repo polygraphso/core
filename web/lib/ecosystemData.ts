@@ -41,7 +41,7 @@ export type {
 } from "@/lib/ecosystemTypes";
 
 const ECOSYSTEM_COLUMNS =
-  "id, slug, name, blurb, page_config, is_public, is_listed, noindex, created_by, created_at";
+  "id, slug, name, blurb, page_config, is_public, is_listed, noindex, monthly_price_usd, created_by, created_at";
 const ENTRY_COLUMNS =
   "id, ecosystem_id, target, target_kind, cohort, visible, featured, position, metadata, last_grade_run_id, last_grade_status, added_by, added_at";
 const MEMBER_COLUMNS =

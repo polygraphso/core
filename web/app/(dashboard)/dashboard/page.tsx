@@ -143,42 +143,36 @@ export default async function DashboardPage() {
   });
 
   return (
-    <main className="flex-1">
-      <div className="max-w-2xl mx-auto px-8 pt-14 pb-24 md:pt-16 md:pb-32">
-
-        {/* Header */}
-        <div className="border-t hairline pt-6 mb-10">
-          <div className="flex items-baseline gap-4">
-            <span className="section-label tabular">§ DASHBOARD</span>
-            <span className="section-label">/</span>
-            <span className="section-label">Monitors</span>
+    <main className="px-6 sm:px-10 py-12 max-w-3xl">
+      <div>
+        {/* Header — same pattern as the ecosystems pages. */}
+        <header className="mb-8">
+          <p className="section-label mb-3">Version monitors</p>
+          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+            <div>
+              <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight">Monitors</h1>
+              <p className="mt-3 text-ink-muted text-[15px] leading-relaxed max-w-xl">
+                MCP servers and skills. By default, one email each time a monitored target is
+                re-graded — a new package version, or a new commit for a github skill or server.
+                Set a grade threshold on any monitor to hear only about the grades you care about.
+              </p>
+            </div>
+            <div className="shrink-0 flex flex-col items-end gap-2">
+              <a
+                href="/mcp-index"
+                className="font-mono text-[11px] uppercase tracking-widest text-ink-muted hover:text-ink transition-colors border-b hairline border-dotted"
+              >
+                Browse grades →
+              </a>
+              <a
+                href="/request"
+                className="font-mono text-[11px] uppercase tracking-widest text-ink-muted hover:text-ink transition-colors border-b hairline border-dotted"
+              >
+                Request a grade →
+              </a>
+            </div>
           </div>
-        </div>
-
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h1 className="font-serif text-3xl text-ink tracking-tight">Monitors</h1>
-            <p className="mt-2 text-ink-muted text-sm leading-relaxed max-w-md">
-              MCP servers and skills. By default, one email each time a monitored target is
-              re-graded — a new package version, or a new commit for a github skill or server.
-              Set a grade threshold on any monitor to hear only about the grades you care about.
-            </p>
-          </div>
-          <div className="shrink-0 flex flex-col items-end gap-2">
-            <a
-              href="/mcp-index"
-              className="font-mono text-[11px] uppercase tracking-widest text-ink-muted hover:text-ink transition-colors border-b hairline border-dotted"
-            >
-              Browse grades →
-            </a>
-            <a
-              href="/request"
-              className="font-mono text-[11px] uppercase tracking-widest text-ink-muted hover:text-ink transition-colors border-b hairline border-dotted"
-            >
-              Request a grade →
-            </a>
-          </div>
-        </div>
+        </header>
 
         {(session.isAdmin || activeCount < 1) && <AddMonitorForm />}
 

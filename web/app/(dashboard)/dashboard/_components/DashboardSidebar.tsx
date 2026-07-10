@@ -14,8 +14,8 @@ const USER_NAV: NavItem[] = [
 ];
 
 // Shown only to app admins and users who belong to at least one ecosystem — a
-// plain user with no ecosystem never sees a dead-end "Manage" tab.
-const MANAGE_NAV: NavItem = { href: "/manage", label: "Manage", active: (p) => p.startsWith("/manage") };
+// plain user with no ecosystem never sees a dead-end "Ecosystems" tab.
+const MANAGE_NAV: NavItem = { href: "/manage", label: "Ecosystems", active: (p) => p.startsWith("/manage") };
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Metrics", active: (p) => p === "/admin" },

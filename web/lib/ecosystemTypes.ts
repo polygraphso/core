@@ -65,6 +65,8 @@ export interface EcosystemRow {
   is_public: boolean;
   is_listed: boolean;
   noindex: boolean;
+  /** Monitoring price override in USD/month. null = app default; 0 = comped. */
+  monthly_price_usd: number | null;
   created_by: string | null;
   created_at: string;
 }

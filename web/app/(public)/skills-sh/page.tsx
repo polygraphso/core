@@ -53,7 +53,7 @@ const CONFIG: SkillEcosystemConfig = {
       content-hash anchored). Reproduce a skill grade with{" "}
       <code className="font-mono">npx -p @polygraphso/litmus polygraphso-litmus-skill &lt;dir&gt;</code>. Source:{" "}
       <Link
-        href="https://skills.sh"
+        target="_blank" rel="noreferrer" href="https://skills.sh"
         className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
       >
         skills.sh

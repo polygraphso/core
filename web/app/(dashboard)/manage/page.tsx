@@ -8,6 +8,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { listEcosystemsForUser } from "@/lib/ecosystemAccess";
+import { getPaymentGate } from "@/lib/ecosystemPayments";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,12 @@ export default async function ManageLandingPage() {
   if (!session) redirect("/login?next=/manage");
 
   const managed = await listEcosystemsForUser(session);
+  const rows = await Promise.all(
+    managed.map(async (m) => ({
+      ...m,
+      paid: (await getPaymentGate(m.ecosystem)).status === "active",
+    })),
+  );
 
   return (
     <main className="px-6 sm:px-10 py-12 max-w-3xl">
@@ -54,7 +61,7 @@ export default async function ManageLandingPage() {
         </div>
       ) : (
         <ul className="divide-y divide-rule border-y border-rule">
-          {managed.map(({ ecosystem, role }) => (
+          {rows.map(({ ecosystem, role, paid }) => (
             <li key={ecosystem.id}>
               <Link
                 href={`/manage/${ecosystem.slug}`}
@@ -66,9 +73,16 @@ export default async function ManageLandingPage() {
                   </div>
                   <div className="font-mono text-[11px] text-ink-faint">/{ecosystem.slug}</div>
                 </div>
-                <span className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted border border-rule rounded-full px-2.5 py-1">
-                  {ROLE_LABEL[role] ?? role}
-                </span>
+                <div className="flex shrink-0 items-center gap-2">
+                  {!paid ? (
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-oxblood border border-oxblood/40 rounded-full px-2.5 py-1">
+                      activation required
+                    </span>
+                  ) : null}
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-muted border border-rule rounded-full px-2.5 py-1">
+                    {ROLE_LABEL[role] ?? role}
+                  </span>
+                </div>
               </Link>
             </li>
           ))}
