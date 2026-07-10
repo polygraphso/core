@@ -1,7 +1,15 @@
 "use client";
 
+/**
+ * The monitor register: one hairline-divided row per monitored target, in the
+ * same specimen-row grammar as the ecosystem console's entries list (grade
+ * stamp, mono target, quiet uppercase controls). A paused monitor dims like a
+ * hidden entry. All mutations are optimistic-or-refresh, matching the console.
+ */
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { GRADE_HEX } from "@/lib/gradeColors";
 
 export interface MonitorEntry {
   id: string;
@@ -27,22 +35,22 @@ function versionLabel(kind: "server" | "skill", version: string | null): string 
   return kind === "skill" ? version.slice(0, 7) : `v${version}`;
 }
 
-function GradePill({ grade }: { grade: string | null }) {
+function Stamp({ grade }: { grade: string | null }) {
   if (!grade) {
     return (
-      <span className="inline-block font-mono text-[10px] uppercase tracking-widest text-ink-faint border hairline px-2 py-0.5">
-        ungraded
+      <span
+        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border hairline font-mono text-[13px] text-ink-faint"
+        aria-label="ungraded"
+      >
+        —
       </span>
     );
   }
-  const colorMap: Record<string, string> = {
-    A: "#2f5132", B: "#4f6b36", C: "#a86b19", D: "#b85024", F: "#7a1f2b",
-  };
-  const color = colorMap[grade] ?? "#23201a";
   return (
     <span
-      className="inline-block font-mono text-[11px] font-semibold px-2 py-0.5 text-parchment"
-      style={{ backgroundColor: color }}
+      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] font-mono text-[15px] font-semibold text-parchment-50 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
+      style={{ backgroundColor: GRADE_HEX[grade as keyof typeof GRADE_HEX] ?? "var(--color-ink-faint)" }}
+      aria-label={`grade ${grade}`}
     >
       {grade}
     </span>
@@ -109,39 +117,53 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
     }
   }
 
+  const version = versionLabel(monitor.kind, monitor.currentVersion);
+
   return (
-    <div
-      className={`border hairline p-4 md:p-5 ${isActive ? "bg-parchment-50" : "bg-parchment opacity-60"}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+    <div className={`border-t hairline py-3 ${isActive ? "" : "opacity-55"}`}>
+      <div className="flex items-start gap-3">
+        <Stamp grade={monitor.currentGrade} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2 flex-wrap">
             <a
               href={monitor.reportHref}
-              className="font-mono text-sm text-ink hover:text-oxblood transition-colors break-all"
+              className="font-mono text-[13px] text-ink font-medium hover:text-oxblood transition-colors break-all"
             >
               {monitor.target}
             </a>
-            {!isActive && (
-              <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint border hairline px-1.5 py-0.5">
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+              {monitor.kind === "skill" ? "skill" : "mcp"}
+              {version ? ` · ${version}` : ""}
+            </span>
+            {!isActive ? (
+              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint border hairline rounded-full px-2 py-0.5">
                 paused
               </span>
-            )}
+            ) : null}
           </div>
-          <div className="mt-2 flex items-center gap-3 flex-wrap">
-            <GradePill grade={monitor.currentGrade} />
-            {versionLabel(monitor.kind, monitor.currentVersion) && (
-              <span className="font-mono text-[11px] text-ink-faint">
-                {versionLabel(monitor.kind, monitor.currentVersion)}
-              </span>
-            )}
-          </div>
-          <div className="mt-3 flex items-center gap-2 flex-wrap">
-            <label
-              htmlFor={`thr-${monitor.id}`}
-              className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-faint"
-            >
-              Email me on
+
+          {monitor.last_notified_at ? (
+            <p className="mt-1 font-mono text-[11px] text-ink-faint">
+              last alerted{" "}
+              {monitor.last_notified_grade ? (
+                <span className="text-ink-muted">{monitor.last_notified_grade}</span>
+              ) : null}
+              {versionLabel(monitor.kind, monitor.last_notified_version) ? (
+                <> · {versionLabel(monitor.kind, monitor.last_notified_version)}</>
+              ) : null}{" "}
+              ·{" "}
+              {new Date(monitor.last_notified_at).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </p>
+          ) : null}
+
+          {/* Controls — the console's quiet uppercase row. */}
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.12em]">
+            <label htmlFor={`thr-${monitor.id}`} className="text-ink-faint">
+              email me on
             </label>
             <select
               id={`thr-${monitor.id}`}
@@ -151,44 +173,32 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
                 saveThreshold(e.target.value === "" ? null : (e.target.value as "C" | "D" | "F"))
               }
               disabled={busy || !isActive}
-              className="font-mono text-[11px] bg-parchment border hairline px-2 py-1 text-ink focus:outline-none focus:border-ink disabled:opacity-50 disabled:cursor-not-allowed"
+              className="font-mono text-[11px] normal-case tracking-normal border border-rule rounded-[3px] bg-parchment-50 px-2 py-1 text-ink focus:outline-none focus:border-ink disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <option value="">every regrade</option>
               <option value="C">C or worse</option>
               <option value="D">D or worse</option>
               <option value="F">F only</option>
             </select>
+            <a href={monitor.reportHref} className="text-ink-muted hover:text-oxblood transition-colors">
+              report ↗
+            </a>
+            <button
+              type="button"
+              onClick={toggleSubscription}
+              disabled={busy}
+              className="ml-auto text-ink-faint hover:text-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {busy ? "…" : isActive ? "pause" : "resume"}
+            </button>
           </div>
-          {monitor.last_notified_at && (
-            <p className="mt-2 font-mono text-[11px] text-ink-faint">
-              Last alerted{" "}
-              {monitor.last_notified_grade && (
-                <span className="text-ink">{monitor.last_notified_grade}</span>
-              )}{" "}
-              {versionLabel(monitor.kind, monitor.last_notified_version) && (
-                <>{versionLabel(monitor.kind, monitor.last_notified_version)} · </>
-              )}
-              {new Date(monitor.last_notified_at).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </p>
-          )}
-          {error && (
+
+          {error ? (
             <p role="alert" className="mt-2 font-mono text-[11px] text-oxblood">
               {error}
             </p>
-          )}
+          ) : null}
         </div>
-        <button
-          type="button"
-          onClick={toggleSubscription}
-          disabled={busy}
-          className="shrink-0 font-mono text-[11px] uppercase tracking-[0.16em] text-ink-muted hover:text-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {busy ? "…" : isActive ? "Pause" : "Resume"}
-        </button>
       </div>
     </div>
   );
@@ -206,7 +216,7 @@ export function MonitorsList({
 
   if (monitors.length === 0) {
     return (
-      <p className="font-mono text-[11px] text-ink-faint mt-4">
+      <p className="text-ink-muted text-[14px] py-4">
         No monitors yet. Add an MCP server or a skill above to get started.
       </p>
     );
@@ -217,26 +227,26 @@ export function MonitorsList({
 
   const section = (label: string, rows: MonitorEntry[]) =>
     rows.length === 0 ? null : (
-      <div className="grid gap-2">
-        <h3 className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint mt-2">
-          {label}
+      <div className="mt-6">
+        <h3 className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+          {label} · {rows.length}
         </h3>
-        {rows.map((m) => (
-          <MonitorRow key={m.id} monitor={m} onAction={() => setKey((k) => k + 1)} />
-        ))}
+        <div>
+          {rows.map((m) => (
+            <MonitorRow key={m.id} monitor={m} onAction={() => setKey((k) => k + 1)} />
+          ))}
+        </div>
       </div>
     );
 
   return (
-    <div className="grid gap-3">
-      <div className="flex items-center justify-between">
-        <p className="font-mono text-[11px] text-ink-faint uppercase tracking-widest">
-          {quota.max === null
-            ? `${quota.used} monitor${quota.used !== 1 ? "s" : ""}`
-            : `${quota.used} of ${quota.max} slot${quota.max !== 1 ? "s" : ""} used`}
-        </p>
-      </div>
-      <div key={key} className="grid gap-5">
+    <div>
+      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint">
+        {quota.max === null
+          ? `${quota.used} monitor${quota.used !== 1 ? "s" : ""}`
+          : `${quota.used} of ${quota.max} slot${quota.max !== 1 ? "s" : ""} used`}
+      </p>
+      <div key={key}>
         {section("MCP servers", servers)}
         {section("Skills", skills)}
       </div>
