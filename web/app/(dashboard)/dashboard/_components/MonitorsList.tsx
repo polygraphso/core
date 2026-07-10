@@ -1,13 +1,14 @@
 "use client";
 
 /**
- * The monitor register: one hairline-divided row per monitored target, in the
- * same specimen-row grammar as the ecosystem console's entries list (grade
- * stamp, mono target, quiet uppercase controls). A paused monitor dims like a
- * hidden entry. All mutations are optimistic-or-refresh, matching the console.
+ * The monitor register: a dense, columned table (grade stamp · target · version ·
+ * last alert · alert threshold · controls) in the same specimen grammar as the
+ * ecosystem console. From `lg` up it reads as a table with a column header; below
+ * that each row reflows to a stacked card. A paused monitor dims. All mutations
+ * are optimistic-or-refresh.
  */
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { GRADE_HEX } from "@/lib/gradeColors";
 
@@ -28,6 +29,9 @@ export interface MonitorEntry {
   reportHref: string;
 }
 
+// One column template, shared by the header and every row so they stay aligned.
+const COLS = "lg:grid lg:grid-cols-[28px_minmax(140px,1fr)_78px_118px_132px_72px] lg:gap-x-3 lg:items-center";
+
 /** Servers carry a package/commit version; a skill's "version" is a commit sha,
  *  shown short. Returns the label to render next to the grade, or null. */
 function versionLabel(kind: "server" | "skill", version: string | null): string | null {
@@ -39,7 +43,7 @@ function Stamp({ grade }: { grade: string | null }) {
   if (!grade) {
     return (
       <span
-        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] border hairline font-mono text-[13px] text-ink-faint"
+        className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[3px] border hairline font-mono text-[13px] text-ink-faint"
         aria-label="ungraded"
       >
         —
@@ -48,7 +52,7 @@ function Stamp({ grade }: { grade: string | null }) {
   }
   return (
     <span
-      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[3px] font-mono text-[15px] font-semibold text-parchment-50 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
+      className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-[3px] font-mono text-[13px] font-semibold text-parchment-50 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.14)]"
       style={{ backgroundColor: GRADE_HEX[grade as keyof typeof GRADE_HEX] ?? "var(--color-ink-faint)" }}
       aria-label={`grade ${grade}`}
     >
@@ -91,7 +95,6 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
     setError(null);
     try {
       if (isActive) {
-        // Unsubscribe via token
         const res = await fetch(
           `/api/monitor/unsubscribe?token=${encodeURIComponent(monitor.unsubscribe_token)}`,
           { method: "POST" },
@@ -99,7 +102,6 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
         const body = (await res.json()) as { ok: boolean; message?: string };
         if (!body.ok) throw new Error(body.message ?? "Couldn't unsubscribe.");
       } else {
-        // Re-subscribe
         const res = await fetch("/api/monitor", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -118,88 +120,87 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
   }
 
   const version = versionLabel(monitor.kind, monitor.currentVersion);
+  const lastAlertDate = monitor.last_notified_at
+    ? new Date(monitor.last_notified_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    : null;
 
   return (
-    <div className={`border-t hairline py-3 ${isActive ? "" : "opacity-55"}`}>
-      <div className="flex items-start gap-3">
-        <Stamp grade={monitor.currentGrade} />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <a
-              href={monitor.reportHref}
-              className="font-mono text-[13px] text-ink font-medium hover:text-oxblood transition-colors break-all"
-            >
-              {monitor.target}
-            </a>
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint">
-              {monitor.kind === "skill" ? "skill" : "mcp"}
-              {version ? ` · ${version}` : ""}
-            </span>
-            {!isActive ? (
-              <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint border hairline rounded-full px-2 py-0.5">
-                paused
-              </span>
-            ) : null}
-          </div>
+    <div
+      className={`border-t hairline py-3 lg:py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 ${COLS} lg:gap-y-0 ${
+        isActive ? "" : "opacity-55"
+      }`}
+    >
+      <Stamp grade={monitor.currentGrade} />
 
-          {monitor.last_notified_at ? (
-            <p className="mt-1 font-mono text-[11px] text-ink-faint">
-              last alerted{" "}
-              {monitor.last_notified_grade ? (
-                <span className="text-ink-muted">{monitor.last_notified_grade}</span>
-              ) : null}
-              {versionLabel(monitor.kind, monitor.last_notified_version) ? (
-                <> · {versionLabel(monitor.kind, monitor.last_notified_version)}</>
-              ) : null}{" "}
-              ·{" "}
-              {new Date(monitor.last_notified_at).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
-            </p>
-          ) : null}
-
-          {/* Controls — the console's quiet uppercase row. */}
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.12em]">
-            <label htmlFor={`thr-${monitor.id}`} className="text-ink-faint">
-              email me on
-            </label>
-            <select
-              id={`thr-${monitor.id}`}
-              aria-label="Alert threshold"
-              value={minGrade ?? ""}
-              onChange={(e) =>
-                saveThreshold(e.target.value === "" ? null : (e.target.value as "C" | "D" | "F"))
-              }
-              disabled={busy || !isActive}
-              className="font-mono text-[11px] normal-case tracking-normal border border-rule rounded-[3px] bg-parchment-50 px-2 py-1 text-ink focus:outline-none focus:border-ink disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <option value="">every regrade</option>
-              <option value="C">C or worse</option>
-              <option value="D">D or worse</option>
-              <option value="F">F only</option>
-            </select>
-            <a href={monitor.reportHref} className="text-ink-muted hover:text-oxblood transition-colors">
-              report ↗
-            </a>
-            <button
-              type="button"
-              onClick={toggleSubscription}
-              disabled={busy}
-              className="ml-auto text-ink-faint hover:text-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {busy ? "…" : isActive ? "pause" : "resume"}
-            </button>
-          </div>
-
-          {error ? (
-            <p role="alert" className="mt-2 font-mono text-[11px] text-oxblood">
-              {error}
-            </p>
-          ) : null}
-        </div>
+      <div className="min-w-0 basis-[calc(100%-2.5rem)] lg:basis-auto">
+        <a
+          href={monitor.reportHref}
+          className="block truncate font-mono text-[12px] font-medium text-ink hover:text-oxblood transition-colors"
+          title={monitor.target}
+        >
+          {monitor.target}
+        </a>
+        {!isActive ? (
+          <span className="lg:hidden mt-0.5 inline-block font-mono text-[9px] uppercase tracking-[0.12em] text-ink-faint border hairline rounded-full px-1.5 py-0.5">
+            paused
+          </span>
+        ) : null}
       </div>
+
+      <span className="font-mono text-[11px] text-ink-muted tabular">
+        {version ?? <span className="text-ink-faint">—</span>}
+      </span>
+
+      <span className="font-mono text-[10px] text-ink-faint">
+        {lastAlertDate ? (
+          <>
+            {lastAlertDate}
+            {monitor.last_notified_grade ? (
+              <>
+                {" · "}
+                <span className="text-ink-muted">{monitor.last_notified_grade}</span>
+              </>
+            ) : null}
+          </>
+        ) : (
+          "—"
+        )}
+      </span>
+
+      <select
+        aria-label="Alert threshold"
+        value={minGrade ?? ""}
+        onChange={(e) =>
+          saveThreshold(e.target.value === "" ? null : (e.target.value as "C" | "D" | "F"))
+        }
+        disabled={busy || !isActive}
+        className="w-auto lg:w-full font-mono text-[11px] border border-rule rounded-[3px] bg-parchment-50 px-2 py-1 text-ink focus:outline-none focus:border-ink disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <option value="">every regrade</option>
+        <option value="C">C or worse</option>
+        <option value="D">D or worse</option>
+        <option value="F">F only</option>
+      </select>
+
+      <div className="ml-auto lg:ml-0 flex items-center gap-3 lg:flex-col lg:items-end lg:gap-1 font-mono text-[9px] uppercase tracking-[0.1em]">
+        <a href={monitor.reportHref} className="text-ink-muted hover:text-oxblood transition-colors">
+          report ↗
+        </a>
+        <button
+          type="button"
+          onClick={toggleSubscription}
+          disabled={busy}
+          className="text-ink-faint hover:text-oxblood transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {busy ? "…" : isActive ? "pause" : "resume"}
+        </button>
+      </div>
+
+      {error ? (
+        <p role="alert" className="basis-full lg:col-span-6 font-mono text-[11px] text-oxblood">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -214,42 +215,62 @@ export function MonitorsList({
 }) {
   const [key, setKey] = useState(0);
 
-  if (monitors.length === 0) {
-    return (
-      <p className="text-ink-muted text-[14px] py-4">
-        No monitors yet. Add an MCP server or a skill above to get started.
-      </p>
-    );
-  }
-
   const servers = monitors.filter((m) => m.kind === "server");
   const skills = monitors.filter((m) => m.kind === "skill");
 
+  const quotaLabel =
+    quota.max === null
+      ? `${quota.used} active · uncapped`
+      : `${quota.used} of ${quota.max} slot${quota.max !== 1 ? "s" : ""} used`;
+
   const section = (label: string, rows: MonitorEntry[]) =>
     rows.length === 0 ? null : (
-      <div className="mt-6">
-        <h3 className="mb-2 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
+      <>
+        <p className="pt-3.5 pb-1 font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
           {label} · {rows.length}
-        </h3>
-        <div>
-          {rows.map((m) => (
-            <MonitorRow key={m.id} monitor={m} onAction={() => setKey((k) => k + 1)} />
-          ))}
-        </div>
-      </div>
+        </p>
+        {rows.map((m) => (
+          <MonitorRow key={m.id} monitor={m} onAction={() => setKey((k) => k + 1)} />
+        ))}
+      </>
     );
 
   return (
-    <div>
-      <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint">
-        {quota.max === null
-          ? `${quota.used} monitor${quota.used !== 1 ? "s" : ""}`
-          : `${quota.used} of ${quota.max} slot${quota.max !== 1 ? "s" : ""} used`}
-      </p>
-      <div key={key}>
-        {section("MCP servers", servers)}
-        {section("Skills", skills)}
+    <section className="min-w-0">
+      <div className="mb-0.5 flex items-baseline justify-between gap-4">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">Your monitors</p>
+        <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-faint tabular">
+          {quotaLabel}
+        </span>
       </div>
-    </div>
+
+      {monitors.length === 0 ? (
+        <p className="border-t hairline py-6 text-ink-muted text-[14px]">
+          No monitors yet. Add an MCP server or a skill to get started.
+        </p>
+      ) : (
+        <>
+          {/* Column header — table from lg up; below that rows reflow to cards. */}
+          <div className={`hidden ${COLS} border-b hairline pb-2 pt-1`}>
+            <span />
+            <HeadCell>Target</HeadCell>
+            <HeadCell>Version</HeadCell>
+            <HeadCell>Last alert</HeadCell>
+            <HeadCell>Email me on</HeadCell>
+            <span />
+          </div>
+          <div key={key}>
+            {section("MCP servers", servers)}
+            {section("Skills", skills)}
+          </div>
+        </>
+      )}
+    </section>
+  );
+}
+
+function HeadCell({ children }: { children: ReactNode }) {
+  return (
+    <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-ink-faint">{children}</span>
   );
 }

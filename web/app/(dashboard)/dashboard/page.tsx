@@ -1,7 +1,8 @@
 /**
- * /dashboard — monitor management for signed-in users.
+ * /dashboard — monitor management for signed-in users, as a full-width ledger.
  *
- * Reads monitors + current grades + recent alert deliveries for this user.
+ * Reads monitors + current grades + recent alert deliveries for this user. App
+ * admins additionally get a topline overview strip (the same numbers as /admin).
  * The proxy guarantees a session before this route is reached, but we double-
  * check and redirect so the type system knows session is non-null below.
  */
@@ -11,6 +12,7 @@ import { getSession } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { refToPath } from "@/lib/badgeData";
 import { skillRefToPath } from "@/lib/skillGrades";
+import { getTopline, getLookupStats, getAgentMetrics } from "@/lib/adminMetrics";
 import { MonitorsList, type MonitorEntry } from "./_components/MonitorsList";
 import { AddMonitorForm } from "./_components/AddMonitorForm";
 
@@ -50,6 +52,54 @@ interface DeliveryRow {
   created_at: string;
 }
 
+interface OverviewCell {
+  label: string;
+  value: number;
+  sub: string;
+}
+
+/** Auth-user + active-monitor counts, mirroring the /admin topline. */
+async function getUserCount() {
+  const db = getSupabaseAdmin();
+  if (!db) return { users: 0, activeMonitors: 0 };
+  const [usersResult, monitorsResult] = await Promise.all([
+    db.auth.admin.listUsers({ perPage: 1 }),
+    db.from("monitors").select("id", { count: "exact", head: true }).is("unsubscribed_at", null),
+  ]);
+  return {
+    users: (usersResult.data as { total?: number } | null)?.total ?? 0,
+    activeMonitors: monitorsResult.count ?? 0,
+  };
+}
+
+/** The eight-cell admin overview strip — the same numbers /admin leads with. */
+async function loadOverview(): Promise<OverviewCell[]> {
+  const [top, lookups, agents, userCount] = await Promise.all([
+    getTopline(),
+    getLookupStats(),
+    getAgentMetrics(),
+    getUserCount(),
+  ]);
+  const lookupSub =
+    lookups && lookups.hitRate !== null
+      ? `${Math.round(lookups.hitRate * 100)}% hit rate`
+      : "no lookups yet";
+  return [
+    { label: "Waitlist", value: top.waitlist, sub: "all-time" },
+    { label: "Grade requests", value: top.gradeRequests, sub: `${top.gradeQueued} queued` },
+    { label: "Notify requests", value: top.notify, sub: `${top.notifyUnfulfilled} unfulfilled` },
+    { label: "Untracked servers", value: top.untrackedServers, sub: "not graded yet" },
+    { label: "CLI lookups", value: lookups?.totalLookups ?? 0, sub: lookupSub },
+    { label: "Agents seen", value: agents?.totalAgents ?? 0, sub: "client builds" },
+    { label: "Attestations", value: top.attestations, sub: `${top.attestationsPending} pending · on-chain` },
+    { label: "Auth users", value: userCount.users, sub: `${userCount.activeMonitors} active monitors` },
+  ];
+}
+
+const HEAD_LINK =
+  "font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted hover:text-oxblood transition-colors border-b border-dotted border-rule pb-0.5";
+const RAIL_LABEL = "font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint";
+
 export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect("/login?next=/dashboard");
@@ -63,8 +113,8 @@ export default async function DashboardPage() {
     );
   }
 
-  // Fetch monitors, grades, deliveries in parallel.
-  const [monitorsResult, deliveriesResult] = await Promise.all([
+  // Monitors + (admin-only) overview strip in parallel.
+  const [monitorsResult, overview] = await Promise.all([
     db
       .from("monitors")
       .select(
@@ -72,8 +122,7 @@ export default async function DashboardPage() {
       )
       .eq("user_id", session.userId)
       .order("created_at", { ascending: false }),
-    // Deliveries fetched after we have monitor IDs; handled below.
-    Promise.resolve(null),
+    session.isAdmin ? loadOverview() : Promise.resolve<OverviewCell[] | null>(null),
   ]);
 
   const monitors: MonitorRow[] = (monitorsResult.data ?? []) as MonitorRow[];
@@ -124,7 +173,7 @@ export default async function DashboardPage() {
       .in("monitor_id", monitorIds)
       .eq("status", "sent")
       .order("created_at", { ascending: false })
-      .limit(20);
+      .limit(12);
     deliveries = (data ?? []) as DeliveryRow[];
   }
 
@@ -143,78 +192,83 @@ export default async function DashboardPage() {
   });
 
   return (
-    <main className="px-6 sm:px-10 py-12 max-w-3xl">
-      <div>
-        {/* Header — same pattern as the ecosystems pages. */}
-        <header className="mb-8">
-          <p className="section-label mb-3">Version monitors</p>
-          <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-            <div>
-              <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight">Monitors</h1>
-              <p className="mt-3 text-ink-muted text-[15px] leading-relaxed max-w-xl">
-                MCP servers and skills. By default, one email each time a monitored target is
-                re-graded — a new package version, or a new commit for a github skill or server.
-                Set a grade threshold on any monitor to hear only about the grades you care about.
-              </p>
-            </div>
-            <div className="shrink-0 flex flex-col items-end gap-2">
-              <a
-                href="/mcp-index"
-                className="font-mono text-[11px] uppercase tracking-widest text-ink-muted hover:text-ink transition-colors border-b hairline border-dotted"
-              >
-                Browse grades →
-              </a>
-              <a
-                href="/request"
-                className="font-mono text-[11px] uppercase tracking-widest text-ink-muted hover:text-ink transition-colors border-b hairline border-dotted"
-              >
-                Request a grade →
-              </a>
-            </div>
+    <main className="px-6 sm:px-10 py-12">
+      <header className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+        <div>
+          <p className="section-label mb-2">Version monitors</p>
+          <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight">Monitors</h1>
+        </div>
+        <div className="flex gap-5">
+          <a href="/mcp-index" className={HEAD_LINK}>
+            Browse grades →
+          </a>
+          <a href="/request" className={HEAD_LINK}>
+            Request a grade →
+          </a>
+        </div>
+      </header>
+
+      {overview ? (
+        <>
+          <p className={`${RAIL_LABEL} mb-2.5`}>Overview</p>
+          <div className="mb-8 grid grid-cols-2 sm:grid-cols-4 gap-px overflow-hidden rounded-[4px] border border-rule bg-rule">
+            {overview.map((c) => (
+              <div key={c.label} className="bg-parchment-50 px-4 py-3.5">
+                <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
+                  {c.label}
+                </p>
+                <p className="font-serif text-[26px] leading-none tabular text-ink">
+                  {c.value.toLocaleString()}
+                </p>
+                <p className="mt-1.5 font-mono text-[10px] text-ink-faint">{c.sub}</p>
+              </div>
+            ))}
           </div>
-        </header>
+        </>
+      ) : null}
 
-        {(session.isAdmin || activeCount < 1) && <AddMonitorForm />}
+      <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:gap-8">
+        <div className="min-w-0 flex-1">
+          <MonitorsList
+            monitors={monitorEntries}
+            quota={{ used: activeCount, max: session.isAdmin ? null : 1 }}
+          />
+        </div>
 
-        <MonitorsList
-          monitors={monitorEntries}
-          quota={{ used: activeCount, max: session.isAdmin ? null : 1 }}
-        />
+        <aside className="flex w-full flex-col gap-6 xl:w-[312px] xl:flex-shrink-0">
+          {session.isAdmin || activeCount < 1 ? <AddMonitorForm /> : null}
 
-        {/* Alert history — the paper trail, as a quiet hairline register. */}
-        {deliveries.length > 0 && (
-          <section className="mt-14">
-            <p className="section-label mb-3">Recent alerts</p>
-            <div className="border-b hairline">
-              {deliveries.map((d) => (
-                <div
-                  key={d.id}
-                  className="flex items-baseline justify-between gap-4 border-t hairline py-2.5"
-                >
-                  <p className="min-w-0 font-mono text-[13px] text-ink truncate">
-                    {d.target}
-                    {d.version ? (
-                      <span className="text-ink-faint"> · v{d.version}</span>
-                    ) : null}
-                    {d.grade ? <span className="text-ink-muted"> → {d.grade}</span> : null}
-                  </p>
-                  <p className="shrink-0 font-mono text-[11px] text-ink-faint tabular">
-                    {new Date(d.sent_at ?? d.created_at).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-              ))}
+          {deliveries.length > 0 ? (
+            <div>
+              <p className={`${RAIL_LABEL} mb-2.5`}>Recent alerts</p>
+              <div className="border-t hairline">
+                {deliveries.map((d) => (
+                  <div
+                    key={d.id}
+                    className="flex items-baseline justify-between gap-3 border-b border-rule-soft py-2"
+                  >
+                    <p className="min-w-0 truncate font-mono text-[11px] text-ink">
+                      {d.target}
+                      {d.version ? <span className="text-ink-faint"> v{d.version}</span> : null}
+                      {d.grade ? <span className="text-ink-muted"> → {d.grade}</span> : null}
+                    </p>
+                    <p className="shrink-0 font-mono text-[10px] text-ink-faint tabular">
+                      {new Date(d.sent_at ?? d.created_at).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-          </section>
-        )}
+          ) : null}
 
-        {/* Account */}
-        <section className="mt-14">
-          <p className="section-label mb-3">Account</p>
-          <p className="font-mono text-[13px] text-ink">{session.email}</p>
-        </section>
+          <div>
+            <p className={`${RAIL_LABEL} mb-2`}>Account</p>
+            <p className="truncate font-mono text-[12px] text-ink">{session.email}</p>
+          </div>
+        </aside>
       </div>
     </main>
   );

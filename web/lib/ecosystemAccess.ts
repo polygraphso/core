@@ -102,7 +102,7 @@ export async function listEcosystemsForUser(
   if (session.isAdmin) {
     const { data } = await db
       .from("ecosystems")
-      .select("id, slug, name, blurb, page_config, is_public, is_listed, noindex, created_by, created_at")
+      .select("id, slug, name, blurb, page_config, is_public, is_listed, noindex, monthly_price_usd, created_by, created_at")
       .order("created_at", { ascending: true });
     return ((data as EcosystemRow[] | null) ?? []).map((ecosystem) => ({
       ecosystem,
@@ -113,7 +113,7 @@ export async function listEcosystemsForUser(
   await claimInvites(session);
   const { data } = await db
     .from("ecosystem_members")
-    .select("role, ecosystems(id, slug, name, blurb, page_config, is_public, is_listed, noindex, created_by, created_at)")
+    .select("role, ecosystems(id, slug, name, blurb, page_config, is_public, is_listed, noindex, monthly_price_usd, created_by, created_at)")
     .eq("user_id", session.userId)
     .eq("status", "active");
 
