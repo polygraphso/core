@@ -130,7 +130,7 @@ export default async function ActivatePage({
             <p className="mt-3 font-mono text-[12px] text-ink-faint">
               Why the token?{" "}
               <a
-                href="/blog/weekly-buyback"
+                href="/blog/paid-in-the-token"
                 className="text-ink-muted underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
               >
                 Monitoring is paid in the token — the revenue note ↗
