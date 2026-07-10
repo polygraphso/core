@@ -85,11 +85,14 @@ function EntryRow({
   vm,
   onChanged,
   onGradeFired,
+  locked,
 }: {
   slug: string;
   vm: EcosystemEntryVM;
   onChanged: () => void;
   onGradeFired: (id: string) => void;
+  /** Unpaid ecosystem: list is visible, everything that mutates or is paid is not. */
+  locked?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [showFixes, setShowFixes] = useState(false);
@@ -151,52 +154,59 @@ function EntryRow({
             </div>
           )}
 
-          {/* Controls */}
+          {/* Controls. Locked = read-only: the public report stays reachable,
+              everything that mutates or is part of the paid layer goes. */}
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.12em]">
-            <button
-              onClick={() => patch({ visible: !vm.visible })}
-              disabled={busy}
-              className="text-ink-muted hover:text-oxblood transition-colors disabled:opacity-50"
-            >
-              {vm.visible ? "hide" : "show"}
-            </button>
-            <button
-              onClick={() => patch({ featured: !vm.featured })}
-              disabled={busy}
-              className="text-ink-muted hover:text-oxblood transition-colors disabled:opacity-50"
-            >
-              {vm.featured ? "unfeature" : "feature"}
-            </button>
-            <button
-              onClick={regrade}
-              disabled={busy || !vm.target}
-              className="text-ink-muted hover:text-oxblood transition-colors disabled:opacity-50"
-            >
-              regrade
-            </button>
-            {vm.fixes.length > 0 ? (
-              <button
-                onClick={() => setShowFixes((s) => !s)}
-                className="text-ink-muted hover:text-oxblood transition-colors"
-              >
-                {showFixes ? "hide fixes" : `fixes · ${vm.fixes.length}`}
-              </button>
+            {!locked ? (
+              <>
+                <button
+                  onClick={() => patch({ visible: !vm.visible })}
+                  disabled={busy}
+                  className="text-ink-muted hover:text-oxblood transition-colors disabled:opacity-50"
+                >
+                  {vm.visible ? "hide" : "show"}
+                </button>
+                <button
+                  onClick={() => patch({ featured: !vm.featured })}
+                  disabled={busy}
+                  className="text-ink-muted hover:text-oxblood transition-colors disabled:opacity-50"
+                >
+                  {vm.featured ? "unfeature" : "feature"}
+                </button>
+                <button
+                  onClick={regrade}
+                  disabled={busy || !vm.target}
+                  className="text-ink-muted hover:text-oxblood transition-colors disabled:opacity-50"
+                >
+                  regrade
+                </button>
+                {vm.fixes.length > 0 ? (
+                  <button
+                    onClick={() => setShowFixes((s) => !s)}
+                    className="text-ink-muted hover:text-oxblood transition-colors"
+                  >
+                    {showFixes ? "hide fixes" : `fixes · ${vm.fixes.length}`}
+                  </button>
+                ) : null}
+              </>
             ) : null}
             {vm.reportPath ? (
               <Link href={vm.reportPath} className="text-ink-muted hover:text-oxblood transition-colors">
                 report ↗
               </Link>
             ) : null}
-            <button
-              onClick={remove}
-              disabled={busy}
-              className="text-ink-faint hover:text-oxblood transition-colors disabled:opacity-50 ml-auto"
-            >
-              remove
-            </button>
+            {!locked ? (
+              <button
+                onClick={remove}
+                disabled={busy}
+                className="text-ink-faint hover:text-oxblood transition-colors disabled:opacity-50 ml-auto"
+              >
+                remove
+              </button>
+            ) : null}
           </div>
 
-          {showFixes ? <FixList vm={vm} /> : null}
+          {showFixes && !locked ? <FixList vm={vm} /> : null}
         </div>
       </div>
     </div>
@@ -270,7 +280,16 @@ function AddEntryForm({ slug, onAdded }: { slug: string; onAdded: (id: string | 
   );
 }
 
-export function EntriesManager({ slug, entries }: { slug: string; entries: EcosystemEntryVM[] }) {
+export function EntriesManager({
+  slug,
+  entries,
+  locked,
+}: {
+  slug: string;
+  entries: EcosystemEntryVM[];
+  /** Unpaid ecosystem: browse only — no adding, no curation (APIs 402 anyway). */
+  locked?: boolean;
+}) {
   const router = useRouter();
   const refresh = useCallback(() => router.refresh(), [router]);
 
@@ -341,9 +360,11 @@ export function EntriesManager({ slug, entries }: { slug: string; entries: Ecosy
 
   return (
     <div>
-      <AddEntryForm slug={slug} onAdded={watchEntry} />
+      {!locked ? <AddEntryForm slug={slug} onAdded={watchEntry} /> : null}
       {entries.length === 0 ? (
-        <p className="text-ink-muted text-[14px] py-4">No servers or skills yet. Add one above.</p>
+        <p className="text-ink-muted text-[14px] py-4">
+          {locked ? "No servers or skills yet." : "No servers or skills yet. Add one above."}
+        </p>
       ) : (
         <div>
           <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -403,7 +424,14 @@ export function EntriesManager({ slug, entries }: { slug: string; entries: Ecosy
           ) : (
             <div>
               {pageEntries.map((vm) => (
-                <EntryRow key={vm.id} slug={slug} vm={vm} onChanged={refresh} onGradeFired={watchEntry} />
+                <EntryRow
+                  key={vm.id}
+                  slug={slug}
+                  vm={vm}
+                  onChanged={refresh}
+                  onGradeFired={watchEntry}
+                  locked={locked}
+                />
               ))}
             </div>
           )}
