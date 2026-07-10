@@ -47,9 +47,11 @@ export default async function ManageConsolePage({
   const manage = canManageEcosystem(role);
 
   // Monitoring is paid: without a live POLYGRAPH stream (or a comp), the whole
-  // console defers to the (public) activation page.
+  // console defers to the (public) activation page. App admins bypass the gate —
+  // the operator sets ecosystems up before a client ever pays.
   const gate = await getPaymentGate(ecosystem);
-  if (gate.status !== "active") redirect(`/ecosystems/${slug}/activate`);
+  const unpaid = gate.status !== "active";
+  if (unpaid && role !== "app-admin") redirect(`/ecosystems/${slug}/activate`);
 
   const [graded, members, advisories, alertSettings, recipients] = await Promise.all([
     loadGradedEntries(ecosystem.id),
@@ -84,6 +86,22 @@ export default async function ManageConsolePage({
         </div>
         {ecosystem.blurb ? (
           <p className="mt-3 text-ink-muted text-[15px] leading-relaxed max-w-2xl">{ecosystem.blurb}</p>
+        ) : null}
+        {unpaid ? (
+          <p className="mt-3 font-mono text-[12px] text-oxblood">
+            monitoring inactive — members are redirected to the{" "}
+            <a
+              href={`/ecosystems/${slug}/activate`}
+              target="_blank"
+              className="underline decoration-dotted"
+            >
+              activation page
+            </a>
+            ; set a price or comp it in{" "}
+            <a href="/admin/ecosystems" className="underline decoration-dotted">
+              admin
+            </a>
+          </p>
         ) : null}
       </header>
 

@@ -43,7 +43,9 @@ export async function guardManage(
   if (opts.requireManage && !canManageEcosystem(access.role)) {
     return Response.json({ error: "Admins only" }, { status: 403 });
   }
-  if (opts.requirePaid !== false) {
+  // App admins bypass the payment gate — the operator works on ecosystems
+  // before (and regardless of) payment.
+  if (opts.requirePaid !== false && access.role !== "app-admin") {
     const gate = await getPaymentGate(access.ecosystem);
     if (gate.status !== "active") {
       return Response.json({ error: "Payment required" }, { status: 402 });

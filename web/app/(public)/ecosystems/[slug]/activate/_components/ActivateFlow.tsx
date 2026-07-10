@@ -5,9 +5,13 @@
  * create a one-month Sablier stream → server verify → monitoring starts.
  * Renewal = the next stream when this one runs out.
  *
- * Wallet plumbing (wagmi + react-query) is mounted here, scoped to the
- * activation route. The tx sequence runs through @wagmi/core actions rather
- * than per-step hooks so approve → create → verify reads as one async flow.
+ * Structure note: the LI.FI swap widget and the AppKit/wagmi pay step are
+ * DELIBERATELY separate React trees. Both libraries sync connectors into
+ * whatever wagmi config they find in context, and sharing one config makes
+ * AppKit's connector watcher choke on LI.FI's entries (observed live:
+ * "connector.getProvider is not a function" once a wallet extension announces
+ * itself). So wagmi wraps only the pay step, the widget self-hosts its own
+ * stack, and the quote/verify plumbing lives outside both — plain fetches.
  * Nothing signed client-side is trusted: the verify route re-reads the stream
  * onchain and re-prices the deposit.
  */
@@ -66,40 +70,14 @@ export interface ActivateFlowProps {
   consoleHref: string | null;
 }
 
-export function ActivateFlow(props: ActivateFlowProps) {
-  return (
-    // No reconnectOnMount: a payment page shouldn't poke wallet extensions on
-    // load (locked/stale extensions reject and trip the dev overlay) — the
-    // visitor connects explicitly through the AppKit modal.
-    <WagmiProvider config={wagmiAdapter.wagmiConfig} reconnectOnMount={false}>
-      <QueryClientProvider client={queryClient}>
-        <ActivateFlowInner {...props} />
-      </QueryClientProvider>
-    </WagmiProvider>
-  );
-}
+type VerifyState = { id: "idle" } | { id: "verifying" } | { id: "done" } | { id: "error"; message: string };
 
-type Step =
-  | { id: "idle" }
-  | { id: "approving" }
-  | { id: "streaming" }
-  | { id: "verifying" }
-  | { id: "done" }
-  | { id: "error"; message: string };
-
-function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
-  const config = useConfig();
-  const { address, isConnected, chainId } = useAccount();
-  const { open } = useAppKit();
-  const { disconnect } = useDisconnect();
-
+export function ActivateFlow({ slug, consoleHref }: ActivateFlowProps) {
   const [quote, setQuote] = useState<PaymentQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [step, setStep] = useState<Step>({ id: "idle" });
   const [showSwap, setShowSwap] = useState(false);
   const [manualTxHash, setManualTxHash] = useState("");
-
-  const busy = step.id === "approving" || step.id === "streaming" || step.id === "verifying";
+  const [manualState, setManualState] = useState<VerifyState>({ id: "idle" });
 
   const fetchQuote = useCallback(async () => {
     setQuoteError(null);
@@ -124,26 +102,146 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
     return () => clearTimeout(t);
   }, [quote, fetchQuote]);
 
+  // Shared by the pay step (after its tx) and the manual recovery input. Plain
+  // fetch, no wallet involvement: the tx hash is the whole input.
   const verify = useCallback(
-    async (txHash: string) => {
-      setStep({ id: "verifying" });
+    async (txHash: string): Promise<{ ok: true } | { ok: false; message: string }> => {
       const res = await fetch(`/api/ecosystems/${slug}/payment/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ txHash }),
       });
       const body = (await res.json()) as { ok?: boolean; error?: string };
-      if (!res.ok || !body.ok) {
-        setStep({ id: "error", message: body.error ?? "verification failed" });
-        return;
-      }
-      setStep({ id: "done" });
+      if (!res.ok || !body.ok) return { ok: false, message: body.error ?? "verification failed" };
       // Members go straight back to the console (full navigation so the server
       // gate re-evaluates); a client with no account gets the inline success.
       if (consoleHref) window.location.assign(consoleHref);
+      return { ok: true };
     },
     [slug, consoleHref],
   );
+
+  return (
+    <section id="activate" className="mb-16">
+      <p className="section-label mb-4">Activate</p>
+
+      {/* The commitment, priced live. */}
+      <div className="border border-rule rounded-[4px] px-6 py-5 mb-6">
+        {quote ? (
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+            <div>
+              <div className="font-serif text-2xl text-ink">
+                ${quote.usdMonthly.toLocaleString("en-US")} / month
+              </div>
+              <div className="mt-1 font-mono text-[12px] text-ink-muted">
+                ≈ {formatTokens(BigInt(quote.tokenAmount))} {POLYGRAPH_TOKEN_SYMBOL} at $
+                {quote.tokenUsdRate.toPrecision(3)} — streamed continuously to the polygraph
+                treasury over the month, cancelable anytime.
+              </div>
+            </div>
+            <div className="font-mono text-[11px] text-ink-faint">
+              rate refreshes automatically
+            </div>
+          </div>
+        ) : quoteError ? (
+          <div className="flex items-baseline justify-between gap-4">
+            <p className="text-[14px] text-ink-muted">{quoteError}</p>
+            <button
+              onClick={() => void fetchQuote()}
+              className="font-mono text-[12px] uppercase tracking-[0.14em] text-oxblood hover:underline"
+            >
+              retry
+            </button>
+          </div>
+        ) : (
+          <p className="font-mono text-[12px] text-ink-faint">Pricing…</p>
+        )}
+      </div>
+
+      {/* Step 1 — get the token (optional, collapsed by default). Own tree: no
+          wagmi context above it, so LI.FI manages wallets independently. */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowSwap((s) => !s)}
+          className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink-muted border-b hairline border-dotted pb-0.5 hover:text-oxblood transition-colors"
+        >
+          {showSwap ? "− hide swap" : `+ need ${POLYGRAPH_TOKEN_SYMBOL}? swap any token`}
+        </button>
+        {showSwap ? (
+          <div className="mt-4 max-w-md">
+            <SwapWidget />
+          </div>
+        ) : null}
+      </div>
+
+      {/* Step 2 — connect and stream (the only wagmi tree on the page). */}
+      <WagmiProvider config={wagmiAdapter.wagmiConfig} reconnectOnMount={false}>
+        <QueryClientProvider client={queryClient}>
+          <PayStep slug={slug} consoleHref={consoleHref} quote={quote} verify={verify} />
+        </QueryClientProvider>
+      </WagmiProvider>
+
+      {/* Recovery: a payment made here whose verify never ran (tab closed
+          mid-flow, network blip). Takes the creation TRANSACTION, not a stream
+          id — the server derives the stream from it and requires this
+          ecosystem's tag, so someone else's stream can't be claimed here. */}
+      <div className="mt-10 border-t hairline pt-5">
+        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint mb-2">
+          Paid here but it didn&rsquo;t register?
+        </p>
+        <div className="flex flex-wrap items-center gap-3">
+          <input
+            value={manualTxHash}
+            onChange={(e) => setManualTxHash(e.target.value)}
+            placeholder="stream creation tx hash (0x…)"
+            spellCheck={false}
+            className="w-96 max-w-full rounded-[3px] border border-rule bg-parchment-50 px-3 py-2 font-mono text-[13px] text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink"
+          />
+          <button
+            disabled={manualState.id === "verifying" || !/^0x[0-9a-fA-F]{64}$/.test(manualTxHash.trim())}
+            onClick={async () => {
+              setManualState({ id: "verifying" });
+              const r = await verify(manualTxHash.trim());
+              setManualState(r.ok ? { id: "done" } : { id: "error", message: r.message });
+            }}
+            className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-muted border border-rule rounded-[3px] px-4 py-2 hover:text-oxblood hover:border-oxblood/40 transition-colors disabled:opacity-50"
+          >
+            {manualState.id === "verifying" ? "verifying…" : "verify it"}
+          </button>
+        </div>
+        {manualState.id === "error" ? (
+          <p className="mt-2 text-[13px] text-ink leading-relaxed max-w-xl">{manualState.message}</p>
+        ) : null}
+        {manualState.id === "done" && !consoleHref ? <SuccessNote /> : null}
+      </div>
+    </section>
+  );
+}
+
+type Step =
+  | { id: "idle" }
+  | { id: "approving" }
+  | { id: "streaming" }
+  | { id: "verifying" }
+  | { id: "done" }
+  | { id: "error"; message: string };
+
+function PayStep({
+  slug,
+  consoleHref,
+  quote,
+  verify,
+}: ActivateFlowProps & {
+  quote: PaymentQuote | null;
+  verify: (txHash: string) => Promise<{ ok: true } | { ok: false; message: string }>;
+}) {
+  const config = useConfig();
+  const { address, isConnected, chainId } = useAccount();
+  const { open } = useAppKit();
+  const { disconnect } = useDisconnect();
+  const [step, setStep] = useState<Step>({ id: "idle" });
+
+  const busy = step.id === "approving" || step.id === "streaming" || step.id === "verifying";
 
   const pay = useCallback(async () => {
     if (!quote || !address) return;
@@ -212,7 +310,9 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
         chainId: PAYMENT_CHAIN_ID,
       });
       await waitForTransactionReceipt(config, { hash: createHash });
-      await verify(createHash);
+      setStep({ id: "verifying" });
+      const r = await verify(createHash);
+      setStep(r.ok ? { id: "done" } : { id: "error", message: r.message });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setStep({ id: "error", message: shortenTxError(message) });
@@ -220,58 +320,7 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
   }, [address, chainId, config, quote, slug, verify]);
 
   return (
-    <section id="activate" className="mb-16">
-      <p className="section-label mb-4">Activate</p>
-
-      {/* The commitment, priced live. */}
-      <div className="border border-rule rounded-[4px] px-6 py-5 mb-6">
-        {quote ? (
-          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-            <div>
-              <div className="font-serif text-2xl text-ink">
-                ${quote.usdMonthly.toLocaleString("en-US")} / month
-              </div>
-              <div className="mt-1 font-mono text-[12px] text-ink-muted">
-                ≈ {formatTokens(BigInt(quote.tokenAmount))} {POLYGRAPH_TOKEN_SYMBOL} at $
-                {quote.tokenUsdRate.toPrecision(3)} — streamed continuously to the polygraph
-                treasury over the month, cancelable anytime.
-              </div>
-            </div>
-            <div className="font-mono text-[11px] text-ink-faint">
-              rate refreshes automatically
-            </div>
-          </div>
-        ) : quoteError ? (
-          <div className="flex items-baseline justify-between gap-4">
-            <p className="text-[14px] text-ink-muted">{quoteError}</p>
-            <button
-              onClick={() => void fetchQuote()}
-              className="font-mono text-[12px] uppercase tracking-[0.14em] text-oxblood hover:underline"
-            >
-              retry
-            </button>
-          </div>
-        ) : (
-          <p className="font-mono text-[12px] text-ink-faint">Pricing…</p>
-        )}
-      </div>
-
-      {/* Step 1 — get the token (optional, collapsed by default). */}
-      <div className="mb-6">
-        <button
-          onClick={() => setShowSwap((s) => !s)}
-          className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink-muted border-b hairline border-dotted pb-0.5 hover:text-oxblood transition-colors"
-        >
-          {showSwap ? "− hide swap" : `+ need ${POLYGRAPH_TOKEN_SYMBOL}? swap any token`}
-        </button>
-        {showSwap ? (
-          <div className="mt-4 max-w-md">
-            <SwapWidget />
-          </div>
-        ) : null}
-      </div>
-
-      {/* Step 2 — connect and stream. */}
+    <div>
       {!isConnected ? (
         <button
           onClick={() => void open()}
@@ -319,18 +368,7 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
         </div>
       )}
 
-      {step.id === "done" && !consoleHref ? (
-        <div className="mt-5 border-l-2 pl-4" style={{ borderColor: "var(--color-oxblood)" }}>
-          <p className="text-[15px] leading-relaxed text-ink">
-            The stream checked out — monitoring is active. Email{" "}
-            <a href="mailto:hello@polygraph.so" className="underline decoration-dotted hover:text-oxblood">
-              hello@polygraph.so
-            </a>{" "}
-            with your team&rsquo;s addresses and we&rsquo;ll invite them to the management console
-            (entries, alert strategy, weekly CVE digest).
-          </p>
-        </div>
-      ) : null}
+      {step.id === "done" && !consoleHref ? <SuccessNote /> : null}
 
       {step.id === "error" ? (
         <div className="mt-5 border-l-2 pl-4" style={{ borderColor: "var(--color-oxblood)" }}>
@@ -343,33 +381,22 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
           </button>
         </div>
       ) : null}
+    </div>
+  );
+}
 
-      {/* Recovery: a payment made here whose verify never ran (tab closed
-          mid-flow, network blip). Takes the creation TRANSACTION, not a stream
-          id — the server derives the stream from it and requires this
-          ecosystem's tag, so someone else's stream can't be claimed here. */}
-      <div className="mt-10 border-t hairline pt-5">
-        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint mb-2">
-          Paid here but it didn&rsquo;t register?
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            value={manualTxHash}
-            onChange={(e) => setManualTxHash(e.target.value)}
-            placeholder="stream creation tx hash (0x…)"
-            spellCheck={false}
-            className="w-96 max-w-full rounded-[3px] border border-rule bg-parchment-50 px-3 py-2 font-mono text-[13px] text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink"
-          />
-          <button
-            disabled={busy || !/^0x[0-9a-fA-F]{64}$/.test(manualTxHash.trim())}
-            onClick={() => void verify(manualTxHash.trim())}
-            className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-muted border border-rule rounded-[3px] px-4 py-2 hover:text-oxblood hover:border-oxblood/40 transition-colors disabled:opacity-50"
-          >
-            verify it
-          </button>
-        </div>
-      </div>
-    </section>
+function SuccessNote() {
+  return (
+    <div className="mt-5 border-l-2 pl-4" style={{ borderColor: "var(--color-oxblood)" }}>
+      <p className="text-[15px] leading-relaxed text-ink">
+        The stream checked out — monitoring is active. Email{" "}
+        <a href="mailto:hello@polygraph.so" className="underline decoration-dotted hover:text-oxblood">
+          hello@polygraph.so
+        </a>{" "}
+        with your team&rsquo;s addresses and we&rsquo;ll invite them to the management console
+        (entries, alert strategy, weekly CVE digest).
+      </p>
+    </div>
   );
 }
 
