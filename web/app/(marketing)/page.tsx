@@ -1,5 +1,6 @@
 import { EcosystemHero } from "@/app/_components/EcosystemHero";
 import { LiveIndexes } from "@/app/_components/LiveIndexes";
+import { MonitoredEcosystems } from "@/app/_components/MonitoredEcosystems";
 import { WhyItHolds } from "@/app/_components/WhyItHolds";
 import { HowMonitoringWorks } from "@/app/_components/HowMonitoringWorks";
 import { TokenNote } from "@/app/_components/TokenNote";
@@ -16,6 +17,7 @@ export default function Home() {
   return (
     <>
       <EcosystemHero />
+      <MonitoredEcosystems />
       <LiveIndexes />
       <WhyItHolds />
       <HowMonitoringWorks />

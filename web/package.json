@@ -11,9 +11,15 @@
   },
   "dependencies": {
     "@ethereum-attestation-service/eas-sdk": "^2.9.1",
+    "@lifi/widget": "^4.3.1",
+    "@lifi/widget-provider-ethereum": "^4.1.1",
     "@modelcontextprotocol/sdk": "1.26.0",
+    "@reown/appkit": "^1.8.22",
+    "@reown/appkit-adapter-wagmi": "^1.8.22",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.45.0",
+    "@tanstack/react-query": "^5.101.2",
+    "@wagmi/core": "^3.6.1",
     "ethers": "^6.16.0",
     "gray-matter": "^4.0.3",
     "mcp-handler": "^1.1.0",
@@ -23,6 +29,8 @@
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
     "server-only": "^0.0.1",
+    "viem": "^2.55.0",
+    "wagmi": "^3.7.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {

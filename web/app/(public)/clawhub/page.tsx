@@ -64,7 +64,7 @@ const CONFIG: SkillEcosystemConfig = {
       content-hash anchored). Reproduce a skill grade with{" "}
       <code className="font-mono">npx -p @polygraphso/litmus polygraphso-litmus-skill &lt;dir&gt;</code>. Incident source:{" "}
       <Link
-        href="https://snyk.io/blog/toxicskills-malicious-ai-agent-skills-clawhub/"
+        target="_blank" rel="noreferrer" href="https://snyk.io/blog/toxicskills-malicious-ai-agent-skills-clawhub/"
         className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
       >
         Snyk ToxicSkills

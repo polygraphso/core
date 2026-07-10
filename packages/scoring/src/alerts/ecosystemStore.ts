@@ -22,6 +22,8 @@ export interface EcosystemAlertSettings {
   frequency: "weekly" | "off";
   recipients_mode: RecipientsMode;
   last_digest_period: string | null;
+  /** Price override joined from ecosystems (null = default, 0 = comped). */
+  monthly_price_usd: number | null;
 }
 
 export interface EcosystemRecipient {
@@ -54,6 +56,12 @@ export interface EntryState {
 export interface EcosystemAlertStore {
   /** Configured ecosystems due this ISO week (frequency='weekly', not yet done). */
   dueEcosystems(periodKey: string): Promise<EcosystemAlertSettings[]>;
+  /**
+   * True when the ecosystem has a live verified payment (an ecosystem_payments
+   * row with status='active' and end_at in the future). The digest trusts the DB
+   * status — the web console is what reconciles it with the chain.
+   */
+  hasActivePayment(ecosystemId: string): Promise<boolean>;
   /** Resolve the digest recipient set for a mode (mints auto tokens as needed). */
   recipientsFor(ecosystemId: string, mode: RecipientsMode): Promise<EcosystemRecipient[]>;
   /** Entries (with a target) for an ecosystem. */
@@ -89,7 +97,10 @@ interface SettingsJoinRow {
   frequency: "weekly" | "off";
   recipients_mode: RecipientsMode;
   last_digest_period: string | null;
-  ecosystems: { slug: string; name: string } | { slug: string; name: string }[] | null;
+  ecosystems:
+    | { slug: string; name: string; monthly_price_usd: number | null }
+    | { slug: string; name: string; monthly_price_usd: number | null }[]
+    | null;
 }
 
 interface RecipientRow {
@@ -119,7 +130,7 @@ export function supabaseEcosystemAlertStore(supabase: SupabaseClient): Ecosystem
       const { data, error } = await supabase
         .from("ecosystem_alert_settings")
         .select(
-          "ecosystem_id, cve_enabled, cve_min_severity, grade_drop_enabled, new_version_enabled, frequency, recipients_mode, last_digest_period, ecosystems(slug, name)",
+          "ecosystem_id, cve_enabled, cve_min_severity, grade_drop_enabled, new_version_enabled, frequency, recipients_mode, last_digest_period, ecosystems(slug, name, monthly_price_usd)",
         )
         .eq("frequency", "weekly")
         .or(`last_digest_period.is.null,last_digest_period.neq.${periodKey}`);
@@ -138,8 +149,21 @@ export function supabaseEcosystemAlertStore(supabase: SupabaseClient): Ecosystem
           frequency: row.frequency,
           recipients_mode: row.recipients_mode,
           last_digest_period: row.last_digest_period,
+          monthly_price_usd: eco.monthly_price_usd,
         }];
       });
+    },
+
+    async hasActivePayment(ecosystemId) {
+      const { data, error } = await supabase
+        .from("ecosystem_payments")
+        .select("id")
+        .eq("ecosystem_id", ecosystemId)
+        .eq("status", "active")
+        .gt("end_at", new Date().toISOString())
+        .limit(1);
+      if (error) throw new Error(`hasActivePayment(${ecosystemId}): ${error.message}`);
+      return ((data as { id: string }[] | null) ?? []).length > 0;
     },
 
     async recipientsFor(ecosystemId, mode) {

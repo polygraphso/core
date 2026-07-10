@@ -232,10 +232,10 @@ export default async function BankrIndexPage() {
           content-hash anchored). Reproduce a skill grade with{" "}
           <code className="font-mono">npx -p @polygraphso/litmus polygraphso-litmus-skill &lt;dir&gt;</code>.
           Agents: behavioral C-01…C-04 on the open harness. Source:{" "}
-          <Link href="https://github.com/BankrBot/skills" className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">
+          <Link target="_blank" rel="noreferrer" href="https://github.com/BankrBot/skills" className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">
             BankrBot/skills
           </Link>{" "}
-          · <Link href="https://bankr.bot/agents" className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">bankr.bot/agents</Link>.
+          · <Link target="_blank" rel="noreferrer" href="https://bankr.bot/agents" className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors">bankr.bot/agents</Link>.
         </p>
       </article>
   );

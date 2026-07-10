@@ -27,6 +27,7 @@ function settings(over: Partial<EcosystemAlertSettings> = {}): EcosystemAlertSet
     frequency: "weekly",
     recipients_mode: "admins",
     last_digest_period: null,
+    monthly_price_usd: null,
     ...over,
   };
 }
@@ -38,6 +39,8 @@ interface FakeOpts {
   advisories?: Record<string, EntryAdvisory[]>;
   grades?: Record<string, PublishedGrade>;
   states?: Record<string, EntryState>;
+  /** Payment gate answer; defaults to paid so unrelated tests aren't skipped. */
+  paid?: boolean;
 }
 
 class FakeEcosystemStore implements EcosystemAlertStore {
@@ -56,6 +59,9 @@ class FakeEcosystemStore implements EcosystemAlertStore {
 
   async dueEcosystems() {
     return this.o.due;
+  }
+  async hasActivePayment() {
+    return this.o.paid ?? true;
   }
   async recipientsFor(ecosystemId: string, _mode: RecipientsMode) {
     return this.o.recipients?.[ecosystemId] ?? [];
@@ -190,6 +196,39 @@ describe("runEcosystemAlerts", () => {
     expect(w2.digestsSent).toBe(1);
     expect(sent.at(-1)!.email.subject).toContain("grade drop");
     expect(store.states["e1"]).toMatchObject({ last_seen_run_id: "run-2", last_seen_grade: "D" });
+  });
+
+  it("skips an unpaid ecosystem without advancing its week", async () => {
+    const adv: EntryAdvisory = { ghsa: "GHSA-x", cveIds: [], severity: "HIGH", fixedVersion: null, url: null };
+    const store = new FakeEcosystemStore({
+      due: [settings({ grade_drop_enabled: false, new_version_enabled: false })],
+      entries: { "eco-1": [entry("e1", "npm/left-pad")] },
+      advisories: { "npm/left-pad": [adv] },
+      recipients: { "eco-1": [recip("r1", "a@acme.com")] },
+      paid: false,
+    });
+    const { sender, sent } = captureSender();
+    const result = await runEcosystemAlerts(store, { periodKey: WEEK, sender });
+    expect(sent).toHaveLength(0);
+    expect(result.processed).toBe(0);
+    expect(result.skipped).toEqual([{ ecosystem: "acme", reason: "unpaid" }]);
+    // Watermark untouched: paying mid-week resumes delivery this same week.
+    expect(store.touched).toHaveLength(0);
+  });
+
+  it("a comped ecosystem (monthly_price_usd = 0) bypasses the payment gate", async () => {
+    const adv: EntryAdvisory = { ghsa: "GHSA-x", cveIds: [], severity: "HIGH", fixedVersion: null, url: null };
+    const store = new FakeEcosystemStore({
+      due: [settings({ monthly_price_usd: 0, grade_drop_enabled: false, new_version_enabled: false })],
+      entries: { "eco-1": [entry("e1", "npm/left-pad")] },
+      advisories: { "npm/left-pad": [adv] },
+      recipients: { "eco-1": [recip("r1", "a@acme.com")] },
+      paid: false,
+    });
+    const { sender, sent } = captureSender();
+    const result = await runEcosystemAlerts(store, { periodKey: WEEK, sender });
+    expect(result.digestsSent).toBe(1);
+    expect(sent[0]!.to).toBe("a@acme.com");
   });
 
   it("skips an ecosystem with nothing to report", async () => {
