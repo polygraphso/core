@@ -117,15 +117,26 @@ export default async function ActivatePage({
             .
           </p>
         ) : (
-          <p className="mt-4 text-ink-muted text-[15px] leading-relaxed max-w-2xl">
-            Continuous monitoring is what keeps an index honest: the same open test, re-run on a
-            clock, with alerts when something moves. It&rsquo;s a monthly subscription:{" "}
-            <span className="text-ink">${usdMonthly.toLocaleString("en-US")}/month in $POLYGRAPH</span>,
-            streamed to the polygraph treasury (
-            <span className="font-mono text-[13px]">polygraph.base.eth</span>) for as long as you
-            stay. Cancel the stream anytime — the unstreamed remainder returns to the payer and
-            monitoring stops. No account needed to pay.
-          </p>
+          <>
+            <p className="mt-4 text-ink-muted text-[15px] leading-relaxed max-w-2xl">
+              Continuous monitoring is what keeps an index honest: the same open test, re-run on a
+              clock, with alerts when something moves. It&rsquo;s a monthly subscription:{" "}
+              <span className="text-ink">${usdMonthly.toLocaleString("en-US")}/month in $POLYGRAPH</span>,
+              streamed to the polygraph treasury (
+              <span className="font-mono text-[13px]">polygraph.base.eth</span>) for as long as you
+              stay. Cancel the stream anytime — the unstreamed remainder returns to the payer and
+              monitoring stops. No account needed to pay.
+            </p>
+            <p className="mt-3 font-mono text-[12px] text-ink-faint">
+              Why the token?{" "}
+              <a
+                href="/blog/weekly-buyback"
+                className="text-ink-muted underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
+              >
+                Monitoring is paid in the token — the revenue note ↗
+              </a>
+            </p>
+          </>
         )}
       </header>
 
