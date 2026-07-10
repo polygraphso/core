@@ -55,14 +55,14 @@ const CONFIG: SkillEcosystemConfig = {
       content-hash anchored). Reproduce a skill grade with{" "}
       <code className="font-mono">npx -p @polygraphso/litmus polygraphso-litmus-skill &lt;dir&gt;</code>. Sources:{" "}
       <Link
-        href="https://github.com/Uniswap/uniswap-ai"
+        target="_blank" rel="noreferrer" href="https://github.com/Uniswap/uniswap-ai"
         className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
       >
         Uniswap/uniswap-ai
       </Link>{" "}
       ·{" "}
       <Link
-        href="https://github.com/BankrBot/skills"
+        target="_blank" rel="noreferrer" href="https://github.com/BankrBot/skills"
         className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
       >
         BankrBot/skills

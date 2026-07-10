@@ -74,12 +74,17 @@ export default async function AdminEcosystemsPage() {
                   </Link>
                   <a
                     href={`/ecosystems/${e.slug}/activate`}
+                    target="_blank"
                     title="The public activation page — the link to send a client"
                     className="text-ink-faint hover:text-oxblood transition-colors"
                   >
                     activate ↗
                   </a>
-                  <a href={`/ecosystems/${e.slug}`} className="text-ink-faint hover:text-oxblood transition-colors">
+                  <a
+                    href={`/ecosystems/${e.slug}`}
+                    target="_blank"
+                    className="text-ink-faint hover:text-oxblood transition-colors"
+                  >
                     public ↗
                   </a>
                 </div>

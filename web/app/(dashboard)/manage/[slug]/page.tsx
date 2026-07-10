@@ -72,6 +72,7 @@ export default async function ManageConsolePage({
           <div className="flex items-center gap-3 font-mono text-[11px] text-ink-faint">
             <a
               href={`/ecosystems/${ecosystem.slug}`}
+              target="_blank"
               className="uppercase tracking-[0.14em] hover:text-oxblood transition-colors"
             >
               Public page ↗

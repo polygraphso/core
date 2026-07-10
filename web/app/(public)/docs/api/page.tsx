@@ -472,7 +472,7 @@ pypi/mcp-server-fetch`}
             nor unsafe), not a failing grade. For local, one-command grading and
             the CLI, install the{" "}
             <a
-              href="https://github.com/polygraphso/litmus"
+              target="_blank" rel="noreferrer" href="https://github.com/polygraphso/litmus"
               className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
             >
               polygraph plugin
