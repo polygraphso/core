@@ -6,9 +6,10 @@
  *
  * PUBLIC — a client can pay before they ever have an account; the wallet is
  * the identity. Safe without auth because the stream is the proof: the route
- * reads it onchain and requires the right token, the treasury as recipient, a
- * ~12-month term, and a deposit covering the USD-pegged price at the current
- * rate (5% tolerance). The only thing an unauthenticated caller can do is pay
+ * reads it onchain and requires the right token, the treasury as recipient, at
+ * least a month's duration, and a deposit covering the monthly price for the
+ * stream's length at the current rate (5% tolerance). The only thing an
+ * unauthenticated caller can do is pay
  * for someone's monitoring. Idempotent for a stream already attached to this
  * ecosystem; a stream can back only one ecosystem.
  */

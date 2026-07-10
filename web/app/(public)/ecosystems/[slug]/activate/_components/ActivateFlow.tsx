@@ -2,7 +2,8 @@
 
 /**
  * The payment island: quote → (optionally swap into $POLYGRAPH) → approve →
- * create the 12-month Sablier stream → server verify → console unlocks.
+ * create a one-month Sablier stream → server verify → monitoring starts.
+ * Renewal = the next stream when this one runs out.
  *
  * Wallet plumbing (wagmi + react-query) is mounted here, scoped to the
  * activation route. The tx sequence runs through @wagmi/core actions rather
@@ -24,12 +25,11 @@ import {
 import { parseEventLogs } from "viem";
 import {
   ERC20_ABI,
+  MONTH_SECONDS,
   PAYMENT_CHAIN_ID,
   POLYGRAPH_TOKEN_ADDRESS,
   POLYGRAPH_TOKEN_SYMBOL,
   SABLIER_LOCKUP_ABI,
-  TERM_MONTHS,
-  TERM_SECONDS,
   type PaymentQuote,
 } from "@/lib/paymentConfig";
 import { wagmiConfig } from "./wagmiConfig";
@@ -184,7 +184,7 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
           },
           { start: BigInt(0), cliff: BigInt(0) },
           0, // granularity: 0 is Sablier's sentinel for per-second streaming
-          { cliff: 0, total: TERM_SECONDS },
+          { cliff: 0, total: MONTH_SECONDS },
         ],
         value: BigInt(0),
         chainId: PAYMENT_CHAIN_ID,
@@ -221,13 +221,12 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
           <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
             <div>
               <div className="font-serif text-2xl text-ink">
-                ${quote.usdMonthly.toLocaleString("en-US")}/mo × {TERM_MONTHS} months = $
-                {quote.usdTotal.toLocaleString("en-US")}
+                ${quote.usdMonthly.toLocaleString("en-US")} / month
               </div>
               <div className="mt-1 font-mono text-[12px] text-ink-muted">
                 ≈ {formatTokens(BigInt(quote.tokenAmount))} {POLYGRAPH_TOKEN_SYMBOL} at $
                 {quote.tokenUsdRate.toPrecision(3)} — streamed continuously to the polygraph
-                treasury, cancelable anytime.
+                treasury over the month, cancelable anytime.
               </div>
             </div>
             <div className="font-mono text-[11px] text-ink-faint">
@@ -306,12 +305,14 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
                     ? consoleHref
                       ? "Active — opening console…"
                       : "Monitoring active"
-                    : `Stream ${POLYGRAPH_TOKEN_SYMBOL} for ${TERM_MONTHS} months`}
+                    : `Stream ${POLYGRAPH_TOKEN_SYMBOL} for a month`}
           </button>
           <p className="mt-3 text-[13px] leading-relaxed text-ink-faint max-w-xl">
             Two transactions: an approval, then the Sablier stream. We verify the stream onchain —
-            token, recipient, amount, term — before the console unlocks. No custody: cancel from
-            any Sablier interface and the unstreamed remainder returns to this wallet.
+            token, recipient, amount, duration — before monitoring starts. No custody: cancel from
+            any Sablier interface and the unstreamed remainder returns to this wallet. Monitoring
+            runs while the stream does; renew by creating the next month&rsquo;s stream here (a
+            longer stream at the same monthly rate prepays more months).
           </p>
         </div>
       )}

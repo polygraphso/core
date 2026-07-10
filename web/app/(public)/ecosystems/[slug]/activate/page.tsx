@@ -3,7 +3,7 @@
  * the link sent to a prospective client. Pitches what monitored means, shows
  * the ecosystem's USD-pegged price in $POLYGRAPH, and takes the payment right
  * there: swap anything into $POLYGRAPH (embedded LI.FI widget), then stream it
- * to the polygraph treasury for 12 months via Sablier.
+ * to the polygraph treasury month by month via Sablier.
  *
  * No account needed — payment is wallet-based and the server verifies the
  * stream onchain, so a client can pay before they ever sign in. An unpaid
@@ -19,7 +19,7 @@ import { getSession } from "@/lib/session";
 import { getEcosystemRole } from "@/lib/ecosystemAccess";
 import { getEcosystemBySlug } from "@/lib/ecosystemData";
 import { getPaymentGate } from "@/lib/ecosystemPayments";
-import { DEFAULT_MONTHLY_PRICE_USD, TERM_MONTHS } from "@/lib/paymentConfig";
+import { DEFAULT_MONTHLY_PRICE_USD } from "@/lib/paymentConfig";
 import { ActivateFlow } from "./_components/ActivateFlow";
 
 export const dynamic = "force-dynamic";
@@ -78,7 +78,6 @@ export default async function ActivatePage({
   const consoleHref = access ? `/manage/${slug}` : null;
 
   const usdMonthly = ecosystem.monthly_price_usd ?? DEFAULT_MONTHLY_PRICE_USD;
-  const usdTotal = usdMonthly * TERM_MONTHS;
 
   return (
     <main className="px-6 sm:px-10 py-12 max-w-4xl mx-auto">
@@ -108,11 +107,11 @@ export default async function ActivatePage({
         ) : (
           <p className="mt-4 text-ink-muted text-[15px] leading-relaxed max-w-2xl">
             Continuous monitoring is what keeps an index honest: the same open test, re-run on a
-            clock, with alerts when something moves. It starts when your ecosystem commits{" "}
-            <span className="text-ink">${usdTotal.toLocaleString("en-US")} in $POLYGRAPH</span>,
+            clock, with alerts when something moves. It&rsquo;s a monthly subscription:{" "}
+            <span className="text-ink">${usdMonthly.toLocaleString("en-US")}/month in $POLYGRAPH</span>,
             streamed to the polygraph treasury (
-            <span className="font-mono text-[13px]">polygraph.base.eth</span>) over {TERM_MONTHS}{" "}
-            months. Cancel the stream anytime — the unstreamed remainder returns to the payer and
+            <span className="font-mono text-[13px]">polygraph.base.eth</span>) for as long as you
+            stay. Cancel the stream anytime — the unstreamed remainder returns to the payer and
             monitoring stops. No account needed to pay.
           </p>
         )}

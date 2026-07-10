@@ -22,14 +22,14 @@ import type { EcosystemRow } from "@/lib/ecosystemTypes";
 import {
   DEFAULT_MONTHLY_PRICE_USD,
   DEPOSIT_TOLERANCE,
-  MIN_TERM_SECONDS,
+  MIN_STREAM_SECONDS,
+  MONTH_SECONDS,
   PAYMENT_CHAIN_ID,
   POLYGRAPH_TOKEN_ADDRESS,
   POLYGRAPH_TOKEN_DECIMALS,
   SABLIER_LOCKUP_ABI,
   SABLIER_LOCKUP_ADDRESS,
   STREAM_STATUS,
-  TERM_MONTHS,
   TREASURY_ADDRESS,
   type PaymentQuote,
 } from "@/lib/paymentConfig";
@@ -187,12 +187,15 @@ function usdToRawTokens(usdTotal: number, rate: number): bigint {
   return ethers.parseUnits(tokens.toFixed(6), POLYGRAPH_TOKEN_DECIMALS);
 }
 
-/** Build the live quote the activation page renders and the create tx uses. */
+/**
+ * Build the live quote the activation page renders and the create tx uses.
+ * The quote is for ONE month — the billing unit; renewal is the next stream.
+ */
 export async function buildPaymentQuote(
   ecosystem: Pick<EcosystemRow, "monthly_price_usd">,
 ): Promise<PaymentQuote> {
   const usdMonthly = effectiveMonthlyPriceUsd(ecosystem);
-  const usdTotal = usdMonthly * TERM_MONTHS;
+  const usdTotal = usdMonthly;
   const rate = await getTokenUsdRate();
   const raw = usdToRawTokens(usdTotal, rate);
   return {
@@ -303,12 +306,17 @@ export async function verifyStreamPayment(
   if (onchain.canceled) return { ok: false, reason: "stream was canceled" };
   if (onchain.depleted) return { ok: false, reason: "stream is depleted" };
   if (onchain.endTime * 1000 <= Date.now()) return { ok: false, reason: "stream has ended" };
-  if (onchain.endTime - onchain.startTime < MIN_TERM_SECONDS) {
-    return { ok: false, reason: `stream is shorter than the ${TERM_MONTHS}-month term` };
+  const durationSeconds = onchain.endTime - onchain.startTime;
+  if (durationSeconds < MIN_STREAM_SECONDS) {
+    return { ok: false, reason: "stream is shorter than one month" };
   }
 
+  // Rate-based: the deposit must cover the monthly price for however long the
+  // stream runs — a 1-month stream needs one month's worth, a 6-month stream
+  // six. Prepaying more months in one stream is fine at the same rate.
   const usdMonthly = effectiveMonthlyPriceUsd(ecosystem);
-  const usdTotal = usdMonthly * TERM_MONTHS;
+  const months = durationSeconds / MONTH_SECONDS;
+  const usdTotal = Math.round(usdMonthly * months * 100) / 100;
   let rate: number;
   try {
     rate = await getTokenUsdRate();
@@ -320,7 +328,7 @@ export async function verifyStreamPayment(
   if (onchain.deposited < required) {
     return {
       ok: false,
-      reason: `stream deposit is below the $${usdTotal.toLocaleString("en-US")} commitment at the current rate`,
+      reason: `stream deposit is below $${usdMonthly.toLocaleString("en-US")}/month for its duration at the current rate`,
     };
   }
 

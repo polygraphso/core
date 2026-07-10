@@ -4,9 +4,12 @@
  * and ABI fragments the server verify route uses. Runtime logic (status checks,
  * quotes, onchain reads) lives in lib/ecosystemPayments (server-only).
  *
- * The payment rail: a 12-month cancelable Sablier Lockup stream of $POLYGRAPH to
- * the polygraph treasury on Base. Verified onchain by the server; the stream IS
- * the subscription (cancel = unstreamed remainder refunds, monitoring stops).
+ * The payment rail: a monthly subscription paid as a cancelable Sablier Lockup
+ * stream of $POLYGRAPH to the polygraph treasury on Base. One stream = one
+ * month by default (renew by creating the next one); a longer stream at the
+ * same monthly rate prepays more months. Verified onchain by the server; the
+ * stream IS the subscription (cancel = unstreamed remainder refunds,
+ * monitoring stops).
  */
 
 /** Base mainnet — the only chain the payment flow supports. */
@@ -34,14 +37,15 @@ export const SABLIER_LOCKUP_ADDRESS =
 export const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_POLYGRAPH_TREASURY_ADDRESS ?? "";
 
 export const DEFAULT_MONTHLY_PRICE_USD = 199;
-export const TERM_MONTHS = 12;
-export const TERM_SECONDS = 365 * 24 * 60 * 60;
+/** One billing month of streaming. */
+export const MONTH_SECONDS = 30 * 24 * 60 * 60;
 /**
- * A verified stream must span ≥ this (creation-time duration), and deposit ≥
- * 95% of the USD-pegged amount at verification-time rate — tolerance for token
- * price moving between the quote and the tx landing.
+ * A verified stream must span at least this (a hair under a month, tolerating
+ * clock/duration slop), and its deposit must cover the monthly price × its
+ * duration at 95% — tolerance for the token price moving between the quote
+ * and the tx landing.
  */
-export const MIN_TERM_SECONDS = 350 * 24 * 60 * 60;
+export const MIN_STREAM_SECONDS = 27 * 24 * 60 * 60;
 export const DEPOSIT_TOLERANCE = 0.95;
 
 /** Lockup.Status enum order, from the verified source. */
