@@ -126,7 +126,7 @@ async function refreshPaymentStatus(row: EcosystemPaymentRow): Promise<Ecosystem
   if (Date.now() - new Date(row.last_checked_at).getTime() < RECHECK_AFTER_MS) return row;
 
   try {
-    const lockup = lockupContract(row.sablier_contract);
+    const lockup = lockupContract(await paymentProvider(), row.sablier_contract);
     const status = Number(await lockup.statusOf(row.stream_id));
     const now = new Date().toISOString();
     if (status === STREAM_STATUS.CANCELED) {
@@ -215,9 +215,31 @@ export async function buildPaymentQuote(
 
 // ── Onchain verification ─────────────────────────────────────────────────────
 
-function lockupContract(address: string = SABLIER_LOCKUP_ADDRESS): ethers.Contract {
-  const rpc = process.env.BASE_RPC_URL?.trim() || "https://mainnet.base.org";
-  return new ethers.Contract(address, SABLIER_LOCKUP_ABI, new ethers.JsonRpcProvider(rpc));
+/**
+ * The payment rail is Base MAINNET by definition, independent of the EAS
+ * attestation chain — BASE_RPC_URL is deliberately NOT reused here (in dev it
+ * points at Base Sepolia for attestation testing, which made every payment
+ * read look up the wrong chain). PAYMENT_RPC_URL overrides the default public
+ * endpoint; the chain id is asserted so a misconfigured RPC fails loudly
+ * instead of "transaction not found".
+ */
+async function paymentProvider(): Promise<ethers.JsonRpcProvider> {
+  const rpc = process.env.PAYMENT_RPC_URL?.trim() || "https://mainnet.base.org";
+  const provider = new ethers.JsonRpcProvider(rpc);
+  const net = await provider.getNetwork();
+  if (Number(net.chainId) !== PAYMENT_CHAIN_ID) {
+    throw new Error(
+      `payment RPC serves chain ${net.chainId}, expected Base mainnet (${PAYMENT_CHAIN_ID})`,
+    );
+  }
+  return provider;
+}
+
+function lockupContract(
+  provider: ethers.JsonRpcProvider,
+  address: string = SABLIER_LOCKUP_ADDRESS,
+): ethers.Contract {
+  return new ethers.Contract(address, SABLIER_LOCKUP_ABI, provider);
 }
 
 export type VerifyResult =
@@ -261,11 +283,14 @@ export async function verifyStreamPayment(
     depleted: boolean;
   };
   try {
-    const rpc = process.env.BASE_RPC_URL?.trim() || "https://mainnet.base.org";
-    const provider = new ethers.JsonRpcProvider(rpc);
+    const provider = await paymentProvider();
     const receipt = await provider.getTransactionReceipt(txHash);
     if (!receipt) {
-      return { ok: false, reason: "transaction not found on Base — still confirming?" };
+      return {
+        ok: false,
+        reason:
+          "transaction not found on Base mainnet — if it just went through, retry in a few seconds; make sure it's a Base transaction",
+      };
     }
     if (receipt.status !== 1) return { ok: false, reason: "transaction reverted" };
 
@@ -290,7 +315,7 @@ export async function verifyStreamPayment(
     const cp = created.args.commonParams;
     const streamId = BigInt(created.args.streamId);
 
-    const lockup = lockupContract();
+    const lockup = lockupContract(provider);
     const canceled = await lockup.wasCanceled(streamId);
     const depleted = await lockup.isDepleted(streamId);
 

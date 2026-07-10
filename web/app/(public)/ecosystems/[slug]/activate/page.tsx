@@ -54,9 +54,21 @@ const BENEFITS = [
   },
   {
     n: "04",
+    title: "Add tools as you grow",
+    body:
+      "Add new MCP servers and skills to the tracked set anytime; each addition is graded immediately and joins the monitoring rotation from that day's run.",
+  },
+  {
+    n: "05",
     title: "Your alert strategy, your console",
     body:
-      "The private management console: curate entries, configure what alerts fire and who receives them, and see remediation guidance per entry — while the public index page stays live for your users.",
+      "The private management console: curate entries, configure what alerts fire and who receives them, and see remediation guidance per entry.",
+  },
+  {
+    n: "06",
+    title: "A public index, on the homepage",
+    body:
+      "Your ecosystem gets a curated public page listing its tools with their live grades, for anyone to check — and monitored ecosystems are featured on the polygraph.so homepage.",
   },
 ];
 
