@@ -2,7 +2,6 @@
 title: "Monitoring is paid in the token"
 date: "2026-07-10"
 excerpt: "Ecosystem monitoring is a monthly subscription, priced in dollars, paid in $POLYGRAPH: a cancelable Sablier stream to a public treasury. Every subscription is a market buy the client makes, and the chain is the receipt."
-unlisted: true
 ---
 
 A while back we wrote about [why open-source safety work is hard to fund without bending it](/blog/open-source-needs-new-funding-mechanisms), and how the community-launched $POLYGRAPH token helps keep the public work free. This post is the other side of the ledger: what the paid product earns, and what that does for the token. We first drafted this as a weekly buyback policy. We ended up building something simpler, so this is the updated version.

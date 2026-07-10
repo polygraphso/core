@@ -32,7 +32,12 @@ const nextConfig: NextConfig = {
   // "The Polygraph Index" brand). Permanent redirect so existing inbound links
   // — the litmus README, embeddable badges, search-engine equity — keep resolving.
   async redirects() {
-    return [{ source: "/rankings", destination: "/mcp-index", permanent: true }];
+    return [
+      { source: "/rankings", destination: "/mcp-index", permanent: true },
+      // The unlisted weekly-buyback draft went public as the pay-in-token note;
+      // the old slug circulated internally while unlisted, so keep it resolving.
+      { source: "/blog/weekly-buyback", destination: "/blog/paid-in-the-token", permanent: true },
+    ];
   },
 };
 
