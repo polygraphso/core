@@ -96,7 +96,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     const title = `${key} — MCP security grade ${result.grade} | polygraph`;
     return {
       title,
-      description: `Is ${key} safe to use? polygraph ran its behavioral litmus (${result.detail.methodology_version}) and graded it ${result.grade} — testing tool-output injection, egress overreach, sensitive-data handling, and adversarial input. Reproducible and evidence-backed.`,
+      description: `Is ${key} safe to use? polygraph's behavioral litmus (${result.detail.methodology_version}) graded it ${result.grade}: injection, egress, data leaks, adversarial input.`,
       alternates: { canonical },
       openGraph: { title, url: canonical, images: [cardUrl] },
       twitter: { card: "summary_large_image", images: [cardUrl] },
@@ -291,9 +291,21 @@ function Graded({
     },
   };
 
+  // Home → Index → this report; the still-supported rich result (unlike FAQ).
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "polygraph.so", item: SITE_ORIGIN },
+      { "@type": "ListItem", position: 2, name: "The MCP Security Index", item: `${SITE_ORIGIN}/mcp-index` },
+      { "@type": "ListItem", position: 3, name: serverKey },
+    ],
+  };
+
   return (
     <>
       <JsonLd data={reviewJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <div className="flex items-start gap-6">
         <span
           className="font-serif text-7xl md:text-8xl leading-none shrink-0"
@@ -325,6 +337,17 @@ function Graded({
       </div>
 
       <AdoptionLine adoption={adoption} />
+
+      {/* One self-contained, quotable verdict sentence — the passage answer
+          engines lift for "is X safe". The header strip above carries the same
+          facts as UI fragments; this states them as prose. */}
+      <p className="mt-6 font-sans text-[14px] text-ink-muted leading-relaxed max-w-xl">
+        <span className="text-ink">{serverKey}</span> is graded{" "}
+        <span className="text-ink">{grade}</span> by polygraph under{" "}
+        {detail.methodology_version}
+        {dated ? <>, as of {dated}</> : null}. The grade is a dated, reproducible
+        observation of behavior, not a guarantee.
+      </p>
 
       <ShareGrade
         pageUrl={pageUrl}

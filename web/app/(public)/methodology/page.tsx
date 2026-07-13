@@ -5,13 +5,14 @@ import { SITE_ORIGIN, METHODOLOGY_VERSION } from "@/lib/site";
 export const metadata: Metadata = {
   title: `Methodology — ${METHODOLOGY_VERSION}`,
   description:
-    "The litmus test, v16: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence. Plus litmus-skill-v2: a static safety scan of Agent Skills, graded A/B/D/F.",
+    "How polygraph security-tests MCP servers: four behavioral checks, ten probes, grades A to F with reproducible evidence. Plus the static skill litmus.",
   alternates: { canonical: "/methodology" },
   openGraph: {
     title: `Methodology — ${METHODOLOGY_VERSION} · polygraph.so`,
     description:
       "How polygraph security-tests MCP servers: four behavioral checks, ten probes, grades A to F with reproducible evidence.",
     url: "/methodology",
+    images: ["/brand/social-preview.png"],
   },
 };
 
@@ -23,6 +24,9 @@ const methodologyJsonLd = {
     "A behavioral evaluation of MCP servers: tool-output injection, permission and egress overreach, sensitive-data handling, and adversarial-input handling, graded A to F with reproducible evidence.",
   url: `${SITE_ORIGIN}/methodology`,
   mainEntityOfPage: `${SITE_ORIGIN}/methodology`,
+  // Required for Article-family rich-result eligibility; the brand card is the
+  // page's representative image (no per-page art exists for the spec).
+  image: [`${SITE_ORIGIN}/brand/social-preview.png`],
   author: { "@id": `${SITE_ORIGIN}/#org` },
   publisher: { "@id": `${SITE_ORIGIN}/#org` },
 };

@@ -29,7 +29,8 @@ export const revalidate = 600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = [
-    { url: `${ORIGIN}/`, changeFrequency: "daily", priority: 1 },
+    // No trailing slash: matches the homepage's emitted canonical form.
+    { url: ORIGIN, changeFrequency: "daily", priority: 1 },
     { url: `${ORIGIN}/ecosystems`, changeFrequency: "daily", priority: 0.8 },
     { url: `${ORIGIN}/mcp-index`, changeFrequency: "daily", priority: 0.9 },
     { url: `${ORIGIN}/builders`, changeFrequency: "monthly", priority: 0.6 },

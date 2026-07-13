@@ -16,7 +16,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin", "/dashboard", "/login", "/auth", "/api/", "/notify", "/monitor", "/fix"],
+      // /login and /fix are deliberately NOT disallowed: both carry a meta
+      // noindex, and Google can only see a noindex on pages it may crawl.
+      // Disallow+noindex together left them indexable as bare URLs.
+      disallow: ["/admin", "/dashboard", "/auth", "/api/", "/notify", "/monitor"],
     },
     sitemap: `${ORIGIN}/sitemap.xml`,
     host: ORIGIN,

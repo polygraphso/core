@@ -29,8 +29,10 @@ export const metadata: Metadata = {
     default: "polygraph.so: an independent trust layer for AI tools",
     template: "%s · polygraph.so",
   },
+  // Kept under ~155 chars: SERP snippets truncate past that, and the old
+  // 278-char version lost its independence claim to the ellipsis.
   description:
-    "An independent trust layer for the MCP servers, agents, and skills your ecosystem runs on. We grade AI tools behaviorally and publish evidence anyone can re-run, then keep the grade current with continuous, per-network monitoring. Free public grades; nobody can pay for a grade.",
+    "Independent A-to-F behavioral security grades for MCP servers, agents, and skills, backed by evidence anyone can re-run. Nobody can pay for a grade.",
   applicationName: "polygraph",
   keywords: [
     "MCP",
@@ -74,7 +76,9 @@ const siteJsonLd = {
       "@id": `${SITE_ORIGIN}/#org`,
       name: "polygraph",
       url: SITE_ORIGIN,
-      logo: `${SITE_ORIGIN}/icon.svg`,
+      // Google's logo feature needs a determinable size >=112px; the 32x32-viewBox
+      // SVG fails that check, so point at the 512px raster from the brand kit.
+      logo: `${SITE_ORIGIN}/brand/mark-512.png`,
       description:
         "Independent, lab-evaluated trust grades for MCP servers, agents, and skills. Behavioral grades backed by evidence anyone can re-run; nobody can pay for a grade.",
       email: "hello@polygraph.so",

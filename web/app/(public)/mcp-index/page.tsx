@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   // skills — "MCP Security Index" is the flagship surface; skills are a tab.
   title: "The MCP Security Index",
   description:
-    "MCP servers and Agent Skills graded with the open litmus harness — servers for behavior (ranked by adoption), skills for static safety. A grade is a measurement, not a guarantee; re-run it yourself.",
+    "MCP servers and Agent Skills graded A to F with the open litmus harness — behavior for servers, static safety for skills. A measurement, not a guarantee.",
   alternates: { canonical: "/mcp-index" },
   openGraph: {
     title: "The MCP Security Index · polygraph.so",
@@ -39,6 +39,7 @@ const datasetJsonLd = {
   url: `${SITE_ORIGIN}/mcp-index`,
   creator: { "@id": `${SITE_ORIGIN}/#org` },
   isAccessibleForFree: true,
+  keywords: ["MCP", "Model Context Protocol", "MCP server security", "agent security", "Agent Skills"],
   distribution: [
     {
       "@type": "DataDownload",
@@ -103,7 +104,7 @@ export default async function RankingsPage() {
         <header className="mb-12">
           <p className="section-label mb-4">Index · {METHODOLOGY_VERSION}</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
-            The Polygraph Index
+            The MCP Security Index
           </h1>
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug max-w-2xl">
             Every grade we publish — MCP servers tested for behavior and ordered by adoption, Agent

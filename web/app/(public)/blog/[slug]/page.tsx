@@ -23,6 +23,13 @@ function formatDate(iso: string): string {
   });
 }
 
+/** SERP snippets cut around 155 chars; trim at a word boundary so the excerpt
+ *  reads whole instead of being ellipsized mid-sentence by Google. */
+function metaDescription(excerpt: string): string {
+  if (excerpt.length <= 155) return excerpt;
+  return `${excerpt.slice(0, 152).replace(/\s+\S*$/, "")}…`;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -36,21 +43,21 @@ export async function generateMetadata({
   // og:image / twitter:image come from the colocated opengraph-image.tsx card.
   return {
     title: post.title,
-    description: post.excerpt,
+    description: metaDescription(post.excerpt),
     alternates: { canonical: url },
     // Unlisted posts are shareable by link but kept out of search indexes.
     robots: post.unlisted ? { index: false, follow: false } : undefined,
     openGraph: {
       type: "article",
       title: post.title,
-      description: post.excerpt,
+      description: metaDescription(post.excerpt),
       url,
       publishedTime: post.date,
     },
     twitter: {
       card: "summary_large_image",
       title: post.title,
-      description: post.excerpt,
+      description: metaDescription(post.excerpt),
     },
   };
 }
@@ -75,15 +82,31 @@ export default async function BlogPostPage({
         description: post.excerpt,
         url: `${SITE_ORIGIN}/blog/${post.slug}`,
         mainEntityOfPage: `${SITE_ORIGIN}/blog/${post.slug}`,
+        // Required for Article-family eligibility. The per-post OG card lives
+        // at a build-hashed URL, so use the stable brand card instead.
+        image: [`${SITE_ORIGIN}/brand/social-preview.png`],
         datePublished: post.date,
         dateModified: post.date,
         author: { "@id": `${SITE_ORIGIN}/#org` },
         publisher: { "@id": `${SITE_ORIGIN}/#org` },
       };
 
+  const breadcrumbJsonLd = post.unlisted
+    ? null
+    : {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "polygraph.so", item: SITE_ORIGIN },
+          { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_ORIGIN}/blog` },
+          { "@type": "ListItem", position: 3, name: post.title },
+        ],
+      };
+
   return (
       <article className="mx-auto max-w-3xl">
         {postJsonLd && <JsonLd data={postJsonLd} />}
+        {breadcrumbJsonLd && <JsonLd data={breadcrumbJsonLd} />}
         <header className="mb-12">
           <p className="section-label mb-4">Blog · {formatDate(post.date)}</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
