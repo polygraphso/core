@@ -25,7 +25,12 @@ export function AuthSlot() {
     );
   }
   return (
-    <a href="/login" className="hover:text-ink transition-colors">
+    // Negative margins keep the visual position; the padding grows the hit
+    // area to the 44px tap-target floor without moving the label.
+    <a
+      href="/login"
+      className="inline-flex min-h-[44px] items-center px-3 -mx-3 hover:text-ink transition-colors"
+    >
       Login
     </a>
   );

@@ -1,10 +1,33 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { fetchPublishedGrade } from "@/lib/hostedGrades";
 import { getChainConfig, attestationUrl, attesterName } from "@/lib/attestations/chains";
 import { findLatestConfirmedByServerVersion } from "@/lib/attestations/store";
+import { refToPath } from "@/lib/badgeData";
 
 export const dynamic = "force-dynamic";
+
+/**
+ * This is the version-pinned evidence page behind attestation URIs — a leaner
+ * sibling of the full /mcp/<key> report. Canonicalize to that report so the
+ * two never compete in search (this page previously shipped with the generic
+ * site title and no canonical at all).
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string[] }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const serverKey = slug.map(decodeSegment).join("/");
+  return {
+    title: `${serverKey} — grade evidence`,
+    // Canonical only — no noindex: a noindex would stop Google from honoring
+    // the consolidation onto the full report.
+    alternates: { canonical: `/mcp/${refToPath(serverKey)}` },
+  };
+}
 
 /** Decode a single path segment; fall back to the raw value on malformed input. */
 function decodeSegment(s: string): string {

@@ -104,7 +104,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     const title = `${name} — skill security grade ${result.grade} | polygraph`;
     return {
       title,
-      description: `Is the ${name} skill safe? polygraph's static skill litmus (${result.detail.methodology_version}) graded it ${result.grade} — checking prompt-injection, data-exfiltration instructions, and dangerous bundled commands. Content-hash-anchored and reproducible.`,
+      description: `Is the ${name} skill safe? polygraph's static skill litmus (${result.detail.methodology_version}) graded it ${result.grade}: prompt injection, exfiltration, dangerous bundled commands.`,
       alternates: { canonical },
       openGraph: { title, url: canonical, images: [cardUrl] },
       twitter: { card: "summary_large_image", images: [cardUrl] },
@@ -221,9 +221,21 @@ function Graded({
     },
   };
 
+  // Home → Index → this report; the still-supported rich result (unlike FAQ).
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "polygraph.so", item: SITE_ORIGIN },
+      { "@type": "ListItem", position: 2, name: "The MCP Security Index", item: `${SITE_ORIGIN}/mcp-index` },
+      { "@type": "ListItem", position: 3, name },
+    ],
+  };
+
   return (
     <>
       <JsonLd data={reviewJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <div className="flex items-start gap-6">
         <span
           className="font-serif text-7xl md:text-8xl leading-none shrink-0"
@@ -267,7 +279,15 @@ function Graded({
         </div>
       </div>
 
-      <p className="mt-6 max-w-xl text-[13.5px] text-ink-muted leading-relaxed">
+      {/* One self-contained, quotable verdict sentence for answer engines. */}
+      <p className="mt-6 font-sans text-[14px] text-ink-muted leading-relaxed max-w-xl">
+        The <span className="text-ink">{name}</span> skill is graded{" "}
+        <span className="text-ink">{grade}</span> by polygraph under{" "}
+        {detail.methodology_version}
+        {dated ? <>, as of {dated}</> : null}, anchored to its content hash.
+      </p>
+
+      <p className="mt-4 max-w-xl text-[13.5px] text-ink-muted leading-relaxed">
         A <span className="text-ink">static</span>{" "}
         safety grade — a deterministic scan of the skill&rsquo;s{" "}
         <code className="font-mono text-[12.5px]">SKILL.md</code>{" "}

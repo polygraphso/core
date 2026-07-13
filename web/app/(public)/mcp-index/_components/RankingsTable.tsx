@@ -133,7 +133,7 @@ export function RankingsTable({ rows }: { rows: RankingRow[] }) {
         </p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse border-b border-ink/15 font-mono text-[13px]">
+          <table className="w-full min-w-[560px] border-collapse border-b border-ink/15 font-mono text-[13px]">
             <thead>
               <tr className="border-y border-ink/15 text-ink-faint uppercase tracking-[0.13em] text-[10.5px]">
                 <th className="py-2.5 pl-1 pr-4 font-normal text-right w-12">#</th>
