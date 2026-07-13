@@ -12,6 +12,7 @@
   "dependencies": {
     "@ethereum-attestation-service/eas-sdk": "^2.9.1",
     "@lifi/widget": "^4.3.1",
+    "@lifi/widget-provider-ethereum": "^4.1.1",
     "@modelcontextprotocol/sdk": "1.26.0",
     "@reown/appkit": "^1.8.22",
     "@reown/appkit-adapter-wagmi": "^1.8.22",

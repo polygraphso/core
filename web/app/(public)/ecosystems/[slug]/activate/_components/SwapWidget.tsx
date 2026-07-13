@@ -5,13 +5,21 @@
  * the destination, so a member can pay in whatever they hold (any token, any
  * major chain) without leaving the page.
  *
- * External wallet management, per LI.FI's official Reown pattern: the widget
- * sits inside the SAME WagmiProvider as the pay step (AppKit's adapter config),
- * carries NO EthereumProvider of its own, and its connect buttons open the
- * AppKit modal via walletConfig.onConnect — one wallet connection powers both
- * the swap and the stream. (Passing EthereumProvider alongside an external
- * wagmi config runs two connector managers on one config; that fight was the
- * "connector.getProvider is not a function" crash.)
+ * External wallet management, per LI.FI's Reown pattern: the widget sits inside
+ * the SAME WagmiProvider as the pay step (AppKit's adapter config) and its
+ * connect buttons open the AppKit modal via walletConfig.onConnect — one wallet
+ * connection powers both the swap and the stream.
+ *
+ * The EthereumProvider in `providers` is REQUIRED for that sharing, not optional:
+ * LI.FI only reuses an external wallet session when its EthereumProvider is
+ * rendered to consume wagmi's context (`config.providers` defaults to [], and
+ * with no provider the widget silently falls back to its own internal wallet
+ * menu — the "still shows connect wallet" bug). Because a WagmiProvider is
+ * already above it, EthereumProvider runs in external mode: it detects the
+ * shared config via `use(WagmiContext)` and reuses it WITHOUT spinning up a
+ * second connector manager (it skips EthereumBaseProvider), so the earlier
+ * "connector.getProvider is not a function" crash — a second manager on one
+ * config — does not apply here.
  *
  * Drawer variant on purpose: the widget hard-autofocuses its token-search input
  * on internal navigation, and in inline flow that focus scrolls the DOCUMENT
@@ -21,6 +29,7 @@
 
 import { useEffect, useRef } from "react";
 import { LiFiWidget, type WidgetConfig, type WidgetDrawer } from "@lifi/widget";
+import { EthereumProvider } from "@lifi/widget-provider-ethereum";
 import { useAppKit } from "@reown/appkit/react";
 import {
   PAYMENT_CHAIN_ID,
@@ -53,6 +62,10 @@ if (typeof window !== "undefined" && !window.__lifiFocusPatched) {
 const widgetConfig: WidgetConfig = {
   integrator: "polygraph.so",
   variant: "drawer",
+  // Module-level so the provider is created once (stable identity across
+  // renders). In external mode this reuses the page's WagmiProvider; see the
+  // file header for why it is required, not optional.
+  providers: [EthereumProvider()],
   toChain: PAYMENT_CHAIN_ID,
   toToken: POLYGRAPH_TOKEN_ADDRESS,
   disabledUI: { toToken: true },
