@@ -1,14 +1,33 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/app/_components/JsonLd";
+import { SITE_ORIGIN, METHODOLOGY_VERSION } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "API",
   description:
     "Public HTTP endpoints behind the polygraphso CLI. POST /api/cli/check looks up a server's polygraph grade; GET /api/cli/list returns every graded server; POST /api/cli/grade-request queues an ungraded server.",
   alternates: { canonical: "/docs/api" },
+  openGraph: {
+    title: "API · polygraph.so",
+    description:
+      "Public HTTP endpoints behind the polygraphso CLI: check a grade, list every graded server, queue a grade request. No auth.",
+    url: "/docs/api",
+  },
 };
 
-const NOTIFY_URL =
-  "https://polygraph.so/notify?for=npm/@modelcontextprotocol/server-filesystem";
+const apiJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "APIReference",
+  headline: "polygraph.so public API",
+  description:
+    "Public HTTP endpoints behind the polygraphso CLI. POST /api/cli/check looks up a server's polygraph grade; GET /api/cli/list returns every graded server; POST /api/cli/grade-request queues an ungraded server.",
+  url: `${SITE_ORIGIN}/docs/api`,
+  mainEntityOfPage: `${SITE_ORIGIN}/docs/api`,
+  author: { "@id": `${SITE_ORIGIN}/#org` },
+  publisher: { "@id": `${SITE_ORIGIN}/#org` },
+};
+
+const NOTIFY_URL = `${SITE_ORIGIN}/notify?for=npm/@modelcontextprotocol/server-filesystem`;
 
 function Section({
   num,
@@ -66,6 +85,7 @@ function Method({ verb, path }: { verb: string; path: string }) {
 export default function ApiDocsPage() {
   return (
       <article className="mx-auto max-w-3xl">
+        <JsonLd data={apiJsonLd} />
         <header className="mb-14">
           <p className="section-label mb-4">Docs · API · v0</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
@@ -183,7 +203,7 @@ pypi/mcp-server-fetch`}
     "c02": "pass",
     "c03": "pass",
     "tool_defs_fingerprint": "0x256a…66db6",
-    "methodology_version": "litmus-v16",
+    "methodology_version": "${METHODOLOGY_VERSION}",
     "resolved_version": "1.4.0",
     "rationale": "All three categories passed.",
     "computed_at": "2026-06-11T14:14:04Z"

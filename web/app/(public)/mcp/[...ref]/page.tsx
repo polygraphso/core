@@ -21,8 +21,14 @@ import { EmbedSnippets } from "@/app/_components/EmbedSnippets";
 import { FixCta } from "@/app/_components/FixCta";
 import { ShareGrade } from "@/app/_components/ShareGrade";
 import { ReportFaq } from "@/app/_components/ReportFaq";
+import { JsonLd } from "@/app/_components/JsonLd";
+import { SITE_ORIGIN } from "@/lib/site";
 
-const ORIGIN = "https://polygraph.so";
+const ORIGIN = SITE_ORIGIN;
+
+// Letter grade → numeric rating for Review markup (Google requires a number;
+// the letter stays in the review name/body). A=5 … F=1, C=3 (E is skipped).
+const GRADE_RATING: Record<string, number> = { A: 5, B: 4, C: 3, D: 2, F: 1 };
 
 // generateMetadata and the page both need the grade; cache() collapses them to
 // one query per request.
@@ -253,8 +259,41 @@ function Graded({
   const fp = shortFingerprint(detail.tool_defs_fingerprint);
   const dated = detail.computed_at?.slice(0, 10) ?? null;
 
+  // Third-party critic review of someone else's software — the shape Google's
+  // review-snippet rules allow (author = the reviewing Organization, never the
+  // thing reviewed). itemReviewed lives inline so the page stands alone.
+  const reviewJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: serverKey,
+    ...(detail.resolved_version ? { softwareVersion: detail.resolved_version } : {}),
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Cross-platform",
+    url: pageUrl,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    review: {
+      "@type": "Review",
+      name: `polygraph behavioral security grade: ${grade}`,
+      reviewBody: `polygraph connected to ${serverKey} the way an agent would and ran the open litmus harness (${detail.methodology_version}): tool-output injection, permission and egress overreach, sensitive-data handling, and adversarial-input handling. Grade: ${grade}. The harness is open and deterministic; the grade is reproducible.`,
+      ...(dated ? { datePublished: dated } : {}),
+      author: {
+        "@type": "Organization",
+        "@id": `${SITE_ORIGIN}/#org`,
+        name: "polygraph",
+        url: SITE_ORIGIN,
+      },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: GRADE_RATING[grade] ?? 1,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    },
+  };
+
   return (
     <>
+      <JsonLd data={reviewJsonLd} />
       <div className="flex items-start gap-6">
         <span
           className="font-serif text-7xl md:text-8xl leading-none shrink-0"

@@ -1,10 +1,30 @@
 import type { Metadata } from "next";
+import { JsonLd } from "@/app/_components/JsonLd";
+import { SITE_ORIGIN, METHODOLOGY_VERSION } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Methodology — litmus-v16",
+  title: `Methodology — ${METHODOLOGY_VERSION}`,
   description:
     "The litmus test, v16: a behavioral evaluation of MCP servers. Four checks — tool-output injection, permission overreach, sensitive-data handling, adversarial-input handling — graded A–F with reproducible evidence. Plus litmus-skill-v2: a static safety scan of Agent Skills, graded A/B/D/F.",
   alternates: { canonical: "/methodology" },
+  openGraph: {
+    title: `Methodology — ${METHODOLOGY_VERSION} · polygraph.so`,
+    description:
+      "How polygraph security-tests MCP servers: four behavioral checks, ten probes, grades A to F with reproducible evidence.",
+    url: "/methodology",
+  },
+};
+
+const methodologyJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  headline: `The litmus test — polygraph's grading methodology (${METHODOLOGY_VERSION})`,
+  description:
+    "A behavioral evaluation of MCP servers: tool-output injection, permission and egress overreach, sensitive-data handling, and adversarial-input handling, graded A to F with reproducible evidence.",
+  url: `${SITE_ORIGIN}/methodology`,
+  mainEntityOfPage: `${SITE_ORIGIN}/methodology`,
+  author: { "@id": `${SITE_ORIGIN}/#org` },
+  publisher: { "@id": `${SITE_ORIGIN}/#org` },
 };
 
 // Faithful rendering of litmus-test.md (polygraphso/hosted-service repo) — the
@@ -56,6 +76,7 @@ function SubHead({ children }: { children: React.ReactNode }) {
 export default function MethodologyPage() {
   return (
       <article className="mx-auto max-w-3xl">
+        <JsonLd data={methodologyJsonLd} />
         <header className="mb-14">
           <p className="section-label mb-4">
             Methodology · litmus-v16 · specification

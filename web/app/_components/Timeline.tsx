@@ -1,4 +1,5 @@
 import { SectionHeader } from "./SectionHeader";
+import { METHODOLOGY_VERSION } from "@/lib/site";
 
 // §04 — where this is going. Status is honest: "now" means built and
 // running, everything else is sequenced intent, no dates promised.
@@ -10,8 +11,8 @@ const steps: Array<{
 }> = [
   {
     status: "now",
-    title: "litmus-v16 harness",
-    body: "Built and running: nine probes across four categories, a grade from A to F, evidence attached.",
+    title: `${METHODOLOGY_VERSION} harness`,
+    body: "Built and running: ten probes across four categories, a grade from A to F, evidence attached.",
   },
   {
     status: "next",

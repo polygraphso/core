@@ -139,15 +139,10 @@ export function ReportFaq({
   grade: string;
 }) {
   const items = kind === "mcp" ? mcpFaq(subject, grade) : skillFaq(subject, grade);
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: items.map((it) => ({
-      "@type": "Question",
-      name: it.q,
-      acceptedAnswer: { "@type": "Answer", text: it.text },
-    })),
-  };
+  // No FAQPage JSON-LD here on purpose: Google restricted FAQ rich results to
+  // government/health sites (Aug 2023), so the markup was dead weight. The
+  // report pages carry SoftwareApplication+Review markup instead (see the
+  // report pages); the visible Q&A below still reads well to LLM crawlers.
 
   return (
     <section className="mt-12 border-t hairline pt-6">
@@ -162,11 +157,6 @@ export function ReportFaq({
           </div>
         ))}
       </dl>
-      <script
-        type="application/ld+json"
-        // JSON.stringify escapes the one XSS vector (</script>) via <; content is our own copy.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
     </section>
   );
 }

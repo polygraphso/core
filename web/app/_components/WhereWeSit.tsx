@@ -1,4 +1,5 @@
 import { SectionHeader } from "./SectionHeader";
+import { METHODOLOGY_VERSION } from "@/lib/site";
 
 const rows = [
   {
@@ -10,7 +11,7 @@ const rows = [
   {
     q: "Does it behave well under pressure?",
     src: "Our sandbox",
-    status: "litmus-v16 — live",
+    status: `${METHODOLOGY_VERSION} — live`,
     statusKind: "primary" as const,
   },
   {
