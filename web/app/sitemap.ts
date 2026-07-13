@@ -20,8 +20,9 @@ import { fetchPublishedGradeDetailMap, fetchPublishedLastModified } from "@/lib/
 import { fetchPublishedSkillGrades } from "@/lib/skillGrades";
 import { isRemoteKey, refToPath } from "@/lib/badgeData";
 import { getAllPosts } from "@/lib/blog";
+import { SITE_ORIGIN } from "@/lib/site";
 
-const ORIGIN = "https://www.polygraph.so";
+const ORIGIN = SITE_ORIGIN;
 
 // Match /mcp-index: a newly published grade or skill should appear within 10 min.
 export const revalidate = 600;

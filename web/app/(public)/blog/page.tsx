@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllPosts } from "@/lib/blog";
+import { JsonLd } from "@/app/_components/JsonLd";
+import { SITE_ORIGIN } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Blog",
@@ -30,8 +32,25 @@ function formatDate(iso: string): string {
 export default async function BlogIndexPage() {
   const posts = await getAllPosts();
 
+  const blogJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    name: "polygraph.so blog",
+    url: `${SITE_ORIGIN}/blog`,
+    description:
+      "Notes on independent AI safety testing, behavioral evaluation of MCP servers, and how polygraph is built and funded.",
+    publisher: { "@id": `${SITE_ORIGIN}/#org` },
+    blogPost: posts.map((post) => ({
+      "@type": "BlogPosting",
+      headline: post.title,
+      url: `${SITE_ORIGIN}/blog/${post.slug}`,
+      datePublished: post.date,
+    })),
+  };
+
   return (
       <article className="mx-auto max-w-3xl">
+        <JsonLd data={blogJsonLd} />
         <header className="mb-14">
           <p className="section-label mb-4">Blog · notes</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">

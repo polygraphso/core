@@ -7,8 +7,9 @@
  * robots.txt would only advertise their existence.
  */
 import type { MetadataRoute } from "next";
+import { SITE_ORIGIN } from "@/lib/site";
 
-const ORIGIN = "https://www.polygraph.so";
+const ORIGIN = SITE_ORIGIN;
 
 export default function robots(): MetadataRoute.Robots {
   return {

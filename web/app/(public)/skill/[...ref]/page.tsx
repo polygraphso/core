@@ -34,8 +34,14 @@ import { FixCta } from "@/app/_components/FixCta";
 import { EmbedSnippets } from "@/app/_components/EmbedSnippets";
 import { ShareGrade } from "@/app/_components/ShareGrade";
 import { ReportFaq } from "@/app/_components/ReportFaq";
+import { JsonLd } from "@/app/_components/JsonLd";
+import { SITE_ORIGIN } from "@/lib/site";
 
-const ORIGIN = "https://polygraph.so";
+const ORIGIN = SITE_ORIGIN;
+
+// Letter grade → numeric rating for Review markup (Google requires a number;
+// the letter stays in the review name/body). A=5 … F=1, C=3 (E is skipped).
+const GRADE_RATING: Record<string, number> = { A: 5, B: 4, C: 3, D: 2, F: 1 };
 
 // generateMetadata and the page both need the grade; cache() collapses them to
 // one query per request.
@@ -184,8 +190,40 @@ function Graded({
       ? `https://github.com/${repoSegs[1]}/${repoSegs[2]}/commit/${detail.commit_sha}`
       : null;
 
+  // Same critic-review shape as /mcp reports: polygraph (Organization) reviews
+  // third-party software; the static skill litmus is the review method.
+  const reviewJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name,
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Cross-platform",
+    url: pageUrl,
+    ...(source ? { downloadUrl: source } : {}),
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    review: {
+      "@type": "Review",
+      name: `polygraph static skill safety grade: ${grade}`,
+      reviewBody: `polygraph ran the open static skill litmus (${detail.methodology_version}) over the ${name} skill's bytes: prompt-injection and context poisoning, data-exfiltration instructions, and dangerous bundled commands. Grade: ${grade}, anchored to the skill's content hash. Static scan, not behavioral proof.`,
+      ...(dated ? { datePublished: dated } : {}),
+      author: {
+        "@type": "Organization",
+        "@id": `${SITE_ORIGIN}/#org`,
+        name: "polygraph",
+        url: SITE_ORIGIN,
+      },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: GRADE_RATING[grade] ?? 1,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    },
+  };
+
   return (
     <>
+      <JsonLd data={reviewJsonLd} />
       <div className="flex items-start gap-6">
         <span
           className="font-serif text-7xl md:text-8xl leading-none shrink-0"

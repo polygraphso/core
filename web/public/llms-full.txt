@@ -1,0 +1,117 @@
+# polygraph.so (full)
+
+> Independent behavioral trust grades for MCP servers, AI agents, and Claude Code / Agent Skills. This is the expanded companion to https://www.polygraph.so/llms.txt: the same facts plus the grading model, the trust model, and the API in full.
+
+Synced to methodologyVersion litmus-v16 and litmus-skill-v2 on 2026-07-13. If this file disagrees with https://www.polygraph.so/methodology, the methodology page wins.
+
+## What polygraph is
+
+polygraph.so is an independent lab that publishes behavioral security grades for MCP servers and static safety grades for Claude Code / Agent Skills. The litmus test connects to an MCP server the way an agent would, exercises its tools, and watches what the server actually does: whether its outputs try to hijack the calling agent, whether it reaches out over the network when nothing required it, and whether data handed to it leaks back out. It answers the one question an agent needs answered before it trusts a tool: will this MCP server hijack me, phone home, or leak my data?
+
+It does not measure popularity, code quality, maintenance, or licensing. It is a behavioral grade, not a quality or popularity score. Popularity is reported separately as an adoption score (0 to 100: downloads, stars, dependents, release velocity), and the two are never averaged.
+
+All published grades: https://www.polygraph.so/mcp-index
+Per-server reports: `https://www.polygraph.so/mcp/<server-ref>` (e.g. https://www.polygraph.so/mcp/npm/@playwright/mcp)
+Per-skill reports: `https://www.polygraph.so/skill/<skill-path>`
+
+## The litmus test (methodologyVersion: litmus-v16)
+
+Ten probes across four categories. Probe IDs are permanent.
+
+- **C-01 Tool-output injection**: do the server's tool descriptions or outputs try to hijack the calling agent? Covers static tool-description scans, dynamic bait calls, second-order chaining (one tool's output weaponized as another's input), and indirect passthrough injection. Looks for instruction mimicry, hidden unicode, markdown and link tricks. Any failure floors the grade at F.
+- **C-02 Permission / egress overreach**: outbound network beyond the server's declared or baseline allowlist, matched on host and port, observed in a hardened default-deny sandbox with a sinkhole; plus a declared-permission honesty check (a server claiming to be read-only must behave read-only). Failure means grade D. For remote servers, or when Docker is unavailable, the egress check is recorded as skipped, not a pass, and the grade caps at B.
+- **C-03 Sensitive-data handling**: per-run-unique planted canaries (fake keys, PII strings, bearer tokens) must not surface in tool outputs or egress. Any failure floors the grade at F.
+- **C-04 Adversarial-input handling**: on malformed, oversized, and jailbreak inputs the server must not crash, leak internals (a stack trace), or amplify the hostile input. Failure means grade D.
+
+## The grade scale (A, B, C, D, F; E is skipped)
+
+- **A**: all four categories pass, on the exact tool surface identified by the fingerprint.
+- **B**: C-01, C-03, and C-04 pass; C-02 was skipped (no sandbox, or a remote target). Egress was not verified; the grade is capped by design and says so honestly.
+- **C**: the coverage cap, live since litmus-v16. A powerful server the harness could neither sandbox nor exercise: an unexercised destructive or value-moving tool together with a category (typically egress) left unverified. That coverage is too thin to clear as B, so the default agent gate refuses a C rather than trust an unexercised powerful surface.
+- **D**: a C-02 or C-04 failure (egress overreach, a read-only lie, or a crash / internals leak / amplification) with no C-01 or C-03 failure. Serious, but not proven exfiltration.
+- **F**: any C-01 or C-03 failure: active injection or a data leak. The failures that directly harm an agent that trusts the server.
+
+What a passing grade claims: against litmus-v16, on the exact tool surface identified by the fingerprint, the server did not exhibit these failure modes, and the evidence is published and re-runnable. What it does not claim: that the server is safe in every configuration, forever, or against attacks outside the probed surface. A grade is a dated, versioned, reproducible observation, nothing more.
+
+## What makes a grade trustworthy
+
+- **Deterministic harness.** Same server version plus same litmus-v16 harness yields the same findings. The bait, jailbreak, and malformed batteries are varied but fixed: no randomness in probe verdicts.
+- **Tool-defs fingerprint.** The canonicalized tool surface is hashed (sha256) to a bytes32. The grade certifies that exact surface. If the server later changes a tool description (a rug pull), the fingerprint no longer matches and the grade is stale by construction. Consumers recompute the live fingerprint before trusting.
+- **Published evidence.** The full evidence bundle, every finding and artifact, travels with the grade.
+- **Re-runnable.** Anyone can re-run litmus-v16 against the same server and compare fingerprint and grade. A false grade is falsifiable, not merely disputable.
+
+Two independent trust properties, stated plainly:
+- **Forgeability** (can the runner fake the result?) is addressed by reproducibility today and by independently verifiable grade records and hardware-attested runs on the roadmap.
+- **Evasion** (can the server tell it is being tested and behave?) is a fundamental limit of any open methodology: a defeat device can behave benignly under test. Mitigations: per-run-unique canaries, varied-but-fixed input pools, behavioral probes over real outputs, periodic re-attestation, and the live-fingerprint check at call time. Evasion is an explicitly acknowledged residual risk of v1.
+
+v1 grades can be self-run: the subject grades itself and trust anchors on reproducibility. A v1 grade is a reproducible test result, not an independent verdict.
+
+## The skill litmus (methodologyVersion: litmus-skill-v2)
+
+A skill is static content (a SKILL.md plus optional bundle), so the skill litmus is a deterministic static scan of its bytes: no execution, no sandbox, no network.
+
+- **S-01 Prompt injection / context poisoning**: does the instruction body try to hijack the agent that loads it (override framing, role tags, hidden unicode)? Fail floors at F.
+- **S-03 Data-exfiltration instructions**: does the body instruct sending credentials or secrets to a sink? Fail floors at F.
+- **S-04 Dangerous bundled commands**: pipe-to-shell, reverse shells, obfuscated payloads in bundled executable scripts. Fail caps at D.
+
+All three pass means A. A skill with no bundle leaves S-04 unverified, so it caps at B. The grade is anchored by a whole-directory content hash (sha256); a consumer re-hashes the skill before installing and refuses on mismatch. A skill A means static-clean, not "safe to run unsupervised": it is not behavioral proof. A separate, advisory quality signal (well-formed / issues / malformed) reports whether the skill is well-formed; it is never a letter and never minted.
+
+## How to query
+
+CLI (sub-second lookups against published grades):
+
+```
+npx polygraphso check npm/@modelcontextprotocol/server-filesystem
+npx polygraphso list
+```
+
+HTTP (no auth):
+
+```
+curl -X POST https://www.polygraph.so/api/cli/check \
+  -H 'content-type: application/json' \
+  -d '{"server_ref":"npm/@modelcontextprotocol/server-filesystem"}'
+
+curl https://www.polygraph.so/api/cli/list
+
+curl -X POST https://www.polygraph.so/api/cli/grade-request \
+  -H 'content-type: application/json' \
+  -d '{"server_ref":"npm/some-mcp-server"}'
+```
+
+`check` returns the published grade, fingerprint, methodology version, and report URL for a server ref. `list` returns every published grade. `grade-request` queues an ungraded server (free, best-effort). Full endpoint docs: https://www.polygraph.so/docs/api
+
+MCP tools (`check_server`, `list_servers`, `request_grade`) and the harness itself ship with the open npm package `@polygraphso/litmus`. To re-run a grade yourself:
+
+```
+npx -p @polygraphso/litmus polygraphso-litmus npm/<package>
+npx -p @polygraphso/litmus polygraphso-litmus-skill <skill-dir>
+```
+
+## Server-ref format
+
+- `npm/<package>@<version>`: `<name>` (unscoped) or `@<scope>/<name>` (scoped). Example: `npm/@modelcontextprotocol/server-filesystem`.
+- `pypi/<name>@<version>`: flat, no owner. Example: `pypi/mcp-server-git`.
+- `github/<owner>/<repo>@<version>`: owner required.
+
+Version is optional; lookups are versionless. Skill refs: `source/owner/repo#path`, e.g. `github/anthropics/skills#skills/pdf`.
+
+## Ecosystem monitoring
+
+Continuous, per-network trust indexes: every server and skill an ecosystem ships, graded, then re-graded on a cadence, with grade-change detection, new-version regrades, and alerts to the network's developers. Public grades stay free and nobody can pay for a grade; monitoring is the paid offering. See https://www.polygraph.so/ecosystems
+
+## Independence
+
+No graded party pays us. No graded party gets review or approval rights over their grade. Significant failures go to the vendor before they go public. The harness is open source; a false grade can be disproven by re-running it. Independence is disclosure-based, not refusal-based.
+
+## Links
+
+- Methodology spec: https://www.polygraph.so/methodology
+- The index: https://www.polygraph.so/mcp-index
+- Ecosystems: https://www.polygraph.so/ecosystems
+- Builders (CLI, CI gate, badges): https://www.polygraph.so/builders
+- API docs: https://www.polygraph.so/docs/api
+- Blog: https://www.polygraph.so/blog
+- Open harness: https://github.com/polygraphso/litmus
+- npm: https://www.npmjs.com/package/@polygraphso/litmus
+- X: https://x.com/polygraphso

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { EcosystemHero } from "@/app/_components/EcosystemHero";
 import { LiveIndexes } from "@/app/_components/LiveIndexes";
 import { MonitoredEcosystems } from "@/app/_components/MonitoredEcosystems";
@@ -5,6 +6,20 @@ import { WhyItHolds } from "@/app/_components/WhyItHolds";
 import { HowMonitoringWorks } from "@/app/_components/HowMonitoringWorks";
 import { TokenNote } from "@/app/_components/TokenNote";
 import { EcosystemCta } from "@/app/_components/EcosystemCta";
+
+// Title/description come from the root layout defaults; this adds what the
+// root can't: the homepage's self-canonical, its own og:url (so the apex 307
+// consolidates cleanly onto www), and explicit og copy — Next does not derive
+// og:title from the page title, so it has to be stated.
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "polygraph.so: an independent trust layer for AI tools",
+    description:
+      "Independent, continuously re-graded trust indexes for the MCP servers, agents, and skills a network ships. Behavioral grades backed by evidence anyone can re-run. Nobody can pay for a grade.",
+    url: "/",
+  },
+};
 
 // ISR so grades published after the last deploy surface without a redeploy.
 // The § 01 live-index numbers read hosted_runs through the ecosystem loaders.

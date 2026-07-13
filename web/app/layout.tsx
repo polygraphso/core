@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono, Source_Serif_4 } from "next/font/google";
+import { SITE_ORIGIN } from "@/lib/site";
+import { JsonLd } from "@/app/_components/JsonLd";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({
@@ -22,7 +24,7 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://www.polygraph.so"),
+  metadataBase: new URL(SITE_ORIGIN),
   title: {
     default: "polygraph.so: an independent trust layer for AI tools",
     template: "%s · polygraph.so",
@@ -41,20 +43,16 @@ export const metadata: Metadata = {
     "agent trust",
     "polygraph",
   ],
+  // No title/description/url here: those fall back to each page's own
+  // metadata, so subpages stop inheriting the homepage's og/twitter copy
+  // (pre-2026-07 every subpage shared one og:title and og:url).
   openGraph: {
-    title: "polygraph.so: an independent trust layer for AI tools",
-    description:
-      "Independent, continuously re-graded trust indexes for the MCP servers, agents, and skills a network ships. Behavioral grades backed by evidence anyone can re-run. Nobody can pay for a grade.",
-    url: "https://www.polygraph.so",
     siteName: "polygraph.so",
     locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "polygraph.so",
-    description:
-      "An independent trust layer for AI tools: behavioral grades for MCP servers and skills, kept current with per-network monitoring. Grades anyone can re-run; nobody can pay for one.",
   },
   robots: { index: true, follow: true },
   verification: {
@@ -63,6 +61,33 @@ export const metadata: Metadata = {
         "2626516e5949995e1f2465ca00631341262f9e478e95f210086d950d55e1bd88a5a836619dae5bef591b7d80cbfeeefc858c13480e5db5a5683820493fd17629",
     },
   },
+};
+
+// Entity grounding for search engines and LLMs: who publishes this site and
+// where else it lives. Sitewide by design — Organization/WebSite are the two
+// types Google reads from any page.
+const siteJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${SITE_ORIGIN}/#org`,
+      name: "polygraph",
+      url: SITE_ORIGIN,
+      logo: `${SITE_ORIGIN}/icon.svg`,
+      description:
+        "Independent, lab-evaluated trust grades for MCP servers, agents, and skills. Behavioral grades backed by evidence anyone can re-run; nobody can pay for a grade.",
+      email: "hello@polygraph.so",
+      sameAs: ["https://x.com/polygraphso", "https://github.com/polygraphso"],
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_ORIGIN}/#website`,
+      name: "polygraph.so",
+      url: SITE_ORIGIN,
+      publisher: { "@id": `${SITE_ORIGIN}/#org` },
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -76,6 +101,7 @@ export default function RootLayout({
       className={`${plexSans.variable} ${plexMono.variable} ${sourceSerif.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col paper-grain">
+        <JsonLd data={siteJsonLd} />
         {children}
       </body>
     </html>
