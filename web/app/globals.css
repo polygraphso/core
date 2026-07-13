@@ -131,6 +131,35 @@ body {
   animation: panel-in 0.18s ease both;
 }
 
+/* Mobile nav sheet + accordion reveals */
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.sheet-in {
+  animation: sheet-in 0.2s ease both;
+}
+
+@keyframes acc-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.acc-in {
+  animation: acc-in 0.22s ease both;
+}
+
 .hairline {
   border-color: var(--color-rule);
 }
@@ -153,7 +182,9 @@ body {
   .pulse-soft,
   .cursor-blink,
   .fade-up,
-  .panel-in {
+  .panel-in,
+  .sheet-in,
+  .acc-in {
     animation: none !important;
   }
   .trace-line {

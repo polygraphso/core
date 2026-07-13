@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
+import { accountItems, identityOf, signOutAndRedirect } from "./useAuthUser";
 
 interface Props {
   email: string;
@@ -38,22 +38,12 @@ export function UserMenu({ email, name, avatarUrl, isAdmin }: Props) {
 
   async function signOut() {
     setOpen(false);
-    await getSupabaseBrowser().auth.signOut();
-    router.push("/login");
+    await signOutAndRedirect((href) => router.push(href));
     router.refresh();
   }
 
-  const displayName = name ?? email.split("@")[0];
-  const parts = displayName.trim().split(/\s+/).filter(Boolean);
-  const initials = (
-    parts.length > 1 ? parts[0]!.slice(0, 1) + parts[parts.length - 1]!.slice(0, 1) : displayName.slice(0, 2)
-  ).toUpperCase();
-
-  const items: Array<{ href: string; label: string }> = [
-    { href: "/dashboard", label: "Your monitors" },
-    { href: "/manage", label: "Your ecosystems" },
-    ...(isAdmin ? [{ href: "/admin", label: "Admin" }] : []),
-  ];
+  const { displayName, initials } = identityOf(email, name);
+  const items = accountItems(isAdmin);
 
   return (
     <div ref={ref} className="relative flex items-center">
