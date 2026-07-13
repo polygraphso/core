@@ -4,8 +4,9 @@
  * ships wallet JS). No 'use client' here per the AppKit Next.js pattern; the
  * client provider (ActivateFlow) imports it and calls createAppKit at module
  * level. This ONE wagmi config backs both the pay step and the LI.FI swap
- * widget, so a wallet connected once works in both (the widget's own connector
- * management stays off — two managers on one config fight; see SwapWidget).
+ * widget, so a wallet connected once works in both: the widget reuses this
+ * config through LI.FI's external wallet management rather than running its own
+ * (see SwapWidget).
  */
 
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
