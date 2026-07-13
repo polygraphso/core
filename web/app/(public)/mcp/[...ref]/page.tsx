@@ -22,7 +22,8 @@ import { FixCta } from "@/app/_components/FixCta";
 import { ShareGrade } from "@/app/_components/ShareGrade";
 import { ReportFaq } from "@/app/_components/ReportFaq";
 import { JsonLd } from "@/app/_components/JsonLd";
-import { SITE_ORIGIN } from "@/lib/site";
+import { SITE_ORIGIN, METHODOLOGY_VERSION } from "@/lib/site";
+import { fetchRegistryDescription } from "@/lib/selfDescription";
 
 const ORIGIN = SITE_ORIGIN;
 
@@ -136,9 +137,10 @@ export default async function McpServerPage({ params }: { params: Params }) {
 
 async function Report({ serverKey }: { serverKey: string }) {
   // Adoption ranking is registry-only; a remote endpoint has no adoption row.
-  const [result, adoption] = await Promise.all([
+  const [result, adoption, selfDescription] = await Promise.all([
     getGrade(serverKey),
     isRemoteKey(serverKey) ? Promise.resolve(null) : getAdoption(serverKey),
+    fetchRegistryDescription(serverKey),
   ]);
   const path = refToPath(serverKey);
   const badgeUrl = `${ORIGIN}/api/badge?server=${path}`;
@@ -151,6 +153,7 @@ async function Report({ serverKey }: { serverKey: string }) {
       grade={result.grade}
       detail={result.detail}
       adoption={adoption}
+      selfDescription={selfDescription}
       badgeUrl={badgeUrl}
       cardUrl={cardUrl}
       pageUrl={pageUrl}
@@ -244,6 +247,7 @@ function Graded({
   grade,
   detail,
   adoption,
+  selfDescription,
   badgeUrl,
   cardUrl,
   pageUrl,
@@ -252,6 +256,7 @@ function Graded({
   grade: LitmusGrade;
   detail: PolygraphDetail;
   adoption: ServerAdoption | null;
+  selfDescription: string | null;
   badgeUrl: string;
   cardUrl: string;
   pageUrl: string;
@@ -266,6 +271,7 @@ function Graded({
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name: serverKey,
+    ...(selfDescription ? { description: selfDescription } : {}),
     ...(detail.resolved_version ? { softwareVersion: detail.resolved_version } : {}),
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Cross-platform",
@@ -348,6 +354,25 @@ function Graded({
         {dated ? <>, as of {dated}</> : null}. The grade is a dated, reproducible
         observation of behavior, not a guarantee.
       </p>
+
+      {/* Stale-methodology disclosure: a grade is read against the spec that
+          produced it, but the reader deserves to know the harness moved on. */}
+      {detail.methodology_version !== METHODOLOGY_VERSION ? (
+        <p className="mt-2 font-mono text-[11px] text-ink-faint leading-relaxed">
+          Graded under {detail.methodology_version}; the current methodology is{" "}
+          {METHODOLOGY_VERSION}. A re-run may change the grade.
+        </p>
+      ) : null}
+
+      {selfDescription ? (
+        <p className="mt-4 font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-ink-faint">
+            Self-reported
+          </span>{" "}
+          &ldquo;{selfDescription}&rdquo; &mdash; the package&rsquo;s own registry
+          description, not part of the grade.
+        </p>
+      ) : null}
 
       <ShareGrade
         pageUrl={pageUrl}
