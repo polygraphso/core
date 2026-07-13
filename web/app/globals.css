@@ -115,6 +115,22 @@ body {
   animation: fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
+/* Nav dropdown panel entrance */
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.panel-in {
+  animation: panel-in 0.18s ease both;
+}
+
 .hairline {
   border-color: var(--color-rule);
 }
@@ -136,7 +152,8 @@ body {
   .trace-line,
   .pulse-soft,
   .cursor-blink,
-  .fade-up {
+  .fade-up,
+  .panel-in {
     animation: none !important;
   }
   .trace-line {
