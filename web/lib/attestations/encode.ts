@@ -27,8 +27,11 @@ export function evidenceHash(evidence: unknown): string {
   return keccak256(toUtf8Bytes(canonicalize(evidence ?? {})));
 }
 
-/** Canonical public site origin used for evidence URIs. */
-const SITE_URL = "https://polygraph.so";
+import { SITE_ORIGIN } from "@/lib/site";
+
+/** Canonical public site origin used for evidence URIs. Attestations minted
+ *  before the www canonicalization carry apex URLs; apex redirects here. */
+const SITE_URL = SITE_ORIGIN;
 
 /**
  * Version-pinned public evidence page URL for a grade. The server key forms

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getAllSlugs, getPost } from "@/lib/blog";
 import { Markdown } from "../_components/Markdown";
+import { JsonLd } from "@/app/_components/JsonLd";
+import { SITE_ORIGIN } from "@/lib/site";
 
 export async function generateStaticParams() {
   // Include unlisted posts so their direct link still resolves; they're just
@@ -62,8 +64,26 @@ export default async function BlogPostPage({
   const post = await getPost(slug);
   if (!post) notFound();
 
+  // Article markup only for indexable posts — an unlisted post is noindex, and
+  // structured data on a noindexed page is contradictory.
+  const postJsonLd = post.unlisted
+    ? null
+    : {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        headline: post.title,
+        description: post.excerpt,
+        url: `${SITE_ORIGIN}/blog/${post.slug}`,
+        mainEntityOfPage: `${SITE_ORIGIN}/blog/${post.slug}`,
+        datePublished: post.date,
+        dateModified: post.date,
+        author: { "@id": `${SITE_ORIGIN}/#org` },
+        publisher: { "@id": `${SITE_ORIGIN}/#org` },
+      };
+
   return (
       <article className="mx-auto max-w-3xl">
+        {postJsonLd && <JsonLd data={postJsonLd} />}
         <header className="mb-12">
           <p className="section-label mb-4">Blog · {formatDate(post.date)}</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">

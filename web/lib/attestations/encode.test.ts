@@ -40,19 +40,19 @@ import { evidenceURI } from "./encode";
 describe("evidenceURI", () => {
   it("builds a version-pinned URL", () => {
     expect(evidenceURI("npm/@scope/pkg", "1.2.3")).toBe(
-      "https://polygraph.so/grade/npm/@scope/pkg?v=1.2.3",
+      "https://www.polygraph.so/grade/npm/@scope/pkg?v=1.2.3",
     );
   });
 
   it("omits ?v when there is no resolved version", () => {
     expect(evidenceURI("github/owner/repo", null)).toBe(
-      "https://polygraph.so/grade/github/owner/repo",
+      "https://www.polygraph.so/grade/github/owner/repo",
     );
   });
 
   it("encodes special characters in the version", () => {
     expect(evidenceURI("pypi/pkg", "1.0+local")).toBe(
-      "https://polygraph.so/grade/pypi/pkg?v=1.0%2Blocal",
+      "https://www.polygraph.so/grade/pypi/pkg?v=1.0%2Blocal",
     );
   });
 });
@@ -104,7 +104,7 @@ describe("buildServerFields", () => {
     expect(f.gradeC02).toBe(2); // skipped
     expect(f.gradeC03).toBe(0); // pass
     expect(f.gradeC04).toBe(2); // absent ⇒ skipped sentinel
-    expect(f.evidenceURI).toBe("https://polygraph.so/grade/npm/some-mcp?v=2.1.0");
+    expect(f.evidenceURI).toBe("https://www.polygraph.so/grade/npm/some-mcp?v=2.1.0");
     expect(f.evidenceHash).toMatch(/^0x[0-9a-f]{64}$/);
     expect(f.ranAt).toBe(BigInt(Date.parse("2026-01-02T00:00:00.000Z") / 1000));
   });
@@ -116,7 +116,7 @@ describe("buildServerFields", () => {
   it("uses empty string + no ?v for an unresolved version", () => {
     const f = buildServerFields({ ...ROW, evidence: { ...ROW.evidence, resolvedVersion: null } })!;
     expect(f.resolvedVersion).toBe("");
-    expect(f.evidenceURI).toBe("https://polygraph.so/grade/npm/some-mcp");
+    expect(f.evidenceURI).toBe("https://www.polygraph.so/grade/npm/some-mcp");
   });
 
   it("falls back to the zero hash when no tool fingerprint is present", () => {
@@ -175,7 +175,7 @@ const SKILL_ROW: HostedGradeRow & { id: number } = {
 describe("skillEvidenceURI", () => {
   it("turns the #subpath into a path segment so the URL resolves", () => {
     expect(skillEvidenceURI("github/anthropic/skills#pdf")).toBe(
-      "https://polygraph.so/skill/github/anthropic/skills/pdf",
+      "https://www.polygraph.so/skill/github/anthropic/skills/pdf",
     );
   });
 });
@@ -189,7 +189,7 @@ describe("buildSkillFields", () => {
     expect(f.gradeS03).toBe(0); // pass
     expect(f.gradeS04).toBe(1); // fail
     expect(f.overallGrade).toBe("D");
-    expect(f.evidenceURI).toBe("https://polygraph.so/skill/github/anthropic/skills/pdf");
+    expect(f.evidenceURI).toBe("https://www.polygraph.so/skill/github/anthropic/skills/pdf");
     expect(f.resolvedRef).toBe("a1b2c3d");
     expect(f.ranAt).toBe(BigInt(Date.parse("2026-01-02T00:00:00.000Z") / 1000));
   });

@@ -1,47 +1,58 @@
 # polygraph.so
 
-> Independent behavioral polygraphs for AI agents, MCP servers, and Claude Code / Agent Skills. We run MCP servers through the litmus test — a reproducible behavioral harness that connects like an agent and watches what the server actually does — and statically grade skills (a SKILL.md + bundle) for prompt injection, exfiltration, and dangerous bundled code; both are published with the evidence. Not vendor self-claims, not gameable user reviews. No graded party pays us or gets review or approval rights over their grade.
+> Independent behavioral trust grades for MCP servers, AI agents, and Claude Code / Agent Skills. We run MCP servers through the litmus test, a reproducible behavioral harness that connects the way an agent would and watches what the server actually does, and we statically grade skills (a SKILL.md plus bundle) for prompt injection, exfiltration instructions, and dangerous bundled code. Every grade is published with its evidence. Not vendor self-claims, not gameable user reviews. No graded party pays us or gets review or approval rights over their grade.
+
+Synced to methodologyVersion litmus-v16 and litmus-skill-v2 on 2026-07-13. If this file disagrees with https://www.polygraph.so/methodology, the methodology page wins.
 
 ## What we produce
 
-For each MCP server we track, we issue a **polygraph**: a **grade** (A, B, D, or F — there is deliberately no C) backed by **probe** results and **evidence**, tied to a **fingerprint** — a sha256 hash of the server's canonicalized tool surface. The grade certifies that exact surface; if the server later changes a tool, the fingerprint stops matching and the grade is stale by construction. Each polygraph is paired with an **adoption tier** — `top10`, `top25`, `top50`, or `top100` — describing where the server sits on the popularity axis. The axes are never averaged.
+For each MCP server we grade, we publish a report at `https://www.polygraph.so/mcp/<server-ref>`: a letter **grade** backed by probe results and evidence, tied to a **fingerprint**, a sha256 hash of the server's canonicalized tool surface. The grade certifies that exact surface; if the server later changes a tool, the fingerprint stops matching and the grade is stale by construction. Reports also carry an **adoption score** (0 to 100), a popularity measure built from downloads, stars, dependents, and release velocity. Adoption measures reach, not safety; the two are never averaged.
 
-Published behavioral grades are rolling out. Until a server's grade is published, `polygraph` is reported as `null` and the adoption tier is what's live.
+Published grades are live now. The full set, servers and skills, is at https://www.polygraph.so/mcp-index. A server with no published grade is unevaluated: neither safe nor unsafe.
 
-For each **skill** we grade, we issue a **safety grade** (A, B, D, or F) from a deterministic static scan of its bytes, anchored by a **content hash** — a sha256 of the whole skill directory. The grade certifies those exact bytes; a consumer re-hashes the skill before installing and refuses on mismatch (the same rug-pull guard a server fingerprint gives). A skill **A means static-clean, not "safe to run unsupervised"** — it is not behavioral proof. Each skill grade is paired with a **separate, advisory quality signal** (well-formed / issues / malformed) — never a letter, never minted. The safety grade needs no LLM key; the optional quality judging does.
+For each **skill** we grade, we publish a report at `https://www.polygraph.so/skill/<skill-path>`: a static safety grade from a deterministic scan of the skill's bytes, anchored by a **content hash**, a sha256 of the whole skill directory. The grade certifies those exact bytes; a consumer re-hashes the skill before installing and refuses on mismatch (the same rug-pull guard a server fingerprint gives). A skill A means static-clean, not "safe to run unsupervised": it is not behavioral proof. Each skill grade is paired with a separate, advisory quality signal (well-formed / issues / malformed), never a letter, never minted.
 
-## The litmus test (methodologyVersion: litmus-v5)
+## The litmus test (methodologyVersion: litmus-v16)
 
-Nine probes across four checks:
+Ten probes across four categories:
 
-- **C-01 Tool-output injection** — do the server's tool descriptions or outputs try to hijack the calling agent (including one tool's output weaponized as another's input)? Static scan, dynamic bait calls, and second-order chaining for instruction mimicry, hidden unicode, markdown/link tricks. Fail → grade F.
-- **C-02 Permission / egress overreach** — outbound network beyond the server's declared/baseline allowlist (matched on host **and** port) in a hardened default-deny sandbox, plus a declared-permission honesty check. Fail → grade D. For remote servers (or without Docker) the egress check is recorded as `skipped` — not a pass — and the grade caps at B.
-- **C-03 Sensitive-data handling** — planted canaries (fake keys, PII strings, bearer tokens) must not surface in outputs or egress. Fail → grade F.
-- **C-04 Adversarial-input handling** — on malformed/oversized and jailbreak inputs the server must not crash, leak internals (a stack trace), or amplify the hostile input. Fail → grade D.
+- **C-01 Tool-output injection**: do the server's tool descriptions or outputs try to hijack the calling agent, including one tool's output weaponized as another's input and indirect passthrough injection? Static scan, dynamic bait calls, and second-order chaining for instruction mimicry, hidden unicode, markdown and link tricks. Fail means grade F.
+- **C-02 Permission / egress overreach**: outbound network beyond the server's declared or baseline allowlist (matched on host and port) in a hardened default-deny sandbox, plus a declared-permission honesty check. Fail means grade D. For remote servers, or without Docker, the egress check is recorded as skipped, not a pass, and the grade caps at B.
+- **C-03 Sensitive-data handling**: planted canaries (fake keys, PII strings, bearer tokens) must not surface in outputs or egress. Fail means grade F.
+- **C-04 Adversarial-input handling**: on malformed, oversized, and jailbreak inputs the server must not crash, leak internals (a stack trace), or amplify the hostile input. Fail means grade D.
 
-All four pass → A (there is no C: F is a proven injection/leak, D an overreach/robustness failure). Full spec: https://polygraph.so/methodology
+## The grade scale
 
-## The skill litmus (methodologyVersion: litmus-skill-v1)
+Five grades are reachable: A, B, C, D, F. The scale skips E, as letter grades conventionally do. C became a live grade in litmus-v16.
 
-A skill is static content (a SKILL.md + optional bundle), so the skill litmus is a **deterministic static scan** of its bytes — no execution, no sandbox. Three safety checks:
+- **A**: all four categories pass.
+- **B**: C-01, C-03, and C-04 pass; C-02 was skipped (no sandbox, or a remote target). Egress was not verified, so the grade is capped by design.
+- **C**: the coverage cap. A powerful server the harness could neither sandbox nor exercise: an unexercised destructive or value-moving tool together with a category (typically egress) left unverified. The default agent gate refuses a C.
+- **D**: a C-02 or C-04 failure (egress overreach, a read-only lie, or a crash / internals leak / amplification) with no C-01 or C-03 failure.
+- **F**: any C-01 or C-03 failure. Active injection or a data leak.
 
-- **S-01 Prompt injection / context poisoning** — does the instruction body try to hijack the agent that loads it (override framing, role tags, hidden unicode)? Fail → grade F.
-- **S-03 Data-exfiltration instructions** — does the body instruct sending credentials/secrets to a sink? Fail → grade F.
-- **S-04 Dangerous bundled commands** — pipe-to-shell, reverse shells, obfuscated payloads in bundled executable scripts. Fail → grade D.
+A grade is a dated, versioned, reproducible observation, nothing more. Full spec: https://www.polygraph.so/methodology
 
-All pass → A. The grade is anchored by a whole-directory **content hash**, and a separate, advisory **quality signal** (well-formed / issues / malformed; never a letter, never minted) reports whether the skill is well-formed and — optionally, LLM-judged — honest and coherent. Being static, an A is static-clean, not behavioral proof.
+## The skill litmus (methodologyVersion: litmus-skill-v2)
+
+A skill is static content (a SKILL.md plus optional bundle), so the skill litmus is a deterministic static scan of its bytes: no execution, no sandbox. Three safety checks:
+
+- **S-01 Prompt injection / context poisoning**: does the instruction body try to hijack the agent that loads it (override framing, role tags, hidden unicode)? Fail floors the grade at F.
+- **S-03 Data-exfiltration instructions**: does the body instruct sending credentials or secrets to a sink? Fail floors the grade at F.
+- **S-04 Dangerous bundled commands**: pipe-to-shell, reverse shells, obfuscated payloads in bundled executable scripts. Fail caps the grade at D.
+
+All three pass means A. A skill with no bundle leaves S-04 unverified, so it caps at B, stated honestly rather than rounded up. The grade is anchored by the whole-directory content hash. Being static, an A is static-clean, not behavioral proof.
 
 ## Vocabulary
 
-- **Polygraph** — the deliverable. The result we issue for an MCP server.
-- **Grade** — the letter inside the polygraph: A, B, D, or F. No C.
-- **Probe** — an individual behavioral test in the harness.
-- **Fingerprint** — sha256 of the canonicalized tool surface the grade certifies.
-- **Adoption tier** — `top10` / `top25` / `top50` / `top100`, by adoption.
-- **Server ref** — registry-prefixed identifier for an MCP server (format below).
-- **Skill ref** — identifier for a skill: `source/owner/repo#path` (e.g. `github/anthropics/skills#skills/pdf`).
-- **Content hash** — sha256 of the whole skill directory the grade certifies; the consumer re-hashes before install (the skill analogue of a server fingerprint).
-- **Quality signal** — the advisory, never-lettered skill output (well-formed / issues / malformed + optional honesty/coherence axes); separate from the safety grade and never minted.
+- **Grade**: the letter we publish for a server or skill: A, B, C, D, or F (E is skipped).
+- **Probe**: an individual behavioral test in the harness. Probe IDs are permanent.
+- **Fingerprint**: sha256 of the canonicalized tool surface the grade certifies. An agent gate re-checks the live fingerprint before trusting a server; a mismatch is a rug pull and means refuse.
+- **Adoption score**: 0 to 100, downloads plus stars plus dependents plus release velocity. Reach, not safety.
+- **Server ref**: registry-prefixed identifier for an MCP server (format below).
+- **Skill ref**: identifier for a skill: `source/owner/repo#path` (e.g. `github/anthropics/skills#skills/pdf`).
+- **Content hash**: sha256 of the whole skill directory the grade certifies; consumers re-hash before install.
+- **Quality signal**: the advisory, never-lettered skill output (well-formed / issues / malformed), separate from the safety grade and never minted.
 
 ## How to query
 
@@ -52,35 +63,44 @@ npx polygraphso check npm/@modelcontextprotocol/server-filesystem
 npx polygraphso list
 ```
 
-The same data is available over HTTP. No auth, no rate limit:
+The same data is available over HTTP. No auth:
 
 ```
-curl -X POST https://polygraph.so/api/cli/check \
+curl -X POST https://www.polygraph.so/api/cli/check \
   -H 'content-type: application/json' \
   -d '{"server_ref":"npm/@modelcontextprotocol/server-filesystem"}'
 
-curl https://polygraph.so/api/cli/list
+curl https://www.polygraph.so/api/cli/list
 ```
+
+MCP tools (`check_server`, `list_servers`, `request_grade`, plus running the harness itself) ship with the open npm package `@polygraphso/litmus`.
 
 ## Server-ref format
 
 Three variants, matching each registry's native namespace shape:
 
-- `npm/<package>@<version>` — `<name>` (unscoped) or `@<scope>/<name>` (scoped). Example: `npm/@modelcontextprotocol/server-filesystem`.
-- `pypi/<name>@<version>` — flat, no owner. Example: `pypi/mcp-server-git`.
-- `github/<owner>/<repo>@<version>` — owner required. Example: `github/anthropic/mcp-server-foo`.
+- `npm/<package>@<version>`: `<name>` (unscoped) or `@<scope>/<name>` (scoped). Example: `npm/@modelcontextprotocol/server-filesystem`.
+- `pypi/<name>@<version>`: flat, no owner. Example: `pypi/mcp-server-git`.
+- `github/<owner>/<repo>@<version>`: owner required. Example: `github/anthropic/mcp-server-foo`.
 
 Version is optional. Lookups are versionless: two CLI calls for `1.0.0` and `1.0.1` of the same package resolve to the same server record.
 
-## Independence & roadmap
+## Ecosystem monitoring
 
-No graded party pays us. No graded party gets review or approval rights over their grade. Significant failures go to the vendor before they go public.
+Beyond one-off grades, polygraph runs continuous, per-network trust indexes: every server and skill an ecosystem ships, graded, then re-graded on a cadence, with grade-change detection and alerts. Public grades stay free; monitoring is the paid offering. See https://www.polygraph.so/ecosystems
 
-Sequenced roadmap (no dates promised): litmus-v5 harness (live) → first public grades on registry servers (publishing after review) → timestamped, independently verifiable grade records with evidence attached → hardware-attested runs so third parties can verify a grade came from the real harness.
+## Independence
+
+No graded party pays us. No graded party gets review or approval rights over their grade. Significant failures go to the vendor before they go public. The harness is open source and deterministic, so anyone can re-run it against the same server and disprove a false grade; that reproducibility, plus the live-fingerprint recheck, is what backs the grade. Independence is disclosure-based, not refusal-based.
 
 ## Where to learn more
 
-- Methodology spec: https://polygraph.so/methodology
-- API documentation: https://polygraph.so/docs/api
-- Landing: https://polygraph.so
+- Methodology spec: https://www.polygraph.so/methodology
+- The index (all published grades): https://www.polygraph.so/mcp-index
+- Ecosystem monitoring: https://www.polygraph.so/ecosystems
+- Builder tooling (CLI, CI gate, badges): https://www.polygraph.so/builders
+- API documentation: https://www.polygraph.so/docs/api
+- Blog: https://www.polygraph.so/blog
+- Open harness (source): https://github.com/polygraphso/litmus
+- npm package: https://www.npmjs.com/package/@polygraphso/litmus
 - X: https://x.com/polygraphso
