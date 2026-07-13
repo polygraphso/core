@@ -35,7 +35,8 @@ import { EmbedSnippets } from "@/app/_components/EmbedSnippets";
 import { ShareGrade } from "@/app/_components/ShareGrade";
 import { ReportFaq } from "@/app/_components/ReportFaq";
 import { JsonLd } from "@/app/_components/JsonLd";
-import { SITE_ORIGIN } from "@/lib/site";
+import { SITE_ORIGIN, SKILL_METHODOLOGY_VERSION } from "@/lib/site";
+import { fetchSkillSelfDescription } from "@/lib/selfDescription";
 
 const ORIGIN = SITE_ORIGIN;
 
@@ -146,12 +147,18 @@ async function Report({ target }: { target: string }) {
   const badgeUrl = `${ORIGIN}/api/badge/skill?skill=${path}`;
   const cardUrl = `${ORIGIN}/api/badge/skill/card?skill=${path}`;
   const pageUrl = `${ORIGIN}/skill/${path}`;
+  // The skill's own SKILL.md description at the graded commit — the one
+  // per-skill fact that differentiates 100+ otherwise-templated report pages.
+  const selfDescription = result
+    ? await fetchSkillSelfDescription(target, result.detail.commit_sha)
+    : null;
 
   return result ? (
     <Graded
       target={target}
       grade={result.grade}
       detail={result.detail}
+      selfDescription={selfDescription}
       badgeUrl={badgeUrl}
       cardUrl={cardUrl}
       pageUrl={pageUrl}
@@ -165,6 +172,7 @@ function Graded({
   target,
   grade,
   detail,
+  selfDescription,
   badgeUrl,
   cardUrl,
   pageUrl,
@@ -172,6 +180,7 @@ function Graded({
   target: string;
   grade: SkillLitmusGrade;
   detail: SkillDetail;
+  selfDescription: string | null;
   badgeUrl: string;
   cardUrl: string;
   pageUrl: string;
@@ -196,6 +205,7 @@ function Graded({
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",
     name,
+    ...(selfDescription ? { description: selfDescription } : {}),
     applicationCategory: "DeveloperApplication",
     operatingSystem: "Cross-platform",
     url: pageUrl,
@@ -286,6 +296,24 @@ function Graded({
         {detail.methodology_version}
         {dated ? <>, as of {dated}</> : null}, anchored to its content hash.
       </p>
+
+      {/* Stale-methodology disclosure, mirroring the server reports. */}
+      {detail.methodology_version !== SKILL_METHODOLOGY_VERSION ? (
+        <p className="mt-2 font-mono text-[11px] text-ink-faint leading-relaxed">
+          Graded under {detail.methodology_version}; the current skill methodology is{" "}
+          {SKILL_METHODOLOGY_VERSION}. A re-run may change the grade.
+        </p>
+      ) : null}
+
+      {selfDescription ? (
+        <p className="mt-4 font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-ink-faint">
+            Self-reported
+          </span>{" "}
+          &ldquo;{selfDescription}&rdquo; &mdash; the skill&rsquo;s own SKILL.md
+          description at the graded commit, not part of the grade.
+        </p>
+      ) : null}
 
       <p className="mt-4 max-w-xl text-[13.5px] text-ink-muted leading-relaxed">
         A <span className="text-ink">static</span>{" "}
