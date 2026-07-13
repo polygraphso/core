@@ -105,7 +105,7 @@ export const NAV_ITEMS: NavItem[] = [
           glyph: "SK",
           title: "Skills, graded",
           desc: "Agent skills scanned for safety on the same open harness.",
-          href: "/mcp-index",
+          href: "/mcp-index#skills",
         },
       ],
       listLabel: "Get graded",
