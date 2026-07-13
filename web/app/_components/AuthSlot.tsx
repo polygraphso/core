@@ -1,39 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { getSupabaseBrowser } from "@/lib/supabaseBrowser";
+import { useAuthUser } from "./useAuthUser";
 import { UserMenu } from "./UserMenu";
 
-// Renders server-side as "Login" (no cookie read, no dynamic opt-in).
-// After hydration, swaps to <UserMenu> if a session is found.
-// This keeps the root layout ISR-compatible for all public pages.
+// Desktop account slot. Renders server-side as "Login" (no cookie read), then
+// swaps to <UserMenu> after hydration if a session is found — keeping the root
+// layout ISR-compatible for all public pages. On mobile the account lives in the
+// nav sheet instead (SiteHeader hides this below `sm`).
 export function AuthSlot() {
-  const [state, setState] = useState<
-    | { status: "loading" }
-    | { status: "anon" }
-    | { status: "authed"; email: string; name: string | null; avatarUrl: string | null; isAdmin: boolean }
-  >({ status: "loading" });
-
-  useEffect(() => {
-    const sb = getSupabaseBrowser();
-    sb.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { setState({ status: "anon" }); return; }
-      const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
-
-      // app_metadata is set by the service role and included in the JWT —
-      // no extra DB query needed, and no RLS to worry about.
-      const isAdmin =
-        (user.app_metadata as Record<string, unknown>)?.is_admin === true;
-
-      setState({
-        status: "authed",
-        email: user.email ?? "",
-        name: (meta.full_name ?? meta.name ?? meta.user_name ?? null) as string | null,
-        avatarUrl: (meta.avatar_url ?? null) as string | null,
-        isAdmin,
-      });
-    });
-  }, []);
+  const state = useAuthUser();
 
   if (state.status === "loading") {
     // Invisible placeholder to avoid layout shift — same width as "Login"
