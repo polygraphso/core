@@ -39,10 +39,16 @@ export const wagmiAdapter = new WagmiAdapter({
   ssr: true, // required for Next.js App Router
 });
 
-/** Wallets verify this against the requesting origin; must match the domain. */
+/**
+ * Wallets verify this against the requesting origin via WalletConnect's Verify
+ * API; it must match the origin the page is actually served from. That origin
+ * is www.polygraph.so — the apex polygraph.so 307-redirects to www (Vercel
+ * primary domain) — so a non-www url here reads as a domain mismatch and
+ * wallets refuse or warn on connect.
+ */
 export const appkitMetadata = {
   name: "polygraph",
   description: "Independent behavioral grades for MCP servers and skills.",
-  url: "https://polygraph.so",
-  icons: ["https://polygraph.so/icon.svg"],
+  url: "https://www.polygraph.so",
+  icons: ["https://www.polygraph.so/icon.svg"],
 };
