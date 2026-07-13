@@ -22,7 +22,7 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://polygraph.so"),
+  metadataBase: new URL("https://www.polygraph.so"),
   title: {
     default: "polygraph.so: an independent trust layer for AI tools",
     template: "%s · polygraph.so",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     title: "polygraph.so: an independent trust layer for AI tools",
     description:
       "Independent, continuously re-graded trust indexes for the MCP servers, agents, and skills a network ships. Behavioral grades backed by evidence anyone can re-run. Nobody can pay for a grade.",
-    url: "https://polygraph.so",
+    url: "https://www.polygraph.so",
     siteName: "polygraph.so",
     locale: "en_US",
     type: "website",
