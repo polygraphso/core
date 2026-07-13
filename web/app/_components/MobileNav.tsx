@@ -66,7 +66,7 @@ export function MobileNav() {
         aria-expanded={open}
         aria-controls="mobile-nav"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-[38px] w-[38px] flex-col items-center justify-center gap-[5px] rounded-[9px] border hairline transition-colors hover:border-ink-faint"
+        className="flex h-[44px] w-[44px] flex-col items-center justify-center gap-[5px] rounded-[9px] border hairline transition-colors hover:border-ink-faint"
       >
         <span
           className="block h-[1.6px] w-4 bg-ink transition-transform duration-200"
