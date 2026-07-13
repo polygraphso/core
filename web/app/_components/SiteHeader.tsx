@@ -12,8 +12,11 @@ export function SiteHeader() {
       {/* Preprint top rule — a thin ink band above the masthead. */}
       <div className="h-2 bg-[#201d18]" aria-hidden />
 
+      {/* Columns are pinned (col-start-*) rather than auto-placed: on mobile
+          DesktopNav is display:none, and auto-placement would otherwise slide the
+          account/hamburger cluster into the empty middle column. */}
       <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-3">
-        <a href="/" className="group inline-flex items-center gap-2.5 justify-self-start">
+        <a href="/" className="group col-start-1 inline-flex items-center gap-2.5 justify-self-start">
           <span
             className="inline-block h-[9px] w-[9px] flex-shrink-0 bg-oxblood pulse-soft"
             aria-hidden
@@ -25,7 +28,7 @@ export function SiteHeader() {
 
         <DesktopNav />
 
-        <div className="flex items-center justify-self-end gap-4 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
+        <div className="col-start-3 flex items-center justify-self-end gap-4 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
           {/* Desktop shows the account slot inline; on mobile it moves into the sheet. */}
           <div className="hidden items-center sm:flex">
             <AuthSlot />
