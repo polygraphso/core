@@ -27,7 +27,7 @@ export default async function AccountPage() {
   const hasActivePlan = planState.plan !== "free";
 
   return (
-    <main className="px-6 sm:px-10 py-12 max-w-3xl">
+    <main className="px-6 sm:px-10 py-12">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
         <div>
           <p className="section-label mb-2">Account</p>
