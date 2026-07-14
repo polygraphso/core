@@ -49,6 +49,31 @@ export function paymentShapeTag(slug: string): string {
 
 export const DEFAULT_MONTHLY_PRICE_USD = 199;
 
+/**
+ * Priority grading: the one-time fee for the 48h lane on the /request queue.
+ * Buys a place in line, never the grade. Env-overridable while the price
+ * finds its level ($99–299 band per the revenue map).
+ */
+export const PRIORITY_GRADE_PRICE_USD = Number.parseFloat(
+  process.env.NEXT_PUBLIC_PRIORITY_GRADE_PRICE_USD ?? "99",
+);
+
+/** What GET /api/grade-requests/[id]/priority/quote returns. */
+export interface PriorityQuote {
+  requestId: string;
+  target: string;
+  usdPrice: number;
+  /** Raw token units (18 decimals) INCLUDING the unique dust digits — pay exactly this. */
+  tokenAmount: string;
+  tokenAmountDisplay: number;
+  tokenUsdRate: number;
+  /** Epoch ms after which the client should re-fetch. */
+  expiresAt: number;
+  chainId: number;
+  token: string;
+  treasury: string;
+}
+
 // ── Per-user plans (monitor quota) ───────────────────────────────────────────
 
 export type PlanId = "indie" | "team";
@@ -293,7 +318,11 @@ export const SABLIER_LOCKUP_ABI = [
   },
 ] as const;
 
-/** Minimal ERC-20 surface for the approve step. */
+/**
+ * Minimal ERC-20 surface: approve/allowance/balance for the stream checkout,
+ * transfer + the Transfer event for the one-time priority-grading payment
+ * (client sends the transfer; the server matches the event log).
+ */
 export const ERC20_ABI = [
   {
     inputs: [
@@ -304,6 +333,26 @@ export const ERC20_ABI = [
     outputs: [{ internalType: "bool", name: "", type: "bool" }],
     stateMutability: "nonpayable",
     type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "to", type: "address" },
+      { internalType: "uint256", name: "amount", type: "uint256" },
+    ],
+    name: "transfer",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "from", type: "address" },
+      { indexed: true, internalType: "address", name: "to", type: "address" },
+      { indexed: false, internalType: "uint256", name: "value", type: "uint256" },
+    ],
+    name: "Transfer",
+    type: "event",
   },
   {
     inputs: [

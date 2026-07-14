@@ -388,6 +388,35 @@ export interface EcosystemPaymentRow {
   created_at: string;
 }
 
+/**
+ * One priority-grading quote/receipt: a one-time $POLYGRAPH transfer to the
+ * treasury, attributed by exact amount (unique dust digits among open quotes).
+ * Mirrors the `grade_request_payments` table. status: 'pending' (open quote) →
+ * 'paid' (verified transfer) | 'expired'. The paid row stamps
+ * grade_requests.priority_paid_at/_deadline_at — speed, never the grade.
+ */
+export interface GradeRequestPaymentRow {
+  id: string;
+  grade_request_id: string;
+  chain_id: number;
+  token: string;
+  token_decimals: number;
+  treasury: string;
+  /**
+   * Raw token units incl. dust (numeric, written as a bigint string); reads
+   * may lose precision past 2^53 — treat as display-only, compare as strings.
+   */
+  expected_amount: number;
+  usd_price: number;
+  token_usd_rate: number;
+  status: "pending" | "paid" | "expired";
+  tx_hash: string | null;
+  payer_address: string | null;
+  expires_at: string;
+  paid_at: string | null;
+  created_at: string;
+}
+
 /** What a paying user bought. Free tier is the absence of a live row. */
 export type UserPlanId = "indie" | "team";
 

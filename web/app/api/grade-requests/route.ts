@@ -154,12 +154,21 @@ export async function POST(request: Request) {
     );
   }
 
-  // The RPC returns a single row: { created, demand }.
+  // The RPC returns a single row: { created, demand } — no row id, so look it
+  // up (unique on target+email) for the priority-upgrade link.
   const row = Array.isArray(data) ? data[0] : data;
+  const { data: reqRow } = await supabase
+    .from("grade_requests")
+    .select("id")
+    .eq("target", parsed.target)
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+
   return NextResponse.json({
     ok: true,
     created: row?.created ?? true,
     demand: row?.demand ?? 1,
     target: parsed.target,
+    requestId: (reqRow as { id?: string } | null)?.id ?? null,
   });
 }
