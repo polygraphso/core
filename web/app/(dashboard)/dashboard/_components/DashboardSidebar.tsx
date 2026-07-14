@@ -1,7 +1,5 @@
 "use client";
 
-import { SignOutButton } from "./SignOutButton";
-
 type NavItem = {
   href: string;
   label: string;
@@ -101,7 +99,6 @@ export function DashboardSidebar({ pathname, isAdmin, showManage }: Props) {
           >
             View site ↗
           </a>
-          <SignOutButton />
         </div>
       </aside>
 
@@ -109,7 +106,12 @@ export function DashboardSidebar({ pathname, isAdmin, showManage }: Props) {
       <div className="sm:hidden sticky top-0 z-40 border-b border-rule bg-parchment-50">
         <div className="flex items-center justify-between px-5 py-3">
           <Brand />
-          <SignOutButton />
+          <a
+            href="/dashboard/account"
+            className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted hover:text-oxblood transition-colors"
+          >
+            Account
+          </a>
         </div>
         <nav className="flex border-t border-rule overflow-x-auto" aria-label="Dashboard sections">
           {userNav.map((item) =>{
