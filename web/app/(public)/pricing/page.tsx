@@ -65,7 +65,7 @@ const TIERS: Tier[] = [
       "Per-target grade thresholds and email alerts",
       "Paid as a cancelable monthly $POLYGRAPH stream",
     ],
-    cta: { label: "See plans →", href: "/dashboard/upgrade" },
+    cta: { label: "See plans →", href: "/dashboard/account" },
   },
   {
     name: "Ecosystem monitoring",

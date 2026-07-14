@@ -225,7 +225,7 @@ export default async function DashboardPage() {
             </div>
             {!session.isAdmin ? (
               <a
-                href="/dashboard/upgrade"
+                href="/dashboard/account"
                 className="mt-1 inline-block font-mono text-[11px] text-ink-muted underline decoration-dotted underline-offset-2 hover:text-oxblood"
               >
                 {planState.plan === "free" ? "Upgrade for more monitors →" : "Manage plan →"}
