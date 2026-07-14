@@ -41,6 +41,11 @@ export function Footer() {
                   Blog →
                 </a>
               </li>
+              <li>
+                <a className="text-ink hover:text-oxblood transition-colors" href="/about">
+                  About →
+                </a>
+              </li>
             </ul>
           </div>
 

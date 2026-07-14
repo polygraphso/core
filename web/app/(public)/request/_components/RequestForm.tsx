@@ -22,14 +22,18 @@ function targetHint(raw: string): { text: string; warn: boolean } | null {
   return null;
 }
 
+// sessionEmail is null for anonymous visitors — the form then collects the
+// email itself (the queue is email-gated, not account-gated). initialTarget
+// pre-fills the server from an ungraded report's ?target= CTA.
 export function RequestForm({
   sessionEmail,
   initialTarget = "",
 }: {
-  sessionEmail: string;
+  sessionEmail: string | null;
   initialTarget?: string;
 }) {
   const [target, setTarget] = useState(initialTarget);
+  const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   const [company, setCompany] = useState(""); // honeypot
   const [state, setState] = useState<"idle" | "submitting" | "ok" | "error" | "redirecting">("idle");
@@ -58,6 +62,11 @@ export function RequestForm({
       setMessage("Enter a server — a registry ref or an https:// MCP URL.");
       return;
     }
+    if (!sessionEmail && !email.trim()) {
+      setState("error");
+      setMessage("Enter an email so we can tell you when the grade publishes.");
+      return;
+    }
     setState("submitting");
     setMessage("");
     try {
@@ -66,6 +75,8 @@ export function RequestForm({
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           target: target.trim(),
+          // Ignored server-side when a session exists (session email wins).
+          email: sessionEmail ?? email.trim(),
           note: note.trim() || undefined,
           company,
         }),
@@ -113,7 +124,7 @@ export function RequestForm({
               <>You&rsquo;re the first to ask for this one.</>
             )}{" "}
             We&rsquo;ll email you at{" "}
-            <span className="font-mono text-ink">{sessionEmail}</span> when its
+            <span className="font-mono text-ink">{sessionEmail ?? email.trim()}</span> when its
             grade publishes.
           </p>
           {result.requestId ? (
@@ -190,6 +201,23 @@ export function RequestForm({
           </span>
         </div>
 
+        {!sessionEmail && (
+          <label className="block">
+            <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
+              Email — we&rsquo;ll tell you when the grade publishes
+            </span>
+            <input
+              type="email"
+              autoComplete="email"
+              maxLength={254}
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full bg-parchment border hairline px-3.5 py-2.5 font-sans text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink transition-colors"
+            />
+          </label>
+        )}
+
         <label className="block">
           <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint block mb-2">
             Why you want it — optional
@@ -221,10 +249,12 @@ export function RequestForm({
               Free. We grade it on our own timeline.
             </p>
           </div>
-          <p className="font-mono text-[11px] text-ink-faint">
-            Requesting as{" "}
-            <span className="text-ink">{sessionEmail}</span>.
-          </p>
+          {sessionEmail && (
+            <p className="font-mono text-[11px] text-ink-faint">
+              Requesting as{" "}
+              <span className="text-ink">{sessionEmail}</span>.
+            </p>
+          )}
         </div>
 
         {state === "error" && (

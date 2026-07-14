@@ -5,6 +5,12 @@ export const metadata: Metadata = {
   description:
     "Logos, colors, and typography for polygraph.so. SVGs are source-of-truth; PNGs are ready-to-use exports.",
   alternates: { canonical: "/brand-kit" },
+  openGraph: {
+    title: "Brand kit · polygraph.so",
+    description:
+      "Logos, colors, and typography for polygraph.so. SVGs are source-of-truth; PNGs are ready-to-use exports.",
+    url: "/brand-kit",
+  },
 };
 
 function Section({

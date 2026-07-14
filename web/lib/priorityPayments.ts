@@ -77,6 +77,23 @@ function applyDust(base: bigint, seed: number): bigint {
 }
 
 /**
+ * Whether a grade request belongs to this email. The priority routes are no
+ * longer proxy-gated (the /request funnel is public), so they enforce
+ * session + ownership in-code before quoting or verifying a payment.
+ */
+export async function requestBelongsTo(requestId: string, email: string): Promise<boolean> {
+  const db = getSupabaseAdmin();
+  if (!db) return false;
+  const { data } = await db
+    .from("grade_requests")
+    .select("email")
+    .eq("id", requestId)
+    .maybeSingle();
+  const owner = (data as { email?: string } | null)?.email;
+  return !!owner && owner.toLowerCase() === email.toLowerCase();
+}
+
+/**
  * Build (or reuse) a pending quote for a request's priority upgrade. Retries on
  * the rare dust collision (the partial unique index rejects a duplicate open
  * amount). Returns null if the request is already paid or gone.

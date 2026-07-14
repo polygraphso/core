@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { RequestForm } from "./_components/RequestForm";
 
@@ -8,15 +7,24 @@ export const metadata: Metadata = {
   description:
     "Ask us to run the litmus battery on an MCP server you care about. Free — add it to the queue and we'll email you when its grade publishes.",
   alternates: { canonical: "/request" },
+  openGraph: {
+    title: "Request a grade · polygraph.so",
+    description:
+      "Ask us to run the litmus battery on an MCP server you care about. Free — we'll email you when its grade publishes.",
+    url: "/request",
+  },
 };
 
+// Public by design: this is the only funnel for getting an ungraded server
+// graded (the /mcp-index CTA and every ungraded report page point here), so it
+// must work without an account. A signed-in session just pre-fills the email;
+// a ?target= (from an ungraded report's CTA) pre-fills the server.
 export default async function RequestPage({
   searchParams,
 }: {
   searchParams: Promise<{ target?: string }>;
 }) {
   const session = await getSession();
-  if (!session) redirect("/login?next=/request");
 
   const { target } = await searchParams;
   const initialTarget = typeof target === "string" ? target.slice(0, 512) : "";
@@ -36,7 +44,7 @@ export default async function RequestPage({
           </p>
         </header>
 
-        <RequestForm sessionEmail={session.email} initialTarget={initialTarget} />
+        <RequestForm sessionEmail={session?.email ?? null} initialTarget={initialTarget} />
 
         <p className="mt-8 font-mono text-[11px] text-ink-faint leading-relaxed">
           Just want to hear about new grades in general?{" "}

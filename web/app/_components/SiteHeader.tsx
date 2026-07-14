@@ -1,38 +1,39 @@
-import { MobileNav } from "./MobileNav";
 import { AuthSlot } from "./AuthSlot";
+import { DesktopNav } from "./DesktopNav";
+import { MobileNav } from "./MobileNav";
 
-const NAV: Array<{ href: string; label: string }> = [
-  { href: "/ecosystems", label: "Ecosystems" },
-  { href: "/mcp-index", label: "Index" },
-  { href: "/builders", label: "Builders" },
-  { href: "/methodology", label: "Methodology" },
-];
-
+// The site header. `relative` so the desktop mega-menu panels (DesktopNav) can
+// anchor to it and drop flush under the whole bar. The row is a three-column
+// grid — wordmark left, primary nav dead-center, account right — so the nav
+// stays centered no matter how wide the wordmark or the signed-in name gets.
 export function SiteHeader() {
   return (
     <header className="relative border-b hairline">
-      <div className="mx-auto max-w-6xl px-6 py-3 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
-        <a href="/" className="flex items-center gap-3 hover:text-ink transition-colors">
+      {/* Preprint top rule — a thin ink band above the masthead. */}
+      <div className="h-2 bg-[#201d18]" aria-hidden />
+
+      {/* Columns are pinned (col-start-*) rather than auto-placed: on mobile
+          DesktopNav is display:none, and auto-placement would otherwise slide the
+          account/hamburger cluster into the empty middle column. */}
+      <div className="mx-auto grid max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 px-6 py-3">
+        <a href="/" className="group col-start-1 inline-flex items-center gap-2.5 justify-self-start">
           <span
-            className="inline-block w-1.5 h-1.5 bg-oxblood pulse-soft"
+            className="inline-block h-[9px] w-[9px] flex-shrink-0 bg-oxblood pulse-soft"
             aria-hidden
           />
-          <span className="text-ink">polygraph.so</span>
+          <span className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink transition-colors group-hover:text-oxblood">
+            polygraph.so
+          </span>
         </a>
-        <nav className="hidden sm:flex items-center gap-5">
-          {NAV.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className="hover:text-ink transition-colors"
-            >
-              {item.label}
-            </a>
-          ))}
-        </nav>
-        <div className="flex items-center gap-4">
-          <AuthSlot />
-          <MobileNav items={NAV} />
+
+        <DesktopNav />
+
+        <div className="col-start-3 flex items-center justify-self-end gap-4 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
+          {/* Desktop shows the account slot inline; on mobile it moves into the sheet. */}
+          <div className="hidden items-center sm:flex">
+            <AuthSlot />
+          </div>
+          <MobileNav />
         </div>
       </div>
     </header>

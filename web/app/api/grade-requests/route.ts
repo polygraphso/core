@@ -23,6 +23,8 @@ import { fetchLatestRunOutcome, isBlockedByRecentFailure } from "@/lib/gradeabil
 
 const TARGET_MAX_LEN = 512;
 const NOTE_MAX_LEN = 2000;
+const EMAIL_MAX_LEN = 254;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export async function POST(request: Request) {
   const limited = await enforceRateLimit(request, "grade-requests", { max: 10, windowSeconds: 60 });
@@ -113,15 +115,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, message: verdict.reason }, { status: 422 });
   }
 
-  // Proxy guarantees a session for this route; use it server-authoritatively.
+  // Anonymous-but-email-gated: a signed-in session's email wins (server-
+  // authoritative), an anonymous request must carry a valid email of its own.
+  // The route is public — rate limit + honeypot above are the abuse gates.
   const session = await getSession();
-  if (!session) {
-    return NextResponse.json(
-      { ok: false, message: "Sign in to request a grade." },
-      { status: 401 },
-    );
+  let normalizedEmail: string;
+  if (session) {
+    normalizedEmail = session.email;
+  } else {
+    if (typeof email !== "string") {
+      return NextResponse.json(
+        { ok: false, message: "Enter a valid email address." },
+        { status: 400 },
+      );
+    }
+    normalizedEmail = email.trim().toLowerCase();
+    if (
+      normalizedEmail.length === 0 ||
+      normalizedEmail.length > EMAIL_MAX_LEN ||
+      !EMAIL_RE.test(normalizedEmail)
+    ) {
+      return NextResponse.json(
+        { ok: false, message: "Enter a valid email address." },
+        { status: 400 },
+      );
+    }
   }
-  const normalizedEmail = session.email;
 
   // Optional note, trimmed and length-guarded; empty string → null.
   let normalizedNote: string | null = null;

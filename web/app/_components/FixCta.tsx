@@ -20,6 +20,19 @@ export function FixCta({ target, kind }: { target: string; kind: "mcp" | "skill"
       </Link>
       <p className="mt-3 font-sans text-[13px] text-ink-faint leading-relaxed max-w-xl">
         Guided remediation — the specific changes that clear this grade.
+        {kind === "mcp" ? (
+          <>
+            {" "}
+            Shipped a fix?{" "}
+            <Link
+              href="/request"
+              className="text-ink-muted border-b hairline border-dotted hover:text-ink transition-colors"
+            >
+              Request a re-grade
+            </Link>{" "}
+            — the harness re-runs against the new version.
+          </>
+        ) : null}
       </p>
     </div>
   );

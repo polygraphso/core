@@ -1,0 +1,78 @@
+# .github/workflows/indexnow.yml
+#
+# IndexNow push — tells Bing/Copilot (and Yandex/Seznam/Naver via the shared
+# endpoint) which report pages changed, instead of waiting on crawl cadence.
+# Grades publish and re-grade same-day, and Bing's index feeds ChatGPT
+# browsing, so push beats poll here. Google does not consume IndexNow; this
+# workflow is Bing-and-friends only.
+#
+# The key is public by design (the protocol verifies ownership by fetching
+# https://www.polygraph.so/<key>.txt, served from web/public/) — no secret.
+# Submits only URLs whose sitemap <lastmod> moved in the last 2 days, per the
+# spec's "don't resubmit unchanged URLs" guidance.
+name: indexnow
+
+on:
+  schedule:
+    - cron: "43 7 * * *" # daily 07:43 UTC, after the 06:17 adoption-score run
+  workflow_dispatch: {}
+
+concurrency:
+  group: indexnow
+  cancel-in-progress: false
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Submit recently-changed sitemap URLs
+        run: |
+          python3 - <<'EOF'
+          import json, sys, urllib.request
+          import xml.etree.ElementTree as ET
+          from datetime import datetime, timedelta, timezone
+
+          HOST = "www.polygraph.so"
+          KEY = "072e897e5737abf76567bfe49d6dad8d"
+          NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+
+          with urllib.request.urlopen(f"https://{HOST}/sitemap.xml", timeout=30) as r:
+              tree = ET.fromstring(r.read())
+
+          cutoff = datetime.now(timezone.utc) - timedelta(days=2)
+          urls = []
+          for u in tree.findall("sm:url", NS):
+              loc = u.findtext("sm:loc", default="", namespaces=NS)
+              lastmod = u.findtext("sm:lastmod", default="", namespaces=NS)
+              if not loc or not lastmod:
+                  continue
+              try:
+                  when = datetime.fromisoformat(lastmod.replace("Z", "+00:00"))
+              except ValueError:
+                  continue
+              # Blog entries carry date-only lastmod (naive); grade entries are
+              # offset-aware. Normalize so the cutoff comparison never throws.
+              if when.tzinfo is None:
+                  when = when.replace(tzinfo=timezone.utc)
+              if when >= cutoff:
+                  urls.append(loc)
+
+          if not urls:
+              print("No URLs changed in the last 2 days; nothing to submit.")
+              sys.exit(0)
+
+          body = json.dumps({
+              "host": HOST,
+              "key": KEY,
+              "keyLocation": f"https://{HOST}/{KEY}.txt",
+              "urlList": urls[:10000],
+          }).encode()
+          req = urllib.request.Request(
+              "https://api.indexnow.org/indexnow",
+              data=body,
+              headers={"Content-Type": "application/json; charset=utf-8"},
+          )
+          with urllib.request.urlopen(req, timeout=30) as r:
+              print(f"Submitted {len(urls)} URLs; IndexNow responded {r.status}")
+          EOF
