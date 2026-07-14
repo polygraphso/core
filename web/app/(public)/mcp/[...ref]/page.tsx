@@ -21,8 +21,15 @@ import { EmbedSnippets } from "@/app/_components/EmbedSnippets";
 import { FixCta } from "@/app/_components/FixCta";
 import { ShareGrade } from "@/app/_components/ShareGrade";
 import { ReportFaq } from "@/app/_components/ReportFaq";
+import { JsonLd } from "@/app/_components/JsonLd";
+import { SITE_ORIGIN, METHODOLOGY_VERSION } from "@/lib/site";
+import { fetchRegistryDescription } from "@/lib/selfDescription";
 
-const ORIGIN = "https://polygraph.so";
+const ORIGIN = SITE_ORIGIN;
+
+// Letter grade → numeric rating for Review markup (Google requires a number;
+// the letter stays in the review name/body). A=5 … F=1, C=3 (E is skipped).
+const GRADE_RATING: Record<string, number> = { A: 5, B: 4, C: 3, D: 2, F: 1 };
 
 // generateMetadata and the page both need the grade; cache() collapses them to
 // one query per request.
@@ -90,7 +97,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     const title = `${key} — MCP security grade ${result.grade} | polygraph`;
     return {
       title,
-      description: `Is ${key} safe to use? polygraph ran its behavioral litmus (${result.detail.methodology_version}) and graded it ${result.grade} — testing tool-output injection, egress overreach, sensitive-data handling, and adversarial input. Reproducible and evidence-backed.`,
+      description: `Is ${key} safe to use? polygraph's behavioral litmus (${result.detail.methodology_version}) graded it ${result.grade}: injection, egress, data leaks, adversarial input.`,
       alternates: { canonical },
       openGraph: { title, url: canonical, images: [cardUrl] },
       twitter: { card: "summary_large_image", images: [cardUrl] },
@@ -130,9 +137,10 @@ export default async function McpServerPage({ params }: { params: Params }) {
 
 async function Report({ serverKey }: { serverKey: string }) {
   // Adoption ranking is registry-only; a remote endpoint has no adoption row.
-  const [result, adoption] = await Promise.all([
+  const [result, adoption, selfDescription] = await Promise.all([
     getGrade(serverKey),
     isRemoteKey(serverKey) ? Promise.resolve(null) : getAdoption(serverKey),
+    fetchRegistryDescription(serverKey),
   ]);
   const path = refToPath(serverKey);
   const badgeUrl = `${ORIGIN}/api/badge?server=${path}`;
@@ -145,6 +153,7 @@ async function Report({ serverKey }: { serverKey: string }) {
       grade={result.grade}
       detail={result.detail}
       adoption={adoption}
+      selfDescription={selfDescription}
       badgeUrl={badgeUrl}
       cardUrl={cardUrl}
       pageUrl={pageUrl}
@@ -238,6 +247,7 @@ function Graded({
   grade,
   detail,
   adoption,
+  selfDescription,
   badgeUrl,
   cardUrl,
   pageUrl,
@@ -246,6 +256,7 @@ function Graded({
   grade: LitmusGrade;
   detail: PolygraphDetail;
   adoption: ServerAdoption | null;
+  selfDescription: string | null;
   badgeUrl: string;
   cardUrl: string;
   pageUrl: string;
@@ -253,8 +264,54 @@ function Graded({
   const fp = shortFingerprint(detail.tool_defs_fingerprint);
   const dated = detail.computed_at?.slice(0, 10) ?? null;
 
+  // Third-party critic review of someone else's software — the shape Google's
+  // review-snippet rules allow (author = the reviewing Organization, never the
+  // thing reviewed). itemReviewed lives inline so the page stands alone.
+  const reviewJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: serverKey,
+    ...(selfDescription ? { description: selfDescription } : {}),
+    ...(detail.resolved_version ? { softwareVersion: detail.resolved_version } : {}),
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Cross-platform",
+    url: pageUrl,
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    review: {
+      "@type": "Review",
+      name: `polygraph behavioral security grade: ${grade}`,
+      reviewBody: `polygraph connected to ${serverKey} the way an agent would and ran the open litmus harness (${detail.methodology_version}): tool-output injection, permission and egress overreach, sensitive-data handling, and adversarial-input handling. Grade: ${grade}. The harness is open and deterministic; the grade is reproducible.`,
+      ...(dated ? { datePublished: dated } : {}),
+      author: {
+        "@type": "Organization",
+        "@id": `${SITE_ORIGIN}/#org`,
+        name: "polygraph",
+        url: SITE_ORIGIN,
+      },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: GRADE_RATING[grade] ?? 1,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    },
+  };
+
+  // Home → Index → this report; the still-supported rich result (unlike FAQ).
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "polygraph.so", item: SITE_ORIGIN },
+      { "@type": "ListItem", position: 2, name: "The MCP Security Index", item: `${SITE_ORIGIN}/mcp-index` },
+      { "@type": "ListItem", position: 3, name: serverKey },
+    ],
+  };
+
   return (
     <>
+      <JsonLd data={reviewJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <div className="flex items-start gap-6">
         <span
           className="font-serif text-7xl md:text-8xl leading-none shrink-0"
@@ -286,6 +343,36 @@ function Graded({
       </div>
 
       <AdoptionLine adoption={adoption} />
+
+      {/* One self-contained, quotable verdict sentence — the passage answer
+          engines lift for "is X safe". The header strip above carries the same
+          facts as UI fragments; this states them as prose. */}
+      <p className="mt-6 font-sans text-[14px] text-ink-muted leading-relaxed max-w-xl">
+        <span className="text-ink">{serverKey}</span> is graded{" "}
+        <span className="text-ink">{grade}</span> by polygraph under{" "}
+        {detail.methodology_version}
+        {dated ? <>, as of {dated}</> : null}. The grade is a dated, reproducible
+        observation of behavior, not a guarantee.
+      </p>
+
+      {/* Stale-methodology disclosure: a grade is read against the spec that
+          produced it, but the reader deserves to know the harness moved on. */}
+      {detail.methodology_version !== METHODOLOGY_VERSION ? (
+        <p className="mt-2 font-mono text-[11px] text-ink-faint leading-relaxed">
+          Graded under {detail.methodology_version}; the current methodology is{" "}
+          {METHODOLOGY_VERSION}. A re-run may change the grade.
+        </p>
+      ) : null}
+
+      {selfDescription ? (
+        <p className="mt-4 font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-ink-faint">
+            Self-reported
+          </span>{" "}
+          &ldquo;{selfDescription}&rdquo; &mdash; the package&rsquo;s own registry
+          description, not part of the grade.
+        </p>
+      ) : null}
 
       <ShareGrade
         pageUrl={pageUrl}

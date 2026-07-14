@@ -20,19 +20,22 @@ import { fetchPublishedGradeDetailMap, fetchPublishedLastModified } from "@/lib/
 import { fetchPublishedSkillGrades } from "@/lib/skillGrades";
 import { isRemoteKey, refToPath } from "@/lib/badgeData";
 import { getAllPosts } from "@/lib/blog";
+import { SITE_ORIGIN } from "@/lib/site";
 
-const ORIGIN = "https://www.polygraph.so";
+const ORIGIN = SITE_ORIGIN;
 
 // Match /mcp-index: a newly published grade or skill should appear within 10 min.
 export const revalidate = 600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticEntries: MetadataRoute.Sitemap = [
-    { url: `${ORIGIN}/`, changeFrequency: "daily", priority: 1 },
+    // No trailing slash: matches the homepage's emitted canonical form.
+    { url: ORIGIN, changeFrequency: "daily", priority: 1 },
     { url: `${ORIGIN}/ecosystems`, changeFrequency: "daily", priority: 0.8 },
     { url: `${ORIGIN}/mcp-index`, changeFrequency: "daily", priority: 0.9 },
     { url: `${ORIGIN}/builders`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${ORIGIN}/methodology`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${ORIGIN}/about`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${ORIGIN}/docs/api`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${ORIGIN}/request`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${ORIGIN}/brand-kit`, changeFrequency: "yearly", priority: 0.3 },

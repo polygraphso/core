@@ -34,8 +34,15 @@ import { FixCta } from "@/app/_components/FixCta";
 import { EmbedSnippets } from "@/app/_components/EmbedSnippets";
 import { ShareGrade } from "@/app/_components/ShareGrade";
 import { ReportFaq } from "@/app/_components/ReportFaq";
+import { JsonLd } from "@/app/_components/JsonLd";
+import { SITE_ORIGIN, SKILL_METHODOLOGY_VERSION } from "@/lib/site";
+import { fetchSkillSelfDescription } from "@/lib/selfDescription";
 
-const ORIGIN = "https://polygraph.so";
+const ORIGIN = SITE_ORIGIN;
+
+// Letter grade → numeric rating for Review markup (Google requires a number;
+// the letter stays in the review name/body). A=5 … F=1, C=3 (E is skipped).
+const GRADE_RATING: Record<string, number> = { A: 5, B: 4, C: 3, D: 2, F: 1 };
 
 // generateMetadata and the page both need the grade; cache() collapses them to
 // one query per request.
@@ -98,7 +105,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
     const title = `${name} — skill security grade ${result.grade} | polygraph`;
     return {
       title,
-      description: `Is the ${name} skill safe? polygraph's static skill litmus (${result.detail.methodology_version}) graded it ${result.grade} — checking prompt-injection, data-exfiltration instructions, and dangerous bundled commands. Content-hash-anchored and reproducible.`,
+      description: `Is the ${name} skill safe? polygraph's static skill litmus (${result.detail.methodology_version}) graded it ${result.grade}: prompt injection, exfiltration, dangerous bundled commands.`,
       alternates: { canonical },
       openGraph: { title, url: canonical, images: [cardUrl] },
       twitter: { card: "summary_large_image", images: [cardUrl] },
@@ -140,12 +147,18 @@ async function Report({ target }: { target: string }) {
   const badgeUrl = `${ORIGIN}/api/badge/skill?skill=${path}`;
   const cardUrl = `${ORIGIN}/api/badge/skill/card?skill=${path}`;
   const pageUrl = `${ORIGIN}/skill/${path}`;
+  // The skill's own SKILL.md description at the graded commit — the one
+  // per-skill fact that differentiates 100+ otherwise-templated report pages.
+  const selfDescription = result
+    ? await fetchSkillSelfDescription(target, result.detail.commit_sha)
+    : null;
 
   return result ? (
     <Graded
       target={target}
       grade={result.grade}
       detail={result.detail}
+      selfDescription={selfDescription}
       badgeUrl={badgeUrl}
       cardUrl={cardUrl}
       pageUrl={pageUrl}
@@ -159,6 +172,7 @@ function Graded({
   target,
   grade,
   detail,
+  selfDescription,
   badgeUrl,
   cardUrl,
   pageUrl,
@@ -166,6 +180,7 @@ function Graded({
   target: string;
   grade: SkillLitmusGrade;
   detail: SkillDetail;
+  selfDescription: string | null;
   badgeUrl: string;
   cardUrl: string;
   pageUrl: string;
@@ -184,8 +199,53 @@ function Graded({
       ? `https://github.com/${repoSegs[1]}/${repoSegs[2]}/commit/${detail.commit_sha}`
       : null;
 
+  // Same critic-review shape as /mcp reports: polygraph (Organization) reviews
+  // third-party software; the static skill litmus is the review method.
+  const reviewJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name,
+    ...(selfDescription ? { description: selfDescription } : {}),
+    applicationCategory: "DeveloperApplication",
+    operatingSystem: "Cross-platform",
+    url: pageUrl,
+    ...(source ? { downloadUrl: source } : {}),
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+    review: {
+      "@type": "Review",
+      name: `polygraph static skill safety grade: ${grade}`,
+      reviewBody: `polygraph ran the open static skill litmus (${detail.methodology_version}) over the ${name} skill's bytes: prompt-injection and context poisoning, data-exfiltration instructions, and dangerous bundled commands. Grade: ${grade}, anchored to the skill's content hash. Static scan, not behavioral proof.`,
+      ...(dated ? { datePublished: dated } : {}),
+      author: {
+        "@type": "Organization",
+        "@id": `${SITE_ORIGIN}/#org`,
+        name: "polygraph",
+        url: SITE_ORIGIN,
+      },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: GRADE_RATING[grade] ?? 1,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    },
+  };
+
+  // Home → Index → this report; the still-supported rich result (unlike FAQ).
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "polygraph.so", item: SITE_ORIGIN },
+      { "@type": "ListItem", position: 2, name: "The MCP Security Index", item: `${SITE_ORIGIN}/mcp-index` },
+      { "@type": "ListItem", position: 3, name },
+    ],
+  };
+
   return (
     <>
+      <JsonLd data={reviewJsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <div className="flex items-start gap-6">
         <span
           className="font-serif text-7xl md:text-8xl leading-none shrink-0"
@@ -229,7 +289,33 @@ function Graded({
         </div>
       </div>
 
-      <p className="mt-6 max-w-xl text-[13.5px] text-ink-muted leading-relaxed">
+      {/* One self-contained, quotable verdict sentence for answer engines. */}
+      <p className="mt-6 font-sans text-[14px] text-ink-muted leading-relaxed max-w-xl">
+        The <span className="text-ink">{name}</span> skill is graded{" "}
+        <span className="text-ink">{grade}</span> by polygraph under{" "}
+        {detail.methodology_version}
+        {dated ? <>, as of {dated}</> : null}, anchored to its content hash.
+      </p>
+
+      {/* Stale-methodology disclosure, mirroring the server reports. */}
+      {detail.methodology_version !== SKILL_METHODOLOGY_VERSION ? (
+        <p className="mt-2 font-mono text-[11px] text-ink-faint leading-relaxed">
+          Graded under {detail.methodology_version}; the current skill methodology is{" "}
+          {SKILL_METHODOLOGY_VERSION}. A re-run may change the grade.
+        </p>
+      ) : null}
+
+      {selfDescription ? (
+        <p className="mt-4 font-sans text-[13px] text-ink-muted leading-relaxed max-w-xl">
+          <span className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-ink-faint">
+            Self-reported
+          </span>{" "}
+          &ldquo;{selfDescription}&rdquo; &mdash; the skill&rsquo;s own SKILL.md
+          description at the graded commit, not part of the grade.
+        </p>
+      ) : null}
+
+      <p className="mt-4 max-w-xl text-[13.5px] text-ink-muted leading-relaxed">
         A <span className="text-ink">static</span>{" "}
         safety grade — a deterministic scan of the skill&rsquo;s{" "}
         <code className="font-mono text-[12.5px]">SKILL.md</code>{" "}

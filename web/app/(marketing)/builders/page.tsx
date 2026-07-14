@@ -5,7 +5,14 @@ import { BuildersTooling } from "@/app/_components/BuildersTooling";
 export const metadata: Metadata = {
   title: "Builders",
   description:
-    "Grade an MCP server A to F with the open litmus harness: install it in your agent, run it from your terminal, gate CI with the GitHub Action, or embed a live README badge. All self-serve, all free.",
+    "Grade an MCP server A to F with the open litmus harness: agent, terminal, CI gate with the GitHub Action, or a live README badge. Self-serve and free.",
+  alternates: { canonical: "/builders" },
+  openGraph: {
+    title: "Builders · polygraph.so",
+    description:
+      "Grade an MCP server A to F with the open litmus harness: agent, terminal, CI gate, or live README badge. All self-serve, all free.",
+    url: "/builders",
+  },
 };
 
 // The builders surface: everything a maintainer of an MCP server or skill needs,
