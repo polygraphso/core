@@ -5,15 +5,13 @@
  * create a one-month Sablier stream → server verify → monitoring starts.
  * Renewal = the next stream when this one runs out.
  *
- * Structure note: the LI.FI swap widget and the AppKit/wagmi pay step are
- * DELIBERATELY separate React trees. Both libraries sync connectors into
- * whatever wagmi config they find in context, and sharing one config makes
- * AppKit's connector watcher choke on LI.FI's entries (observed live:
- * "connector.getProvider is not a function" once a wallet extension announces
- * itself). So wagmi wraps only the pay step, the widget self-hosts its own
- * stack, and the quote/verify plumbing lives outside both — plain fetches.
- * Nothing signed client-side is trusted: the verify route re-reads the stream
- * onchain and re-prices the deposit.
+ * Structure note: the LI.FI swap widget and the AppKit/wagmi pay step share ONE
+ * wagmi tree (AppKit's adapter config), so a wallet connected once works in
+ * both. The widget reuses that session via LI.FI's external wallet management —
+ * which only engages when its EthereumProvider is rendered to read the shared
+ * WagmiContext (see SwapWidget). The quote/verify plumbing lives outside wallet
+ * state entirely — plain fetches. Nothing signed client-side is trusted: the
+ * verify route re-reads the stream onchain and re-prices the deposit.
  */
 
 import { useCallback, useEffect, useState } from "react";

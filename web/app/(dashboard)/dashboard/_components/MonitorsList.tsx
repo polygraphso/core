@@ -220,7 +220,7 @@ export function MonitorsList({
 
   const quotaLabel =
     quota.max === null
-      ? `${quota.used} active · uncapped`
+      ? `${quota.used} active`
       : `${quota.used} of ${quota.max} slot${quota.max !== 1 ? "s" : ""} used`;
 
   const section = (label: string, rows: MonitorEntry[]) =>
