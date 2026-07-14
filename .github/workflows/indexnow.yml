@@ -51,6 +51,10 @@ jobs:
                   when = datetime.fromisoformat(lastmod.replace("Z", "+00:00"))
               except ValueError:
                   continue
+              # Blog entries carry date-only lastmod (naive); grade entries are
+              # offset-aware. Normalize so the cutoff comparison never throws.
+              if when.tzinfo is None:
+                  when = when.replace(tzinfo=timezone.utc)
               if when >= cutoff:
                   urls.append(loc)
 
