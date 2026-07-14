@@ -61,7 +61,14 @@ async function buildEcosystemCards(
 export const metadata: Metadata = {
   title: "Ecosystems",
   description:
-    "Independent, continuously re-graded trust indexes for the MCP servers, agents, and skills a network ships. Live example indexes, and how per-network monitoring works.",
+    "Independent, continuously re-graded trust indexes for the MCP servers, agents, and skills a network ships. Live indexes and how monitoring works.",
+  alternates: { canonical: "/ecosystems" },
+  openGraph: {
+    title: "Ecosystems · polygraph.so",
+    description:
+      "Independent, continuously re-graded trust indexes for the MCP servers, agents, and skills a network ships.",
+    url: "/ecosystems",
+  },
 };
 
 // Stats come from the live hosted_runs loaders. Cache with ISR like /base & /bankr

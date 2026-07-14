@@ -29,10 +29,10 @@ export function EcosystemHero() {
         Independent trust for the AI tools your ecosystem runs on.
       </h1>
       <p className="mt-6 max-w-2xl text-ink-muted text-lg leading-relaxed">
-        Agents plug into third-party MCP servers and skills that can hijack them or leak data. We
-        grade those tools behaviorally, publish the evidence, and keep the grade current, because a
-        tool surface doesn&rsquo;t hold still. Free to read as a public index; continuous and
-        monitored for your network:
+        Agents plug into third-party MCP servers and skills that can hijack them or leak data.
+        polygraph.so is an independent lab that grades those tools behaviorally, publishes evidence
+        anyone can re-run, and keeps the grade current, because a tool surface doesn&rsquo;t hold
+        still. Free to read as a public index; continuous and monitored for your network:
       </p>
 
       {/* The two-audience fork: paid monitoring (left) + free public index (right). */}

@@ -16,12 +16,14 @@ export const config = {
     "/api/manage/:path*",
     "/monitor/:path*",
     "/notify/:path*",
-    "/request/:path*",
     "/api/monitor/:path*",
     "/api/notify/:path*",
-    "/api/grade-requests/:path*",
   ],
 };
+// /request and /api/grade-requests are deliberately NOT gated: the grade queue
+// is the public funnel (anonymous-but-email-gated in the route itself). Gating
+// them behind /login broke the "Request a grade" CTA for anonymous visitors
+// and put a redirecting URL in the sitemap (2026-07 SEO audit).
 
 // Routes that bypass the user gate. The unsubscribe endpoint is token-authed
 // from email links and must stay reachable without a Supabase session.
