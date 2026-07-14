@@ -9,6 +9,7 @@ import {
   getAgentMetrics,
 } from "@/lib/adminMetrics";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { getPriorityLane } from "@/lib/priorityPayments";
 import { Panel, KpiCard, MiniBars, BarList, EmptyNote, RecentList } from "./_components/ui";
 
 async function getUserCount() {
@@ -29,17 +30,20 @@ export const revalidate = 0;
 export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 
 export default async function AdminPage() {
-  const [top, waitlist, grades, notify, untracked, lookups, agents, userCount] =
+  const [top, waitlist, grades, priorityLane, notify, untracked, lookups, agents, userCount] =
     await Promise.all([
       getTopline(),
       getWaitlistMetrics(),
       getGradeRequestMetrics(),
+      getPriorityLane(),
       getNotifyMetrics(),
       getUntrackedDemand(),
       getLookupStats(),
       getAgentMetrics(),
       getUserCount(),
     ]);
+
+  const now = Date.now();
 
   return (
     <main className="w-full px-8 py-12">
@@ -107,6 +111,33 @@ export default async function AdminPage() {
         <Panel label="§2" title="Grade-request queue" note="Requests per day (last 30d).">
           {grades ? (
             <div className="space-y-5">
+              {priorityLane.length > 0 ? (
+                <div className="border border-oxblood/30 rounded-[4px] p-3">
+                  <p className="section-label mb-2 text-oxblood">
+                    Priority lane · 48h SLA ({priorityLane.length})
+                  </p>
+                  <div className="space-y-1.5">
+                    {priorityLane.map((r) => {
+                      const deadline = new Date(r.priority_deadline_at).getTime();
+                      const overdue = deadline <= now;
+                      const hrsLeft = Math.round((deadline - now) / 3_600_000);
+                      return (
+                        <div
+                          key={r.id}
+                          className="flex items-baseline justify-between gap-3 font-mono text-[11px]"
+                        >
+                          <span className="min-w-0 truncate text-ink">{r.target}</span>
+                          <span
+                            className={`shrink-0 tabular ${overdue ? "text-oxblood font-semibold" : "text-ink-faint"}`}
+                          >
+                            {overdue ? "OVERDUE" : `${hrsLeft}h left`}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ) : null}
               <MiniBars data={grades.perDay} />
               <div>
                 <p className="section-label mb-2">By status</p>

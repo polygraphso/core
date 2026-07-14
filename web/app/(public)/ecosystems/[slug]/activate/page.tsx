@@ -3,7 +3,7 @@
  * the link sent to a prospective client. Pitches what monitored means, shows
  * the ecosystem's USD-pegged price in $POLYGRAPH, and takes the payment right
  * there: swap anything into $POLYGRAPH (embedded LI.FI widget), then stream it
- * to the polygraph treasury month by month via Sablier.
+ * to the polygraph treasury month by month (a cancelable onchain stream).
  *
  * No account needed — payment is wallet-based and the server verifies the
  * stream onchain, so a client can pay before they ever sign in. An unpaid
@@ -124,8 +124,8 @@ export default async function ActivatePage({
               <span className="text-ink">${usdMonthly.toLocaleString("en-US")}/month in $POLYGRAPH</span>,
               streamed to the polygraph treasury (
               <span className="font-mono text-[13px]">polygraph.base.eth</span>) for as long as you
-              stay. Cancel the stream anytime — the unstreamed remainder returns to the payer and
-              monitoring stops. No account needed to pay.
+              stay. Cancel it anytime from the console, and the unstreamed remainder returns to the
+              payer while monitoring stops. No account needed to pay.
             </p>
             <p className="mt-3 font-mono text-[12px] text-ink-faint">
               Why the token?{" "}

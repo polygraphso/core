@@ -389,6 +389,72 @@ export interface EcosystemPaymentRow {
 }
 
 /**
+ * One priority-grading quote/receipt: a one-time $POLYGRAPH transfer to the
+ * treasury, attributed by exact amount (unique dust digits among open quotes).
+ * Mirrors the `grade_request_payments` table. status: 'pending' (open quote) →
+ * 'paid' (verified transfer) | 'expired'. The paid row stamps
+ * grade_requests.priority_paid_at/_deadline_at — speed, never the grade.
+ */
+export interface GradeRequestPaymentRow {
+  id: string;
+  grade_request_id: string;
+  chain_id: number;
+  token: string;
+  token_decimals: number;
+  treasury: string;
+  /**
+   * Raw token units incl. dust (numeric, written as a bigint string); reads
+   * may lose precision past 2^53 — treat as display-only, compare as strings.
+   */
+  expected_amount: number;
+  usd_price: number;
+  token_usd_rate: number;
+  status: "pending" | "paid" | "expired";
+  tx_hash: string | null;
+  payer_address: string | null;
+  expires_at: string;
+  paid_at: string | null;
+  created_at: string;
+}
+
+/** What a paying user bought. Free tier is the absence of a live row. */
+export type UserPlanId = "indie" | "team";
+
+/**
+ * One verified per-user plan payment: the same Sablier stream rail as
+ * EcosystemPaymentRow, keyed by auth user instead of ecosystem, plus `plan`
+ * naming what was bought. Mirrors the `user_plan_payments` table. While a row
+ * is status='active' with end_at in the future, record_monitor grants the
+ * plan's monitor quota (25 indie / 100 team; free = 1).
+ */
+export interface UserPlanPaymentRow {
+  id: string;
+  user_id: string;
+  plan: UserPlanId;
+  chain_id: number;
+  sablier_contract: string;
+  stream_id: number;
+  tx_hash: string | null;
+  token: string;
+  token_decimals: number;
+  /**
+   * Raw token units (uint128). Exact in Postgres (numeric, written as a bigint
+   * string); reads may lose precision past 2^53 — treat as display-only.
+   */
+  deposit_amount: number;
+  usd_monthly: number;
+  usd_total: number;
+  token_usd_rate: number;
+  payer_address: string;
+  start_at: string;
+  end_at: string;
+  status: EcosystemPaymentStatus;
+  verified_at: string;
+  last_checked_at: string;
+  created_at: string;
+}
+
+/**
  * A person who manages an ecosystem, or a pending email invite. Mirrors the
  * `ecosystem_members` table. `user_id` is null while `status` is 'invited' and
  * binds to the account on first sign-in (resolve_ecosystem_invites).

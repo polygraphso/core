@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { HoneypotField } from "@/app/_components/HoneypotField";
 import { ServerCombobox, type ComboboxResult } from "@/app/_components/ServerCombobox";
 import { refToPath } from "@/lib/serverRef";
+import { PRIORITY_GRADE_PRICE_USD } from "@/lib/paymentConfig";
 
 function targetHint(raw: string): { text: string; warn: boolean } | null {
   const t = raw.trim();
@@ -22,15 +23,22 @@ function targetHint(raw: string): { text: string; warn: boolean } | null {
 }
 
 // sessionEmail is null for anonymous visitors — the form then collects the
-// email itself (the queue is email-gated, not account-gated).
-export function RequestForm({ sessionEmail }: { sessionEmail: string | null }) {
-  const [target, setTarget] = useState("");
+// email itself (the queue is email-gated, not account-gated). initialTarget
+// pre-fills the server from an ungraded report's ?target= CTA.
+export function RequestForm({
+  sessionEmail,
+  initialTarget = "",
+}: {
+  sessionEmail: string | null;
+  initialTarget?: string;
+}) {
+  const [target, setTarget] = useState(initialTarget);
   const [email, setEmail] = useState("");
   const [note, setNote] = useState("");
   const [company, setCompany] = useState(""); // honeypot
   const [state, setState] = useState<"idle" | "submitting" | "ok" | "error" | "redirecting">("idle");
   const [message, setMessage] = useState("");
-  const [result, setResult] = useState<{ created: boolean; demand: number } | null>(null);
+  const [result, setResult] = useState<{ created: boolean; demand: number; requestId: string | null } | null>(null);
   const router = useRouter();
 
   // A catalog pick that we've already graded needs no request — send the user
@@ -78,11 +86,12 @@ export function RequestForm({ sessionEmail }: { sessionEmail: string | null }) {
         message?: string;
         created?: boolean;
         demand?: number;
+        requestId?: string | null;
       };
       if (!res.ok || !body.ok) {
         throw new Error(body.message ?? "Couldn't save your request.");
       }
-      setResult({ created: body.created ?? true, demand: body.demand ?? 1 });
+      setResult({ created: body.created ?? true, demand: body.demand ?? 1, requestId: body.requestId ?? null });
       setState("ok");
     } catch (err) {
       setState("error");
@@ -118,6 +127,25 @@ export function RequestForm({ sessionEmail }: { sessionEmail: string | null }) {
             <span className="font-mono text-ink">{sessionEmail ?? email.trim()}</span> when its
             grade publishes.
           </p>
+          {result.requestId ? (
+            <div className="mt-6 border-t hairline pt-5">
+              <p className="font-serif text-lg text-ink leading-snug">
+                Need it inside 48 hours?
+              </p>
+              <p className="mt-1.5 text-ink-muted leading-relaxed text-[15px]">
+                Priority grading runs the same battery on the same timeline everyone else&rsquo;s
+                grade is held to, just sooner &mdash;{" "}
+                <span className="font-mono text-ink">${PRIORITY_GRADE_PRICE_USD}</span> one-time, paid
+                in $POLYGRAPH. It buys turnaround, never the grade.
+              </p>
+              <a
+                href={`/request/priority/${result.requestId}`}
+                className="mt-4 inline-flex items-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors"
+              >
+                Grade it within 48h →
+              </a>
+            </div>
+          ) : null}
           <button
             type="button"
             onClick={() => {
@@ -126,7 +154,7 @@ export function RequestForm({ sessionEmail }: { sessionEmail: string | null }) {
               setResult(null);
               setState("idle");
             }}
-            className="mt-6 font-mono text-xs text-ink-faint border-b hairline border-dotted hover:text-ink transition-colors"
+            className="mt-6 block font-mono text-xs text-ink-faint border-b hairline border-dotted hover:text-ink transition-colors"
           >
             Request another →
           </button>

@@ -9,6 +9,7 @@
 
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
+import { getUserPlan } from "@/lib/userPlans";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { refToPath } from "@/lib/badgeData";
 import { skillRefToPath } from "@/lib/skillGrades";
@@ -130,6 +131,11 @@ export default async function DashboardPage() {
 
   const activeCount = monitors.filter((m) => !m.unsubscribed_at).length;
 
+  // Plan-aware quota: free = 1, indie 25, team 100; admins uncapped. Also
+  // lazily reconciles a canceled plan stream before we render its badge.
+  const planState = await getUserPlan(session.userId);
+  const quotaMax = session.isAdmin ? null : planState.quota;
+
   const monitorEntries: MonitorEntry[] = monitors.map((m) => {
     const kind = m.target_kind === "skill" ? ("skill" as const) : ("server" as const);
     return {
@@ -159,7 +165,7 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      {session.isAdmin || activeCount < 1 ? (
+      {session.isAdmin || quotaMax === null || activeCount < quotaMax ? (
         <div className="mb-8">
           <AddMonitorForm />
         </div>
@@ -169,7 +175,7 @@ export default async function DashboardPage() {
         <div className="min-w-0 flex-1">
           <MonitorsList
             monitors={monitorEntries}
-            quota={{ used: activeCount, max: session.isAdmin ? null : 1 }}
+            quota={{ used: activeCount, max: quotaMax }}
           />
         </div>
 
@@ -203,6 +209,28 @@ export default async function DashboardPage() {
           <div>
             <p className={`${RAIL_LABEL} mb-2`}>Account</p>
             <p className="truncate font-mono text-[12px] text-ink">{session.email}</p>
+            <div className="mt-2 flex items-baseline gap-2 font-mono text-[11px]">
+              <span className="uppercase tracking-[0.12em] text-ink-muted">
+                {planState.plan} plan
+              </span>
+              {planState.endAt ? (
+                <span className="text-ink-faint">
+                  renews by{" "}
+                  {new Date(planState.endAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </span>
+              ) : null}
+            </div>
+            {!session.isAdmin ? (
+              <a
+                href="/dashboard/upgrade"
+                className="mt-1 inline-block font-mono text-[11px] text-ink-muted underline decoration-dotted underline-offset-2 hover:text-oxblood"
+              >
+                {planState.plan === "free" ? "Upgrade for more monitors →" : "Manage plan →"}
+              </a>
+            ) : null}
           </div>
         </aside>
       </div>

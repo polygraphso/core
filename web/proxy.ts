@@ -18,6 +18,7 @@ export const config = {
     "/notify/:path*",
     "/api/monitor/:path*",
     "/api/notify/:path*",
+    "/api/account/:path*",
   ],
 };
 // /request and /api/grade-requests are deliberately NOT gated: the grade queue

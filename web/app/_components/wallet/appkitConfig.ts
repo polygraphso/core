@@ -1,12 +1,13 @@
 /**
- * Reown AppKit + wagmi adapter config for the activation flow, scoped to this
- * route (deliberately NOT in the root layout — the rest of the site never
- * ships wallet JS). No 'use client' here per the AppKit Next.js pattern; the
- * client provider (ActivateFlow) imports it and calls createAppKit at module
- * level. This ONE wagmi config backs both the pay step and the LI.FI swap
- * widget, so a wallet connected once works in both: the widget reuses this
- * config through LI.FI's external wallet management rather than running its own
- * (see SwapWidget).
+ * Reown AppKit + wagmi adapter config for every checkout on the site
+ * (ecosystem activation today; any future pay step imports the same island).
+ * Deliberately NOT in the root layout — pages that don't take payment never
+ * ship wallet JS. No 'use client' here per the AppKit Next.js pattern;
+ * WalletIsland imports it and calls createAppKit at module level. This is the
+ * ONLY WagmiAdapter in the app: a second one anywhere would give users two
+ * disjoint wallet sessions (the exact bug the shared tree removed). The LI.FI
+ * swap widget reuses this config through its external wallet management rather
+ * than running its own (see SwapWidget).
  */
 
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";

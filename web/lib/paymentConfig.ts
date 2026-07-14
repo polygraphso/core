@@ -48,6 +48,71 @@ export function paymentShapeTag(slug: string): string {
 }
 
 export const DEFAULT_MONTHLY_PRICE_USD = 199;
+
+/**
+ * Priority grading: the one-time fee for the 48h lane on the /request queue.
+ * Buys a place in line, never the grade. Env-overridable while the price
+ * finds its level ($99–299 band per the revenue map).
+ */
+export const PRIORITY_GRADE_PRICE_USD = Number.parseFloat(
+  process.env.NEXT_PUBLIC_PRIORITY_GRADE_PRICE_USD ?? "99",
+);
+
+/** What GET /api/grade-requests/[id]/priority/quote returns. */
+export interface PriorityQuote {
+  requestId: string;
+  target: string;
+  usdPrice: number;
+  /** Raw token units (18 decimals) INCLUDING the unique dust digits — pay exactly this. */
+  tokenAmount: string;
+  tokenAmountDisplay: number;
+  tokenUsdRate: number;
+  /** Epoch ms after which the client should re-fetch. */
+  expiresAt: number;
+  chainId: number;
+  token: string;
+  treasury: string;
+}
+
+// ── Per-user plans (monitor quota) ───────────────────────────────────────────
+
+export type PlanId = "indie" | "team";
+
+/** USD/month, paid as the same Sablier stream rail as ecosystem monitoring. */
+export const PLAN_PRICES_USD: Record<PlanId, number> = { indie: 15, team: 79 };
+
+/**
+ * Active monitor slots per plan. The free tier's 1 and these numbers are
+ * duplicated in record_monitor (packages/core migrations) — the RPC enforces,
+ * this renders; change both together.
+ */
+export const PLAN_QUOTAS: Record<PlanId | "free", number> = { free: 1, indie: 25, team: 100 };
+
+const B64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+/**
+ * The onchain tag binding a plan stream to its buyer, same role as
+ * paymentShapeTag below. Sablier caps shape at 32 bytes and `pgu:<uuid>` is 40
+ * chars, so the uuid's 16 bytes go base64url (22 chars, 26 total). The pgu:
+ * namespace also guarantees a plan stream can never verify as an ecosystem
+ * payment (pg:<slug>) or vice versa.
+ */
+export function planShapeTag(userId: string): string {
+  const hex = userId.replace(/-/g, "").toLowerCase();
+  if (!/^[0-9a-f]{32}$/.test(hex)) throw new Error(`planShapeTag: not a uuid: ${userId}`);
+  const bytes = Array.from({ length: 16 }, (_, i) => parseInt(hex.slice(i * 2, i * 2 + 2), 16));
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b = bytes[i + 1];
+    const c = bytes[i + 2];
+    const n = (bytes[i] << 16) | ((b ?? 0) << 8) | (c ?? 0);
+    out += B64URL[(n >>> 18) & 63];
+    out += B64URL[(n >>> 12) & 63];
+    if (b !== undefined) out += B64URL[(n >>> 6) & 63];
+    if (c !== undefined) out += B64URL[n & 63];
+  }
+  return `pgu:${out}`;
+}
 /** One billing month of streaming. */
 export const MONTH_SECONDS = 30 * 24 * 60 * 60;
 /**
@@ -84,6 +149,11 @@ export interface PaymentQuote {
   token: string;
   treasury: string;
   lockup: string;
+}
+
+/** What GET /api/account/plan/quote returns — a PaymentQuote for a plan. */
+export interface PlanQuote extends PaymentQuote {
+  plan: PlanId;
 }
 
 /**
@@ -185,6 +255,16 @@ export const SABLIER_LOCKUP_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  // Sender-only: stops the stream, refunds the unstreamed remainder to the
+  // payer. The client calls this from the cancel button; the server then
+  // re-reads statusOf and flips the payment row.
+  {
+    inputs: [{ internalType: "uint256", name: "streamId", type: "uint256" }],
+    name: "cancel",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
   {
     inputs: [{ internalType: "uint256", name: "streamId", type: "uint256" }],
     name: "wasCanceled",
@@ -248,7 +328,11 @@ export const SABLIER_LOCKUP_ABI = [
   },
 ] as const;
 
-/** Minimal ERC-20 surface for the approve step. */
+/**
+ * Minimal ERC-20 surface: approve/allowance/balance for the stream checkout,
+ * transfer + the Transfer event for the one-time priority-grading payment
+ * (client sends the transfer; the server matches the event log).
+ */
 export const ERC20_ABI = [
   {
     inputs: [
@@ -259,6 +343,26 @@ export const ERC20_ABI = [
     outputs: [{ internalType: "bool", name: "", type: "bool" }],
     stateMutability: "nonpayable",
     type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "to", type: "address" },
+      { internalType: "uint256", name: "amount", type: "uint256" },
+    ],
+    name: "transfer",
+    outputs: [{ internalType: "bool", name: "", type: "bool" }],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "from", type: "address" },
+      { indexed: true, internalType: "address", name: "to", type: "address" },
+      { indexed: false, internalType: "uint256", name: "value", type: "uint256" },
+    ],
+    name: "Transfer",
+    type: "event",
   },
   {
     inputs: [

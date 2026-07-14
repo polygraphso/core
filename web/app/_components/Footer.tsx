@@ -27,6 +27,11 @@ export function Footer() {
                 </a>
               </li>
               <li>
+                <a className="text-ink hover:text-oxblood transition-colors" href="/pricing">
+                  Pricing →
+                </a>
+              </li>
+              <li>
                 <a className="text-ink hover:text-oxblood transition-colors" href="/methodology">
                   Methodology →
                 </a>
