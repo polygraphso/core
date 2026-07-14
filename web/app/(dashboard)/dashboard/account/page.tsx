@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import { getSession } from "@/lib/session";
 import { getUserPlan } from "@/lib/userPlans";
 import { PLAN_QUOTAS } from "@/lib/paymentConfig";
+import { SignOutButton } from "../_components/SignOutButton";
 import { UpgradeFlow } from "./_components/UpgradeFlow";
 import { DeleteAccount } from "./_components/DeleteAccount";
 
@@ -27,25 +28,28 @@ export default async function AccountPage() {
 
   return (
     <main className="px-6 sm:px-10 py-12 max-w-3xl">
-      <header className="mb-8">
-        <p className="section-label mb-2">Account</p>
-        <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight">
-          {session.email}
-        </h1>
-        <p className="mt-2 font-mono text-[12px] text-ink-muted">
-          {planState.plan === "free" ? "Free" : planState.plan} plan ·{" "}
-          {session.isAdmin ? "uncapped" : `${PLAN_QUOTAS[planState.plan]} monitors`}
-          {hasActivePlan && planState.endAt ? (
-            <>
-              {" "}
-              · renews by{" "}
-              {new Date(planState.endAt).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })}
-            </>
-          ) : null}
-        </p>
+      <header className="mb-8 flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+        <div>
+          <p className="section-label mb-2">Account</p>
+          <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight">
+            {session.email}
+          </h1>
+          <p className="mt-2 font-mono text-[12px] text-ink-muted">
+            {planState.plan === "free" ? "Free" : planState.plan} plan ·{" "}
+            {session.isAdmin ? "uncapped" : `${PLAN_QUOTAS[planState.plan]} monitors`}
+            {hasActivePlan && planState.endAt ? (
+              <>
+                {" "}
+                · renews by{" "}
+                {new Date(planState.endAt).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })}
+              </>
+            ) : null}
+          </p>
+        </div>
+        <SignOutButton />
       </header>
 
       {/* Membership */}
