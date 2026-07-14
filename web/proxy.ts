@@ -20,6 +20,7 @@ export const config = {
     "/api/monitor/:path*",
     "/api/notify/:path*",
     "/api/grade-requests/:path*",
+    "/api/account/:path*",
   ],
 };
 

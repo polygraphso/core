@@ -1,38 +1,35 @@
 import "server-only";
 
 /**
- * The paid-monitoring gate. An ecosystem is 'active' when it is comped
- * (monthly_price_usd = 0) or has a verified, still-live Sablier stream of
- * $POLYGRAPH to the treasury (an ecosystem_payments row with status='active'
- * and end_at in the future). Everything else is 'unpaid' — the /manage console
- * redirects to the activation page and the manage APIs return 402.
+ * Per-user plans: the paid monitor quota. A user lifts the free 1-monitor cap
+ * by streaming $POLYGRAPH to the treasury, exactly the ecosystem-monitoring
+ * rail keyed by user instead of ecosystem (see lib/ecosystemPayments for the
+ * pattern, lib/paymentRail for the shared onchain plumbing). The stream IS the
+ * subscription: while a user_plan_payments row is status='active' with end_at
+ * in the future, record_monitor grants the plan's quota; cancel and the quota
+ * falls back to free within an hour of the next quota-relevant request.
  *
- * The stream is the source of truth: status is re-checked onchain (statusOf)
- * when a row hasn't been looked at for an hour, so a payer canceling mid-term
- * flips the gate within an hour of the next dashboard visit. RPC failures never
- * lock a paying customer out — the row stays as-is and the check retries later.
- *
- * Pricing is USD-pegged at quote time via the token's DexScreener price
- * (deepest Base pair), cached for a minute server-side. The onchain plumbing
- * (provider, stream reads, pricing) is shared with the per-user plan rail —
- * see lib/paymentRail.
+ * The RPC enforces quotas from the DB row alone (end_at); callers that are
+ * about to hit the quota path should call getUserPlan() first so onchain
+ * cancellation reconciles before enforcement.
  */
 
 import { ethers } from "ethers";
 import { getSupabaseAdmin } from "@/lib/supabase";
-import type { EcosystemRow } from "@/lib/ecosystemTypes";
 import {
-  DEFAULT_MONTHLY_PRICE_USD,
   DEPOSIT_TOLERANCE,
   MIN_STREAM_SECONDS,
   MONTH_SECONDS,
   PAYMENT_CHAIN_ID,
-  paymentShapeTag,
+  PLAN_PRICES_USD,
+  PLAN_QUOTAS,
+  planShapeTag,
   POLYGRAPH_TOKEN_ADDRESS,
   POLYGRAPH_TOKEN_DECIMALS,
   SABLIER_LOCKUP_ADDRESS,
   TREASURY_ADDRESS,
-  type PaymentQuote,
+  type PlanId,
+  type PlanQuote,
 } from "@/lib/paymentConfig";
 import {
   getTokenUsdRate,
@@ -41,12 +38,11 @@ import {
   usdToRawTokens,
 } from "@/lib/paymentRail";
 
-export { getTokenUsdRate };
-
-// Column-for-column mirror of ecosystem_payments (see packages/core/src/types.ts).
-export interface EcosystemPaymentRow {
+// Column-for-column mirror of user_plan_payments (see packages/core/src/types.ts).
+export interface UserPlanPaymentRow {
   id: string;
-  ecosystem_id: string;
+  user_id: string;
+  plan: PlanId;
   chain_id: number;
   sablier_contract: string;
   stream_id: number;
@@ -66,68 +62,57 @@ export interface EcosystemPaymentRow {
   created_at: string;
 }
 
-const PAYMENT_COLUMNS =
-  "id, ecosystem_id, chain_id, sablier_contract, stream_id, tx_hash, token, token_decimals, " +
+const PLAN_COLUMNS =
+  "id, user_id, plan, chain_id, sablier_contract, stream_id, tx_hash, token, token_decimals, " +
   "deposit_amount, usd_monthly, usd_total, token_usd_rate, payer_address, start_at, end_at, " +
   "status, verified_at, last_checked_at, created_at";
 
 const RECHECK_AFTER_MS = 60 * 60 * 1000;
 
-/** Effective monitoring price. null override = app default; 0 = comped. */
-export function effectiveMonthlyPriceUsd(
-  ecosystem: Pick<EcosystemRow, "monthly_price_usd">,
-): number {
-  return ecosystem.monthly_price_usd ?? DEFAULT_MONTHLY_PRICE_USD;
+export interface UserPlanState {
+  plan: PlanId | "free";
+  /** Active monitor slots this plan grants (admins are uncapped elsewhere). */
+  quota: number;
+  payment: UserPlanPaymentRow | null;
+  /** When the paid plan lapses; null on free. */
+  endAt: string | null;
 }
 
-export interface PaymentGate {
-  status: "active" | "unpaid";
-  /** True when the ecosystem is comped and no stream is required. */
-  exempt: boolean;
-  payment: EcosystemPaymentRow | null;
-}
+const FREE: UserPlanState = { plan: "free", quota: PLAN_QUOTAS.free, payment: null, endAt: null };
 
-/**
- * The one question the console, the manage APIs, and the digest ask: is this
- * ecosystem paid up right now?
- */
-export async function getPaymentGate(
-  ecosystem: Pick<EcosystemRow, "id" | "monthly_price_usd">,
-): Promise<PaymentGate> {
-  if (effectiveMonthlyPriceUsd(ecosystem) === 0) {
-    return { status: "active", exempt: true, payment: null };
-  }
+/** The user's current plan, lazily reconciled with the chain. */
+export async function getUserPlan(userId: string): Promise<UserPlanState> {
   const db = getSupabaseAdmin();
-  if (!db) return { status: "unpaid", exempt: false, payment: null };
+  if (!db) return FREE;
 
   const { data } = await db
-    .from("ecosystem_payments")
-    .select(PAYMENT_COLUMNS)
-    .eq("ecosystem_id", ecosystem.id)
+    .from("user_plan_payments")
+    .select(PLAN_COLUMNS)
+    .eq("user_id", userId)
     .eq("status", "active")
     .order("verified_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  let payment = (data as EcosystemPaymentRow | null) ?? null;
-  if (!payment) return { status: "unpaid", exempt: false, payment: null };
+  let payment = (data as UserPlanPaymentRow | null) ?? null;
+  if (!payment) return FREE;
 
-  payment = await refreshPaymentStatus(payment);
-  return payment.status === "active"
-    ? { status: "active", exempt: false, payment }
-    : { status: "unpaid", exempt: false, payment };
+  payment = await refreshPlanStatus(payment);
+  if (payment.status !== "active") return FREE;
+  return {
+    plan: payment.plan,
+    quota: PLAN_QUOTAS[payment.plan],
+    payment,
+    endAt: payment.end_at,
+  };
 }
 
-/**
- * Lazily reconcile a payment row with the chain: expire it when end_at has
- * passed, and once an hour ask the Lockup contract whether the payer canceled.
- * Onchain read failures leave the row untouched (never lock out on RPC flake).
- */
-async function refreshPaymentStatus(row: EcosystemPaymentRow): Promise<EcosystemPaymentRow> {
+/** Same lazy reconcile as the ecosystem gate: expiry in SQL terms, cancel onchain. */
+async function refreshPlanStatus(row: UserPlanPaymentRow): Promise<UserPlanPaymentRow> {
   const db = getSupabaseAdmin();
   if (!db) return row;
 
   if (new Date(row.end_at).getTime() <= Date.now()) {
-    await db.from("ecosystem_payments").update({ status: "ended" }).eq("id", row.id);
+    await db.from("user_plan_payments").update({ status: "ended" }).eq("id", row.id);
     return { ...row, status: "ended" };
   }
 
@@ -138,22 +123,22 @@ async function refreshPaymentStatus(row: EcosystemPaymentRow): Promise<Ecosystem
     const now = new Date().toISOString();
     if (live === "canceled") {
       await db
-        .from("ecosystem_payments")
+        .from("user_plan_payments")
         .update({ status: "canceled", last_checked_at: now })
         .eq("id", row.id);
       return { ...row, status: "canceled", last_checked_at: now };
     }
     if (live === "ended") {
       await db
-        .from("ecosystem_payments")
+        .from("user_plan_payments")
         .update({ status: "ended", last_checked_at: now })
         .eq("id", row.id);
       return { ...row, status: "ended", last_checked_at: now };
     }
-    await db.from("ecosystem_payments").update({ last_checked_at: now }).eq("id", row.id);
+    await db.from("user_plan_payments").update({ last_checked_at: now }).eq("id", row.id);
     return { ...row, last_checked_at: now };
   } catch (e) {
-    console.error("[payments] onchain re-check failed", e);
+    console.error("[plans] onchain re-check failed", e);
     return row;
   }
 }
@@ -162,20 +147,15 @@ async function refreshPaymentStatus(row: EcosystemPaymentRow): Promise<Ecosystem
 
 const QUOTE_TTL_MS = 10 * 60 * 1000;
 
-/**
- * Build the live quote the activation page renders and the create tx uses.
- * The quote is for ONE month — the billing unit; renewal is the next stream.
- */
-export async function buildPaymentQuote(
-  ecosystem: Pick<EcosystemRow, "monthly_price_usd">,
-): Promise<PaymentQuote> {
-  const usdMonthly = effectiveMonthlyPriceUsd(ecosystem);
-  const usdTotal = usdMonthly;
+/** Live quote for one month of a plan, same shape the activate page uses. */
+export async function buildPlanQuote(plan: PlanId): Promise<PlanQuote> {
+  const usdMonthly = PLAN_PRICES_USD[plan];
   const rate = await getTokenUsdRate();
-  const raw = usdToRawTokens(usdTotal, rate);
+  const raw = usdToRawTokens(usdMonthly, rate);
   return {
+    plan,
     usdMonthly,
-    usdTotal,
+    usdTotal: usdMonthly,
     tokenAmount: raw.toString(),
     tokenAmountDisplay: Number(ethers.formatUnits(raw, POLYGRAPH_TOKEN_DECIMALS)),
     tokenUsdRate: rate,
@@ -189,27 +169,24 @@ export async function buildPaymentQuote(
 
 // ── Onchain verification ─────────────────────────────────────────────────────
 
-export type VerifyResult =
-  | { ok: true; payment: EcosystemPaymentRow }
+export type PlanVerifyResult =
+  | { ok: true; payment: UserPlanPaymentRow }
   | { ok: false; reason: string };
 
 /**
- * Verify a payment from its CREATION TRANSACTION and, when it checks out,
- * record it as this ecosystem's payment. The stream is derived from the tx's
- * CreateLockupLinearStream event — never from a client-supplied id — and the
- * event's `shape` must carry this ecosystem's tag (paymentShapeTag, written by
- * our create flow). That binding is what stops someone pasting another
- * client's fresh, not-yet-verified stream and claiming it for their own
- * ecosystem: the tag names the ecosystem it was created for.
- *
- * Stateless with respect to the quote: the price is re-fetched here and the
- * deposit must cover ≥95% of the monthly price × the stream's duration, so a
- * quote can't be replayed after the token moves.
+ * Verify a plan payment from its creation tx and record it. Same trust posture
+ * as verifyStreamPayment: the stream comes from the event, the shape tag must
+ * name THIS user (pgu: namespace — an ecosystem stream can never be claimed as
+ * a plan or vice versa), and the deposit must cover the plan's monthly price
+ * for the stream's duration at the current rate. The plan is the buyer's claim
+ * checked against the deposit: claiming a pricier plan than was paid for fails
+ * the deposit check.
  */
-export async function verifyStreamPayment(
-  ecosystem: Pick<EcosystemRow, "id" | "slug" | "monthly_price_usd">,
+export async function verifyPlanStreamPayment(
+  userId: string,
+  plan: PlanId,
   txHash: string,
-): Promise<VerifyResult> {
+): Promise<PlanVerifyResult> {
   const db = getSupabaseAdmin();
   if (!db) return { ok: false, reason: "storage unconfigured" };
   if (!TREASURY_ADDRESS) return { ok: false, reason: "treasury address unconfigured" };
@@ -219,11 +196,11 @@ export async function verifyStreamPayment(
   const onchain = read.onchain;
 
   const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-  if (onchain.shape !== paymentShapeTag(ecosystem.slug)) {
+  if (onchain.shape !== planShapeTag(userId)) {
     return {
       ok: false,
       reason:
-        "this stream wasn't created for this ecosystem — pay on this page, or email hello@polygraph.so to attach a stream created elsewhere",
+        "this stream wasn't created for this account's plan — pay on the upgrade page, or email hello@polygraph.so",
     };
   }
   if (!same(onchain.token, POLYGRAPH_TOKEN_ADDRESS)) {
@@ -242,36 +219,32 @@ export async function verifyStreamPayment(
 
   const streamId = Number(onchain.streamId);
 
-  // Idempotent re-verify; a stream can back only one ecosystem. (The shape tag
-  // already binds it, but the unique row keeps history honest.)
+  // Idempotent re-verify; one stream backs one plan purchase.
   const { data: existing } = await db
-    .from("ecosystem_payments")
-    .select(PAYMENT_COLUMNS)
+    .from("user_plan_payments")
+    .select(PLAN_COLUMNS)
     .eq("chain_id", PAYMENT_CHAIN_ID)
     .eq("sablier_contract", SABLIER_LOCKUP_ADDRESS)
     .eq("stream_id", streamId)
     .maybeSingle();
-  const prior = (existing as EcosystemPaymentRow | null) ?? null;
+  const prior = (existing as UserPlanPaymentRow | null) ?? null;
   if (prior) {
-    if (prior.ecosystem_id !== ecosystem.id) {
-      return { ok: false, reason: "stream already backs another ecosystem" };
+    if (prior.user_id !== userId) {
+      return { ok: false, reason: "stream already backs another account" };
     }
     return prior.status === "active"
       ? { ok: true, payment: prior }
       : { ok: false, reason: `stream already recorded as ${prior.status}` };
   }
 
-  // Rate-based: the deposit must cover the monthly price for however long the
-  // stream runs — a 1-month stream needs one month's worth, a 6-month stream
-  // six. Prepaying more months in one stream is fine at the same rate.
-  const usdMonthly = effectiveMonthlyPriceUsd(ecosystem);
+  const usdMonthly = PLAN_PRICES_USD[plan];
   const months = durationSeconds / MONTH_SECONDS;
   const usdTotal = Math.round(usdMonthly * months * 100) / 100;
   let rate: number;
   try {
     rate = await getTokenUsdRate();
   } catch (e) {
-    console.error("[payments] price fetch failed", e);
+    console.error("[plans] price fetch failed", e);
     return { ok: false, reason: "could not price $POLYGRAPH right now, retry shortly" };
   }
   const required = usdToRawTokens(usdTotal * DEPOSIT_TOLERANCE, rate);
@@ -283,7 +256,8 @@ export async function verifyStreamPayment(
   }
 
   const insert = {
-    ecosystem_id: ecosystem.id,
+    user_id: userId,
+    plan,
     chain_id: PAYMENT_CHAIN_ID,
     sablier_contract: SABLIER_LOCKUP_ADDRESS,
     stream_id: streamId,
@@ -300,13 +274,13 @@ export async function verifyStreamPayment(
     status: "active" as const,
   };
   const { data: created, error } = await db
-    .from("ecosystem_payments")
+    .from("user_plan_payments")
     .insert(insert)
-    .select(PAYMENT_COLUMNS)
+    .select(PLAN_COLUMNS)
     .single();
   if (error || !created) {
-    console.error("[payments] insert failed", error);
+    console.error("[plans] insert failed", error);
     return { ok: false, reason: "verified onchain but could not be recorded, retry" };
   }
-  return { ok: true, payment: created as unknown as EcosystemPaymentRow };
+  return { ok: true, payment: created as unknown as UserPlanPaymentRow };
 }

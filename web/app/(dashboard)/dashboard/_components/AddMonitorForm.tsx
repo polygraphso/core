@@ -13,22 +13,30 @@ export function AddMonitorForm() {
   const [skillValue, setSkillValue] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [upgradeUrl, setUpgradeUrl] = useState<string | null>(null);
   const router = useRouter();
 
   async function submitRef(server_ref: string, opts: { alreadyGraded: boolean; isSkill: boolean }) {
     setStatus("loading");
     setMessage("");
+    setUpgradeUrl(null);
 
     const res = await fetch("/api/monitor", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ server_ref }),
     });
-    const body = (await res.json()) as { ok: boolean; message?: string };
+    const body = (await res.json()) as {
+      ok: boolean;
+      message?: string;
+      code?: string;
+      upgradeUrl?: string;
+    };
 
     if (!res.ok) {
       setStatus("error");
       setMessage(body.message ?? "Something went wrong.");
+      if (body.code === "quota_exceeded" && body.upgradeUrl) setUpgradeUrl(body.upgradeUrl);
       return;
     }
 
@@ -164,6 +172,17 @@ export function AddMonitorForm() {
           className={`mt-3 font-mono text-[11px] ${status === "error" ? "text-oxblood" : "text-ink-muted"}`}
         >
           {message}
+          {upgradeUrl ? (
+            <>
+              {" "}
+              <a
+                href={upgradeUrl}
+                className="text-ink underline decoration-dotted underline-offset-2 hover:text-oxblood"
+              >
+                See plans →
+              </a>
+            </>
+          ) : null}
         </p>
       )}
     </div>

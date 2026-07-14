@@ -48,6 +48,46 @@ export function paymentShapeTag(slug: string): string {
 }
 
 export const DEFAULT_MONTHLY_PRICE_USD = 199;
+
+// ── Per-user plans (monitor quota) ───────────────────────────────────────────
+
+export type PlanId = "indie" | "team";
+
+/** USD/month, paid as the same Sablier stream rail as ecosystem monitoring. */
+export const PLAN_PRICES_USD: Record<PlanId, number> = { indie: 15, team: 79 };
+
+/**
+ * Active monitor slots per plan. The free tier's 1 and these numbers are
+ * duplicated in record_monitor (packages/core migrations) — the RPC enforces,
+ * this renders; change both together.
+ */
+export const PLAN_QUOTAS: Record<PlanId | "free", number> = { free: 1, indie: 25, team: 100 };
+
+const B64URL = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+/**
+ * The onchain tag binding a plan stream to its buyer, same role as
+ * paymentShapeTag below. Sablier caps shape at 32 bytes and `pgu:<uuid>` is 40
+ * chars, so the uuid's 16 bytes go base64url (22 chars, 26 total). The pgu:
+ * namespace also guarantees a plan stream can never verify as an ecosystem
+ * payment (pg:<slug>) or vice versa.
+ */
+export function planShapeTag(userId: string): string {
+  const hex = userId.replace(/-/g, "").toLowerCase();
+  if (!/^[0-9a-f]{32}$/.test(hex)) throw new Error(`planShapeTag: not a uuid: ${userId}`);
+  const bytes = Array.from({ length: 16 }, (_, i) => parseInt(hex.slice(i * 2, i * 2 + 2), 16));
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b = bytes[i + 1];
+    const c = bytes[i + 2];
+    const n = (bytes[i] << 16) | ((b ?? 0) << 8) | (c ?? 0);
+    out += B64URL[(n >>> 18) & 63];
+    out += B64URL[(n >>> 12) & 63];
+    if (b !== undefined) out += B64URL[(n >>> 6) & 63];
+    if (c !== undefined) out += B64URL[n & 63];
+  }
+  return `pgu:${out}`;
+}
 /** One billing month of streaming. */
 export const MONTH_SECONDS = 30 * 24 * 60 * 60;
 /**
@@ -84,6 +124,11 @@ export interface PaymentQuote {
   token: string;
   treasury: string;
   lockup: string;
+}
+
+/** What GET /api/account/plan/quote returns — a PaymentQuote for a plan. */
+export interface PlanQuote extends PaymentQuote {
+  plan: PlanId;
 }
 
 /**

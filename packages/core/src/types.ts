@@ -388,6 +388,43 @@ export interface EcosystemPaymentRow {
   created_at: string;
 }
 
+/** What a paying user bought. Free tier is the absence of a live row. */
+export type UserPlanId = "indie" | "team";
+
+/**
+ * One verified per-user plan payment: the same Sablier stream rail as
+ * EcosystemPaymentRow, keyed by auth user instead of ecosystem, plus `plan`
+ * naming what was bought. Mirrors the `user_plan_payments` table. While a row
+ * is status='active' with end_at in the future, record_monitor grants the
+ * plan's monitor quota (25 indie / 100 team; free = 1).
+ */
+export interface UserPlanPaymentRow {
+  id: string;
+  user_id: string;
+  plan: UserPlanId;
+  chain_id: number;
+  sablier_contract: string;
+  stream_id: number;
+  tx_hash: string | null;
+  token: string;
+  token_decimals: number;
+  /**
+   * Raw token units (uint128). Exact in Postgres (numeric, written as a bigint
+   * string); reads may lose precision past 2^53 — treat as display-only.
+   */
+  deposit_amount: number;
+  usd_monthly: number;
+  usd_total: number;
+  token_usd_rate: number;
+  payer_address: string;
+  start_at: string;
+  end_at: string;
+  status: EcosystemPaymentStatus;
+  verified_at: string;
+  last_checked_at: string;
+  created_at: string;
+}
+
 /**
  * A person who manages an ecosystem, or a pending email invite. Mirrors the
  * `ecosystem_members` table. `user_id` is null while `status` is 'invited' and

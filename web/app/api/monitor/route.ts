@@ -22,6 +22,7 @@ import {
 } from "@/lib/identity";
 import { decodeSkillRef, githubUrlToSkillRef } from "@/lib/skillGrades";
 import { getSession } from "@/lib/session";
+import { getUserPlan } from "@/lib/userPlans";
 import { verifyRunnable, checkRegistryExists } from "@/lib/verifyRunnable";
 import { gateKnownMcp, isCatalogedServer } from "@/lib/knownMcp";
 import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
@@ -157,6 +158,11 @@ export async function POST(request: Request) {
       }
     }
 
+    // Reconcile the plan with the chain BEFORE enforcement: a canceled stream
+    // flips the row here, so the RPC's DB-only quota check sees the truth. The
+    // returned state also makes the 409 message accurate.
+    const planState = await getUserPlan(session.userId);
+
     const { error } = await supabase.rpc("record_monitor", {
       p_target: normalizedRef,
       p_email: null,
@@ -170,7 +176,10 @@ export async function POST(request: Request) {
             ok: false,
             code: "quota_exceeded",
             message:
-              "You're already monitoring a server. Unsubscribe from it in your dashboard to add a new one.",
+              planState.plan === "free"
+                ? "The free tier watches one target. Upgrade for more slots, or unsubscribe from your current monitor."
+                : `Your ${planState.plan} plan is at its ${planState.quota}-monitor cap. Unsubscribe from one, or upgrade.`,
+            upgradeUrl: "/dashboard/upgrade",
           },
           { status: 409 },
         );
