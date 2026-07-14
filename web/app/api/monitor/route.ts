@@ -179,7 +179,7 @@ export async function POST(request: Request) {
               planState.plan === "free"
                 ? "The free tier watches one target. Upgrade for more slots, or unsubscribe from your current monitor."
                 : `Your ${planState.plan} plan is at its ${planState.quota}-monitor cap. Unsubscribe from one, or upgrade.`,
-            upgradeUrl: "/dashboard/upgrade",
+            upgradeUrl: "/dashboard/account",
           },
           { status: 409 },
         );
