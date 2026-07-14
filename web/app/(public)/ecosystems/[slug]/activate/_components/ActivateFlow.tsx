@@ -16,9 +16,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createAppKit, useAppKit } from "@reown/appkit/react";
-import { WagmiProvider, useAccount, useConfig, useDisconnect } from "wagmi";
+import { useAppKit } from "@reown/appkit/react";
+import { useAccount, useConfig, useDisconnect } from "wagmi";
 import {
   readContract,
   switchChain,
@@ -35,23 +34,7 @@ import {
   SABLIER_LOCKUP_ABI,
   type PaymentQuote,
 } from "@/lib/paymentConfig";
-import { appkitMetadata, appkitNetworks, reownProjectId, wagmiAdapter } from "./appkitConfig";
-
-// Module level per the AppKit pattern — runs once on import, never per render.
-if (reownProjectId) {
-  createAppKit({
-    adapters: [wagmiAdapter],
-    networks: appkitNetworks,
-    projectId: reownProjectId,
-    metadata: appkitMetadata,
-    features: { analytics: false, email: false, socials: false },
-    themeMode: "light",
-    themeVariables: {
-      "--w3m-accent": "#7a1f2b",
-      "--w3m-font-family": "'IBM Plex Sans', system-ui, sans-serif",
-    },
-  });
-}
+import { WalletIsland } from "@/app/_components/wallet/WalletIsland";
 
 const SwapWidget = dynamic(() => import("./SwapWidget").then((m) => m.SwapWidget), {
   ssr: false,
@@ -61,8 +44,6 @@ const SwapWidget = dynamic(() => import("./SwapWidget").then((m) => m.SwapWidget
     </p>
   ),
 });
-
-const queryClient = new QueryClient();
 
 export interface ActivateFlowProps {
   slug: string;
@@ -74,15 +55,12 @@ type VerifyState = { id: "idle" } | { id: "verifying" } | { id: "done" } | { id:
 
 export function ActivateFlow(props: ActivateFlowProps) {
   return (
-    // ONE wagmi tree (AppKit's adapter config) around the whole flow — the
+    // ONE wagmi tree (the shared WalletIsland) around the whole flow — the
     // LI.FI widget detects it and reuses the same wallet session as the pay
-    // step (external wallet management; see SwapWidget). No reconnectOnMount:
-    // a payment page shouldn't poke wallet extensions on load.
-    <WagmiProvider config={wagmiAdapter.wagmiConfig} reconnectOnMount={false}>
-      <QueryClientProvider client={queryClient}>
-        <ActivateFlowInner {...props} />
-      </QueryClientProvider>
-    </WagmiProvider>
+    // step (external wallet management; see SwapWidget).
+    <WalletIsland>
+      <ActivateFlowInner {...props} />
+    </WalletIsland>
   );
 }
 
