@@ -24,6 +24,7 @@ import { CvesManager } from "./_components/CvesManager";
 import { AlertSettingsForm } from "./_components/AlertSettingsForm";
 import { MembersManager } from "./_components/MembersManager";
 import { SettingsForm } from "./_components/SettingsForm";
+import { MonitoringStatus } from "./_components/MonitoringStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +100,17 @@ export default async function ManageConsolePage({
           </p>
         ) : null}
       </header>
+
+      {/* Active-monitoring line + cancel, for managers on a paid (non-comped)
+          ecosystem. Comped ecosystems have no stream, so nothing to cancel. */}
+      {manage && !locked && gate.payment ? (
+        <MonitoringStatus
+          slug={ecosystem.slug}
+          streamId={gate.payment.stream_id}
+          lockup={gate.payment.sablier_contract}
+          endAt={gate.payment.end_at}
+        />
+      ) : null}
 
       {/* The locked-console banner: browse, but the paid layer waits on activation. */}
       {locked ? (

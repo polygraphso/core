@@ -5,64 +5,39 @@
  * create a one-month Sablier stream → server verify → monitoring starts.
  * Renewal = the next stream when this one runs out.
  *
- * Structure note: the LI.FI swap widget and the AppKit/wagmi pay step share ONE
- * wagmi tree (AppKit's adapter config), so a wallet connected once works in
- * both. The widget reuses that session via LI.FI's external wallet management —
- * which only engages when its EthereumProvider is rendered to read the shared
- * WagmiContext (see SwapWidget). The quote/verify plumbing lives outside wallet
- * state entirely — plain fetches. Nothing signed client-side is trusted: the
- * verify route re-reads the stream onchain and re-prices the deposit.
+ * Structure note: the LI.FI swap widget and the pay step share ONE wagmi tree
+ * (the shared WalletIsland), so a wallet connected once works in both. The
+ * quote/verify plumbing lives outside wallet state entirely — plain fetches.
+ * Nothing signed client-side is trusted: the verify route re-reads the stream
+ * onchain and re-prices the deposit. The connect/approve/stream mechanics live
+ * in the shared StreamPayStep (also used by the plan upgrade flow).
  */
 
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createAppKit, useAppKit } from "@reown/appkit/react";
-import { WagmiProvider, useAccount, useConfig, useDisconnect } from "wagmi";
 import {
-  readContract,
-  switchChain,
-  waitForTransactionReceipt,
-  writeContract,
-} from "@wagmi/core";
-import {
-  ERC20_ABI,
-  MONTH_SECONDS,
-  PAYMENT_CHAIN_ID,
   paymentShapeTag,
-  POLYGRAPH_TOKEN_ADDRESS,
   POLYGRAPH_TOKEN_SYMBOL,
-  SABLIER_LOCKUP_ABI,
   type PaymentQuote,
 } from "@/lib/paymentConfig";
-import { appkitMetadata, appkitNetworks, reownProjectId, wagmiAdapter } from "./appkitConfig";
+import { WalletIsland } from "@/app/_components/wallet/WalletIsland";
+import {
+  formatTokens,
+  ManualStreamVerify,
+  StreamPayStep,
+} from "@/app/_components/wallet/StreamPayStep";
 
-// Module level per the AppKit pattern — runs once on import, never per render.
-if (reownProjectId) {
-  createAppKit({
-    adapters: [wagmiAdapter],
-    networks: appkitNetworks,
-    projectId: reownProjectId,
-    metadata: appkitMetadata,
-    features: { analytics: false, email: false, socials: false },
-    themeMode: "light",
-    themeVariables: {
-      "--w3m-accent": "#7a1f2b",
-      "--w3m-font-family": "'IBM Plex Sans', system-ui, sans-serif",
-    },
-  });
-}
-
-const SwapWidget = dynamic(() => import("./SwapWidget").then((m) => m.SwapWidget), {
-  ssr: false,
-  loading: () => (
-    <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink-faint">
-      loading swap…
-    </p>
-  ),
-});
-
-const queryClient = new QueryClient();
+const SwapWidget = dynamic(
+  () => import("@/app/_components/wallet/SwapWidget").then((m) => m.SwapWidget),
+  {
+    ssr: false,
+    loading: () => (
+      <p className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink-faint">
+        loading swap…
+      </p>
+    ),
+  },
+);
 
 export interface ActivateFlowProps {
   slug: string;
@@ -70,27 +45,20 @@ export interface ActivateFlowProps {
   consoleHref: string | null;
 }
 
-type VerifyState = { id: "idle" } | { id: "verifying" } | { id: "done" } | { id: "error"; message: string };
-
 export function ActivateFlow(props: ActivateFlowProps) {
   return (
-    // ONE wagmi tree (AppKit's adapter config) around the whole flow — the
+    // ONE wagmi tree (the shared WalletIsland) around the whole flow — the
     // LI.FI widget detects it and reuses the same wallet session as the pay
-    // step (external wallet management; see SwapWidget). No reconnectOnMount:
-    // a payment page shouldn't poke wallet extensions on load.
-    <WagmiProvider config={wagmiAdapter.wagmiConfig} reconnectOnMount={false}>
-      <QueryClientProvider client={queryClient}>
-        <ActivateFlowInner {...props} />
-      </QueryClientProvider>
-    </WagmiProvider>
+    // step (external wallet management; see SwapWidget).
+    <WalletIsland>
+      <ActivateFlowInner {...props} />
+    </WalletIsland>
   );
 }
 
 function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
   const [quote, setQuote] = useState<PaymentQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [manualTxHash, setManualTxHash] = useState("");
-  const [manualState, setManualState] = useState<VerifyState>({ id: "idle" });
 
   const fetchQuote = useCallback(async () => {
     setQuoteError(null);
@@ -180,209 +148,26 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
       </div>
 
       {/* Step 2 — connect and stream. */}
-      <PayStep slug={slug} consoleHref={consoleHref} quote={quote} verify={verify} />
+      <StreamPayStep
+        quote={quote}
+        shapeTag={paymentShapeTag(slug)}
+        verify={verify}
+        idleLabel={`Stream ${POLYGRAPH_TOKEN_SYMBOL} for a month`}
+        doneLabel={consoleHref ? "Active — opening console…" : "Monitoring active"}
+        helper={
+          <>
+            Two transactions: an approval, then the payment stream. We verify it onchain (token,
+            recipient, amount, duration) before monitoring starts. No custody: cancel anytime from
+            the console and the unstreamed remainder returns to this wallet. Monitoring runs while
+            the stream does; renew by funding the next month&rsquo;s stream here (a longer stream at
+            the same monthly rate prepays more months).
+          </>
+        }
+        success={!consoleHref ? <SuccessNote /> : undefined}
+      />
 
-      {/* Recovery: a payment made here whose verify never ran (tab closed
-          mid-flow, network blip). Takes the creation TRANSACTION, not a stream
-          id — the server derives the stream from it and requires this
-          ecosystem's tag, so someone else's stream can't be claimed here. */}
-      <div className="mt-10 border-t hairline pt-5">
-        <p className="font-mono text-[11px] uppercase tracking-[0.16em] text-ink-faint mb-2">
-          Paid here but it didn&rsquo;t register?
-        </p>
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            value={manualTxHash}
-            onChange={(e) => setManualTxHash(e.target.value)}
-            placeholder="stream creation tx hash (0x…)"
-            spellCheck={false}
-            className="w-96 max-w-full rounded-[3px] border border-rule bg-parchment-50 px-3 py-2 font-mono text-[13px] text-ink placeholder:text-ink-faint focus:outline-none focus:border-ink"
-          />
-          <button
-            disabled={manualState.id === "verifying" || !/^0x[0-9a-fA-F]{64}$/.test(manualTxHash.trim())}
-            onClick={async () => {
-              setManualState({ id: "verifying" });
-              const r = await verify(manualTxHash.trim());
-              setManualState(r.ok ? { id: "done" } : { id: "error", message: r.message });
-            }}
-            className="font-mono text-[12px] uppercase tracking-[0.14em] text-ink-muted border border-rule rounded-[3px] px-4 py-2 hover:text-oxblood hover:border-oxblood/40 transition-colors disabled:opacity-50"
-          >
-            {manualState.id === "verifying" ? "verifying…" : "verify it"}
-          </button>
-        </div>
-        {manualState.id === "error" ? (
-          <p className="mt-2 text-[13px] text-ink leading-relaxed max-w-xl">{manualState.message}</p>
-        ) : null}
-        {manualState.id === "done" && !consoleHref ? <SuccessNote /> : null}
-      </div>
+      <ManualStreamVerify verify={verify} success={!consoleHref ? <SuccessNote /> : undefined} />
     </section>
-  );
-}
-
-type Step =
-  | { id: "idle" }
-  | { id: "approving" }
-  | { id: "streaming" }
-  | { id: "verifying" }
-  | { id: "done" }
-  | { id: "error"; message: string };
-
-function PayStep({
-  slug,
-  consoleHref,
-  quote,
-  verify,
-}: ActivateFlowProps & {
-  quote: PaymentQuote | null;
-  verify: (txHash: string) => Promise<{ ok: true } | { ok: false; message: string }>;
-}) {
-  const config = useConfig();
-  const { address, isConnected, chainId } = useAccount();
-  const { open } = useAppKit();
-  const { disconnect } = useDisconnect();
-  const [step, setStep] = useState<Step>({ id: "idle" });
-
-  const busy = step.id === "approving" || step.id === "streaming" || step.id === "verifying";
-
-  const pay = useCallback(async () => {
-    if (!quote || !address) return;
-    try {
-      if (chainId !== PAYMENT_CHAIN_ID) {
-        await switchChain(config, { chainId: PAYMENT_CHAIN_ID });
-      }
-      const amount = BigInt(quote.tokenAmount);
-      const token = quote.token as `0x${string}`;
-      const lockup = quote.lockup as `0x${string}`;
-
-      const balance = (await readContract(config, {
-        abi: ERC20_ABI,
-        address: token,
-        functionName: "balanceOf",
-        args: [address],
-      })) as bigint;
-      if (balance < amount) {
-        setStep({
-          id: "error",
-          message: `This wallet holds ${formatTokens(balance)} ${POLYGRAPH_TOKEN_SYMBOL}; the stream needs ${formatTokens(amount)}. Use the swap above to top up, then retry.`,
-        });
-        return;
-      }
-
-      const allowance = (await readContract(config, {
-        abi: ERC20_ABI,
-        address: token,
-        functionName: "allowance",
-        args: [address, lockup],
-      })) as bigint;
-      if (allowance < amount) {
-        setStep({ id: "approving" });
-        const approveHash = await writeContract(config, {
-          abi: ERC20_ABI,
-          address: token,
-          functionName: "approve",
-          args: [lockup, amount],
-          chainId: PAYMENT_CHAIN_ID,
-        });
-        await waitForTransactionReceipt(config, { hash: approveHash });
-      }
-
-      setStep({ id: "streaming" });
-      const createHash = await writeContract(config, {
-        abi: SABLIER_LOCKUP_ABI,
-        address: lockup,
-        functionName: "createWithDurationsLL",
-        args: [
-          {
-            sender: address,
-            recipient: quote.treasury as `0x${string}`,
-            depositAmount: amount,
-            token,
-            cancelable: true,
-            transferable: false,
-            // Binds the stream to THIS ecosystem; the verify route requires it
-            // back from the creation event.
-            shape: paymentShapeTag(slug),
-          },
-          { start: BigInt(0), cliff: BigInt(0) },
-          0, // granularity: 0 is Sablier's sentinel for per-second streaming
-          { cliff: 0, total: MONTH_SECONDS },
-        ],
-        value: BigInt(0),
-        chainId: PAYMENT_CHAIN_ID,
-      });
-      await waitForTransactionReceipt(config, { hash: createHash });
-      setStep({ id: "verifying" });
-      const r = await verify(createHash);
-      setStep(r.ok ? { id: "done" } : { id: "error", message: r.message });
-    } catch (e) {
-      const message = e instanceof Error ? e.message : String(e);
-      setStep({ id: "error", message: shortenTxError(message) });
-    }
-  }, [address, chainId, config, quote, slug, verify]);
-
-  return (
-    <div>
-      {!isConnected ? (
-        <button
-          onClick={() => void open()}
-          className="inline-flex items-center gap-2 rounded-[3px] bg-ink px-6 py-3.5 font-mono text-sm tracking-wide text-parchment transition-colors hover:bg-oxblood"
-        >
-          Connect wallet
-        </button>
-      ) : (
-        <div>
-          <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[12px] text-ink-muted">
-            <span>
-              {address?.slice(0, 6)}…{address?.slice(-4)} on Base
-            </span>
-            <button
-              onClick={() => disconnect()}
-              className="text-ink-faint underline decoration-dotted hover:text-oxblood"
-            >
-              disconnect
-            </button>
-          </div>
-          <button
-            disabled={!quote || busy}
-            onClick={() => void pay()}
-            className="inline-flex items-center gap-2 rounded-[3px] bg-ink px-6 py-3.5 font-mono text-sm tracking-wide text-parchment transition-colors hover:bg-oxblood disabled:opacity-50"
-          >
-            {step.id === "approving"
-              ? "Approving…"
-              : step.id === "streaming"
-                ? "Creating the stream…"
-                : step.id === "verifying"
-                  ? "Verifying onchain…"
-                  : step.id === "done"
-                    ? consoleHref
-                      ? "Active — opening console…"
-                      : "Monitoring active"
-                    : `Stream ${POLYGRAPH_TOKEN_SYMBOL} for a month`}
-          </button>
-          <p className="mt-3 text-[13px] leading-relaxed text-ink-faint max-w-xl">
-            Two transactions: an approval, then the Sablier stream. We verify the stream onchain —
-            token, recipient, amount, duration — before monitoring starts. No custody: cancel from
-            any Sablier interface and the unstreamed remainder returns to this wallet. Monitoring
-            runs while the stream does; renew by creating the next month&rsquo;s stream here (a
-            longer stream at the same monthly rate prepays more months).
-          </p>
-        </div>
-      )}
-
-      {step.id === "done" && !consoleHref ? <SuccessNote /> : null}
-
-      {step.id === "error" ? (
-        <div className="mt-5 border-l-2 pl-4" style={{ borderColor: "var(--color-oxblood)" }}>
-          <p className="text-[14px] leading-relaxed text-ink">{step.message}</p>
-          <button
-            onClick={() => setStep({ id: "idle" })}
-            className="mt-1 font-mono text-[12px] uppercase tracking-[0.14em] text-oxblood hover:underline"
-          >
-            dismiss
-          </button>
-        </div>
-      ) : null}
-    </div>
   );
 }
 
@@ -399,15 +184,4 @@ function SuccessNote() {
       </p>
     </div>
   );
-}
-
-function formatTokens(raw: bigint): string {
-  const whole = raw / BigInt("1000000000000000000"); // 18 decimals
-  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(whole);
-}
-
-/** Wallet errors arrive as multi-paragraph essays; keep the first line. */
-function shortenTxError(message: string): string {
-  const first = message.split("\n")[0]?.trim() ?? message;
-  return first.length > 240 ? `${first.slice(0, 240)}…` : first;
 }

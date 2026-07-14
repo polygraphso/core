@@ -17,9 +17,17 @@ export const metadata: Metadata = {
 
 // Public by design: this is the only funnel for getting an ungraded server
 // graded (the /mcp-index CTA and every ungraded report page point here), so it
-// must work without an account. A signed-in session just pre-fills the email.
-export default async function RequestPage() {
+// must work without an account. A signed-in session just pre-fills the email;
+// a ?target= (from an ungraded report's CTA) pre-fills the server.
+export default async function RequestPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ target?: string }>;
+}) {
   const session = await getSession();
+
+  const { target } = await searchParams;
+  const initialTarget = typeof target === "string" ? target.slice(0, 512) : "";
 
   return (
       <div className="mx-auto max-w-3xl">
@@ -31,11 +39,12 @@ export default async function RequestPage() {
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug">
             Want a server graded that isn&rsquo;t up yet? Add it to the bench.
             We work the queue on our own timeline &mdash; demand moves servers
-            up &mdash; and email you when the grade publishes.
+            up &mdash; and email you when the grade publishes. A paid 48-hour
+            lane is offered once it&rsquo;s queued.
           </p>
         </header>
 
-        <RequestForm sessionEmail={session?.email ?? null} />
+        <RequestForm sessionEmail={session?.email ?? null} initialTarget={initialTarget} />
 
         <p className="mt-8 font-mono text-[11px] text-ink-faint leading-relaxed">
           Just want to hear about new grades in general?{" "}

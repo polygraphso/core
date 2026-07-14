@@ -518,12 +518,20 @@ function Ungraded({
           Notify me when it&rsquo;s graded
         </Link>
         <Link
-          href="/request"
+          href={`/request?target=${encodeURIComponent(serverKey)}`}
           className="inline-flex items-center gap-2 border hairline px-5 py-3 font-mono text-sm tracking-wide text-ink-muted hover:text-ink transition-colors"
         >
           Request a grade now
         </Link>
       </div>
+
+      <p className="mt-3 font-mono text-[11px] text-ink-faint">
+        Free, on our own timeline. Need it in 48h? A{" "}
+        <Link href={`/request?target=${encodeURIComponent(serverKey)}`} className="text-ink-muted hover:text-oxblood underline decoration-dotted underline-offset-2">
+          paid priority lane
+        </Link>{" "}
+        is offered once it&rsquo;s queued.
+      </p>
 
       <AdoptionSignals adoption={adoption} />
 

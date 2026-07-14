@@ -13,7 +13,9 @@ import "server-only";
  * lock a paying customer out — the row stays as-is and the check retries later.
  *
  * Pricing is USD-pegged at quote time via the token's DexScreener price
- * (deepest Base pair), cached for a minute server-side.
+ * (deepest Base pair), cached for a minute server-side. The onchain plumbing
+ * (provider, stream reads, pricing) is shared with the per-user plan rail —
+ * see lib/paymentRail.
  */
 
 import { ethers } from "ethers";
@@ -28,12 +30,18 @@ import {
   paymentShapeTag,
   POLYGRAPH_TOKEN_ADDRESS,
   POLYGRAPH_TOKEN_DECIMALS,
-  SABLIER_LOCKUP_ABI,
   SABLIER_LOCKUP_ADDRESS,
-  STREAM_STATUS,
   TREASURY_ADDRESS,
   type PaymentQuote,
 } from "@/lib/paymentConfig";
+import {
+  getTokenUsdRate,
+  liveStreamStatus,
+  readStreamCreation,
+  usdToRawTokens,
+} from "@/lib/paymentRail";
+
+export { getTokenUsdRate };
 
 // Column-for-column mirror of ecosystem_payments (see packages/core/src/types.ts).
 export interface EcosystemPaymentRow {
@@ -111,10 +119,15 @@ export async function getPaymentGate(
 
 /**
  * Lazily reconcile a payment row with the chain: expire it when end_at has
- * passed, and once an hour ask the Lockup contract whether the payer canceled.
- * Onchain read failures leave the row untouched (never lock out on RPC flake).
+ * passed, and once an hour (or immediately when `force`) ask the Lockup
+ * contract whether the payer canceled. Onchain read failures leave the row
+ * untouched (never lock out on RPC flake). `force` is used right after a user
+ * cancels in the UI so the change reflects without waiting out the hour.
  */
-async function refreshPaymentStatus(row: EcosystemPaymentRow): Promise<EcosystemPaymentRow> {
+async function refreshPaymentStatus(
+  row: EcosystemPaymentRow,
+  force = false,
+): Promise<EcosystemPaymentRow> {
   const db = getSupabaseAdmin();
   if (!db) return row;
 
@@ -123,20 +136,19 @@ async function refreshPaymentStatus(row: EcosystemPaymentRow): Promise<Ecosystem
     return { ...row, status: "ended" };
   }
 
-  if (Date.now() - new Date(row.last_checked_at).getTime() < RECHECK_AFTER_MS) return row;
+  if (!force && Date.now() - new Date(row.last_checked_at).getTime() < RECHECK_AFTER_MS) return row;
 
   try {
-    const lockup = lockupContract(await paymentProvider(), row.sablier_contract);
-    const status = Number(await lockup.statusOf(row.stream_id));
+    const live = await liveStreamStatus(row.sablier_contract, row.stream_id);
     const now = new Date().toISOString();
-    if (status === STREAM_STATUS.CANCELED) {
+    if (live === "canceled") {
       await db
         .from("ecosystem_payments")
         .update({ status: "canceled", last_checked_at: now })
         .eq("id", row.id);
       return { ...row, status: "canceled", last_checked_at: now };
     }
-    if (status === STREAM_STATUS.DEPLETED) {
+    if (live === "ended") {
       await db
         .from("ecosystem_payments")
         .update({ status: "ended", last_checked_at: now })
@@ -151,42 +163,34 @@ async function refreshPaymentStatus(row: EcosystemPaymentRow): Promise<Ecosystem
   }
 }
 
-// ── Pricing ──────────────────────────────────────────────────────────────────
+/**
+ * Force an immediate onchain re-check of the ecosystem's active payment and
+ * return the reconciled status. Called by the payment/refresh route right after
+ * a user cancels the stream in the UI. No-ops to "unpaid" when there's no
+ * active row (already canceled/ended).
+ */
+export async function reconcileEcosystemPayment(
+  ecosystemId: string,
+): Promise<"active" | "canceled" | "ended" | "unpaid"> {
+  const db = getSupabaseAdmin();
+  if (!db) return "unpaid";
+  const { data } = await db
+    .from("ecosystem_payments")
+    .select(PAYMENT_COLUMNS)
+    .eq("ecosystem_id", ecosystemId)
+    .eq("status", "active")
+    .order("verified_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const row = (data as EcosystemPaymentRow | null) ?? null;
+  if (!row) return "unpaid";
+  const reconciled = await refreshPaymentStatus(row, true);
+  return reconciled.status === "active" ? "active" : reconciled.status;
+}
 
-const DEXSCREENER_URL = `https://api.dexscreener.com/latest/dex/tokens/${POLYGRAPH_TOKEN_ADDRESS}`;
-const PRICE_TTL_MS = 60 * 1000;
+// ── Quotes ───────────────────────────────────────────────────────────────────
+
 const QUOTE_TTL_MS = 10 * 60 * 1000;
-
-let priceCache: { rate: number; fetchedAt: number } | null = null;
-
-interface DexScreenerPair {
-  chainId?: string;
-  priceUsd?: string;
-  liquidity?: { usd?: number };
-}
-
-/** USD per $POLYGRAPH from the deepest Base pair. Throws when unavailable. */
-export async function getTokenUsdRate(): Promise<number> {
-  if (priceCache && Date.now() - priceCache.fetchedAt < PRICE_TTL_MS) return priceCache.rate;
-  const res = await fetch(DEXSCREENER_URL, { cache: "no-store" });
-  if (!res.ok) throw new Error(`dexscreener ${res.status}`);
-  const body = (await res.json()) as { pairs?: DexScreenerPair[] };
-  const best = (body.pairs ?? [])
-    .filter((p) => p.chainId === "base" && p.priceUsd)
-    .sort((a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0))[0];
-  const rate = best ? Number.parseFloat(best.priceUsd as string) : NaN;
-  if (!Number.isFinite(rate) || rate <= 0) throw new Error("no usable POLYGRAPH price");
-  priceCache = { rate, fetchedAt: Date.now() };
-  return rate;
-}
-
-/** Convert a USD total into raw token units at the given rate. */
-function usdToRawTokens(usdTotal: number, rate: number): bigint {
-  const tokens = usdTotal / rate;
-  // 6 fractional digits is far inside the 5% verify tolerance; parseUnits keeps
-  // the 1e18 scaling exact.
-  return ethers.parseUnits(tokens.toFixed(6), POLYGRAPH_TOKEN_DECIMALS);
-}
 
 /**
  * Build the live quote the activation page renders and the create tx uses.
@@ -215,33 +219,6 @@ export async function buildPaymentQuote(
 
 // ── Onchain verification ─────────────────────────────────────────────────────
 
-/**
- * The payment rail is Base MAINNET by definition, independent of the EAS
- * attestation chain — BASE_RPC_URL is deliberately NOT reused here (in dev it
- * points at Base Sepolia for attestation testing, which made every payment
- * read look up the wrong chain). PAYMENT_RPC_URL overrides the default public
- * endpoint; the chain id is asserted so a misconfigured RPC fails loudly
- * instead of "transaction not found".
- */
-async function paymentProvider(): Promise<ethers.JsonRpcProvider> {
-  const rpc = process.env.PAYMENT_RPC_URL?.trim() || "https://mainnet.base.org";
-  const provider = new ethers.JsonRpcProvider(rpc);
-  const net = await provider.getNetwork();
-  if (Number(net.chainId) !== PAYMENT_CHAIN_ID) {
-    throw new Error(
-      `payment RPC serves chain ${net.chainId}, expected Base mainnet (${PAYMENT_CHAIN_ID})`,
-    );
-  }
-  return provider;
-}
-
-function lockupContract(
-  provider: ethers.JsonRpcProvider,
-  address: string = SABLIER_LOCKUP_ADDRESS,
-): ethers.Contract {
-  return new ethers.Contract(address, SABLIER_LOCKUP_ABI, provider);
-}
-
 export type VerifyResult =
   | { ok: true; payment: EcosystemPaymentRow }
   | { ok: false; reason: string };
@@ -267,74 +244,9 @@ export async function verifyStreamPayment(
   if (!db) return { ok: false, reason: "storage unconfigured" };
   if (!TREASURY_ADDRESS) return { ok: false, reason: "treasury address unconfigured" };
 
-  // The immutable facts come from the creation event; only the two mutable
-  // ones (canceled / depleted) need state reads. Sequential on purpose: the
-  // default public Base RPC rate-limits parallel call bursts (observed live).
-  let onchain: {
-    streamId: bigint;
-    token: string;
-    recipient: string;
-    sender: string;
-    deposited: bigint;
-    startTime: number;
-    endTime: number;
-    shape: string;
-    canceled: boolean;
-    depleted: boolean;
-  };
-  try {
-    const provider = await paymentProvider();
-    const receipt = await provider.getTransactionReceipt(txHash);
-    if (!receipt) {
-      return {
-        ok: false,
-        reason:
-          "transaction not found on Base mainnet — if it just went through, retry in a few seconds; make sure it's a Base transaction",
-      };
-    }
-    if (receipt.status !== 1) return { ok: false, reason: "transaction reverted" };
-
-    const iface = new ethers.Interface(SABLIER_LOCKUP_ABI);
-    let created: ethers.LogDescription | null = null;
-    for (const log of receipt.logs) {
-      if (log.address.toLowerCase() !== SABLIER_LOCKUP_ADDRESS.toLowerCase()) continue;
-      let parsed: ethers.LogDescription | null = null;
-      try {
-        parsed = iface.parseLog({ topics: [...log.topics], data: log.data });
-      } catch {
-        continue;
-      }
-      if (parsed?.name === "CreateLockupLinearStream") {
-        created = parsed;
-        break;
-      }
-    }
-    if (!created) {
-      return { ok: false, reason: "transaction did not create a Sablier stream on this contract" };
-    }
-    const cp = created.args.commonParams;
-    const streamId = BigInt(created.args.streamId);
-
-    const lockup = lockupContract(provider);
-    const canceled = await lockup.wasCanceled(streamId);
-    const depleted = await lockup.isDepleted(streamId);
-
-    onchain = {
-      streamId,
-      token: String(cp.token),
-      recipient: String(cp.recipient),
-      sender: String(cp.sender),
-      deposited: BigInt(cp.depositAmount),
-      startTime: Number(cp.timestamps.start),
-      endTime: Number(cp.timestamps.end),
-      shape: String(cp.shape),
-      canceled: Boolean(canceled),
-      depleted: Boolean(depleted),
-    };
-  } catch (e) {
-    console.error("[payments] stream read failed", e);
-    return { ok: false, reason: "could not read the transaction onchain" };
-  }
+  const read = await readStreamCreation(txHash);
+  if (!read.ok) return read;
+  const onchain = read.onchain;
 
   const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
   if (onchain.shape !== paymentShapeTag(ecosystem.slug)) {
