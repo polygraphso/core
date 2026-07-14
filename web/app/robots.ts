@@ -8,7 +8,7 @@
  */
 import type { MetadataRoute } from "next";
 
-const ORIGIN = "https://polygraph.so";
+const ORIGIN = "https://www.polygraph.so";
 
 export default function robots(): MetadataRoute.Robots {
   return {

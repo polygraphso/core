@@ -12,7 +12,6 @@ import { getSession } from "@/lib/session";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { refToPath } from "@/lib/badgeData";
 import { skillRefToPath } from "@/lib/skillGrades";
-import { getTopline, getLookupStats, getAgentMetrics } from "@/lib/adminMetrics";
 import { MonitorsList, type MonitorEntry } from "./_components/MonitorsList";
 import { AddMonitorForm } from "./_components/AddMonitorForm";
 
@@ -52,50 +51,6 @@ interface DeliveryRow {
   created_at: string;
 }
 
-interface OverviewCell {
-  label: string;
-  value: number;
-  sub: string;
-}
-
-/** Auth-user + active-monitor counts, mirroring the /admin topline. */
-async function getUserCount() {
-  const db = getSupabaseAdmin();
-  if (!db) return { users: 0, activeMonitors: 0 };
-  const [usersResult, monitorsResult] = await Promise.all([
-    db.auth.admin.listUsers({ perPage: 1 }),
-    db.from("monitors").select("id", { count: "exact", head: true }).is("unsubscribed_at", null),
-  ]);
-  return {
-    users: (usersResult.data as { total?: number } | null)?.total ?? 0,
-    activeMonitors: monitorsResult.count ?? 0,
-  };
-}
-
-/** The eight-cell admin overview strip — the same numbers /admin leads with. */
-async function loadOverview(): Promise<OverviewCell[]> {
-  const [top, lookups, agents, userCount] = await Promise.all([
-    getTopline(),
-    getLookupStats(),
-    getAgentMetrics(),
-    getUserCount(),
-  ]);
-  const lookupSub =
-    lookups && lookups.hitRate !== null
-      ? `${Math.round(lookups.hitRate * 100)}% hit rate`
-      : "no lookups yet";
-  return [
-    { label: "Waitlist", value: top.waitlist, sub: "all-time" },
-    { label: "Grade requests", value: top.gradeRequests, sub: `${top.gradeQueued} queued` },
-    { label: "Notify requests", value: top.notify, sub: `${top.notifyUnfulfilled} unfulfilled` },
-    { label: "Untracked servers", value: top.untrackedServers, sub: "not graded yet" },
-    { label: "CLI lookups", value: lookups?.totalLookups ?? 0, sub: lookupSub },
-    { label: "Agents seen", value: agents?.totalAgents ?? 0, sub: "client builds" },
-    { label: "Attestations", value: top.attestations, sub: `${top.attestationsPending} pending · on-chain` },
-    { label: "Auth users", value: userCount.users, sub: `${userCount.activeMonitors} active monitors` },
-  ];
-}
-
 const HEAD_LINK =
   "font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted hover:text-oxblood transition-colors border-b border-dotted border-rule pb-0.5";
 const RAIL_LABEL = "font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint";
@@ -113,17 +68,13 @@ export default async function DashboardPage() {
     );
   }
 
-  // Monitors + (admin-only) overview strip in parallel.
-  const [monitorsResult, overview] = await Promise.all([
-    db
-      .from("monitors")
-      .select(
-        "id, target, target_kind, unsubscribe_token, unsubscribed_at, created_at, last_notified_grade, last_notified_version, last_notified_at, alert_min_grade",
-      )
-      .eq("user_id", session.userId)
-      .order("created_at", { ascending: false }),
-    session.isAdmin ? loadOverview() : Promise.resolve<OverviewCell[] | null>(null),
-  ]);
+  const monitorsResult = await db
+    .from("monitors")
+    .select(
+      "id, target, target_kind, unsubscribe_token, unsubscribed_at, created_at, last_notified_grade, last_notified_version, last_notified_at, alert_min_grade",
+    )
+    .eq("user_id", session.userId)
+    .order("created_at", { ascending: false });
 
   const monitors: MonitorRow[] = (monitorsResult.data ?? []) as MonitorRow[];
   const serverTargets = monitors.filter((m) => m.target_kind !== "skill").map((m) => m.target);
@@ -208,23 +159,10 @@ export default async function DashboardPage() {
         </div>
       </header>
 
-      {overview ? (
-        <>
-          <p className={`${RAIL_LABEL} mb-2.5`}>Overview</p>
-          <div className="mb-8 grid grid-cols-2 sm:grid-cols-4 gap-px overflow-hidden rounded-[4px] border border-rule bg-rule">
-            {overview.map((c) => (
-              <div key={c.label} className="bg-parchment-50 px-4 py-3.5">
-                <p className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">
-                  {c.label}
-                </p>
-                <p className="font-serif text-[26px] leading-none tabular text-ink">
-                  {c.value.toLocaleString()}
-                </p>
-                <p className="mt-1.5 font-mono text-[10px] text-ink-faint">{c.sub}</p>
-              </div>
-            ))}
-          </div>
-        </>
+      {session.isAdmin || activeCount < 1 ? (
+        <div className="mb-8">
+          <AddMonitorForm />
+        </div>
       ) : null}
 
       <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:gap-8">
@@ -236,8 +174,6 @@ export default async function DashboardPage() {
         </div>
 
         <aside className="flex w-full flex-col gap-6 xl:w-[312px] xl:flex-shrink-0">
-          {session.isAdmin || activeCount < 1 ? <AddMonitorForm /> : null}
-
           {deliveries.length > 0 ? (
             <div>
               <p className={`${RAIL_LABEL} mb-2.5`}>Recent alerts</p>

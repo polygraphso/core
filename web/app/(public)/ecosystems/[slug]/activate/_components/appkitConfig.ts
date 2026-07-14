@@ -4,8 +4,9 @@
  * ships wallet JS). No 'use client' here per the AppKit Next.js pattern; the
  * client provider (ActivateFlow) imports it and calls createAppKit at module
  * level. This ONE wagmi config backs both the pay step and the LI.FI swap
- * widget, so a wallet connected once works in both (the widget's own connector
- * management stays off — two managers on one config fight; see SwapWidget).
+ * widget, so a wallet connected once works in both: the widget reuses this
+ * config through LI.FI's external wallet management rather than running its own
+ * (see SwapWidget).
  */
 
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
@@ -39,10 +40,16 @@ export const wagmiAdapter = new WagmiAdapter({
   ssr: true, // required for Next.js App Router
 });
 
-/** Wallets verify this against the requesting origin; must match the domain. */
+/**
+ * Wallets verify this against the requesting origin via WalletConnect's Verify
+ * API; it must match the origin the page is actually served from. That origin
+ * is www.polygraph.so — the apex polygraph.so 307-redirects to www (Vercel
+ * primary domain) — so a non-www url here reads as a domain mismatch and
+ * wallets refuse or warn on connect.
+ */
 export const appkitMetadata = {
   name: "polygraph",
   description: "Independent behavioral grades for MCP servers and skills.",
-  url: "https://polygraph.so",
-  icons: ["https://polygraph.so/icon.svg"],
+  url: "https://www.polygraph.so",
+  icons: ["https://www.polygraph.so/icon.svg"],
 };
