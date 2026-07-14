@@ -11,6 +11,7 @@ type NavItem = {
 
 const USER_NAV: NavItem[] = [
   { href: "/dashboard", label: "Monitors", active: (p) => p === "/dashboard" || p.startsWith("/dashboard/monitors") },
+  { href: "/dashboard/account", label: "Account", active: (p) => p.startsWith("/dashboard/account") || p.startsWith("/dashboard/upgrade") },
 ];
 
 // Shown only to app admins and users who belong to at least one ecosystem — a
