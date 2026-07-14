@@ -106,8 +106,14 @@ export async function getUserPlan(userId: string): Promise<UserPlanState> {
   };
 }
 
-/** Same lazy reconcile as the ecosystem gate: expiry in SQL terms, cancel onchain. */
-async function refreshPlanStatus(row: UserPlanPaymentRow): Promise<UserPlanPaymentRow> {
+/**
+ * Same lazy reconcile as the ecosystem gate: expiry in SQL terms, cancel
+ * onchain. `force` skips the hourly gate (used right after an in-UI cancel).
+ */
+async function refreshPlanStatus(
+  row: UserPlanPaymentRow,
+  force = false,
+): Promise<UserPlanPaymentRow> {
   const db = getSupabaseAdmin();
   if (!db) return row;
 
@@ -116,7 +122,7 @@ async function refreshPlanStatus(row: UserPlanPaymentRow): Promise<UserPlanPayme
     return { ...row, status: "ended" };
   }
 
-  if (Date.now() - new Date(row.last_checked_at).getTime() < RECHECK_AFTER_MS) return row;
+  if (!force && Date.now() - new Date(row.last_checked_at).getTime() < RECHECK_AFTER_MS) return row;
 
   try {
     const live = await liveStreamStatus(row.sablier_contract, row.stream_id);
@@ -141,6 +147,34 @@ async function refreshPlanStatus(row: UserPlanPaymentRow): Promise<UserPlanPayme
     console.error("[plans] onchain re-check failed", e);
     return row;
   }
+}
+
+/**
+ * Force an immediate onchain re-check of the user's active plan stream and
+ * return the reconciled plan. Called by the plan/refresh route right after a
+ * user cancels in the UI. Falls back to free when there's no active row.
+ */
+export async function reconcileUserPlan(userId: string): Promise<UserPlanState> {
+  const db = getSupabaseAdmin();
+  if (!db) return FREE;
+  const { data } = await db
+    .from("user_plan_payments")
+    .select(PLAN_COLUMNS)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .order("verified_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const row = (data as UserPlanPaymentRow | null) ?? null;
+  if (!row) return FREE;
+  const reconciled = await refreshPlanStatus(row, true);
+  if (reconciled.status !== "active") return FREE;
+  return {
+    plan: reconciled.plan,
+    quota: PLAN_QUOTAS[reconciled.plan],
+    payment: reconciled,
+    endAt: reconciled.end_at,
+  };
 }
 
 // ── Quotes ───────────────────────────────────────────────────────────────────

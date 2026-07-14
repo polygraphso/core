@@ -45,7 +45,15 @@ export default async function UpgradePage() {
         ) : null}
       </header>
 
-      <UpgradeFlow userId={session.userId} currentPlan={planState.plan} />
+      <UpgradeFlow
+        userId={session.userId}
+        currentPlan={planState.plan}
+        active={
+          planState.payment
+            ? { streamId: planState.payment.stream_id, lockup: planState.payment.sablier_contract }
+            : null
+        }
+      />
     </main>
   );
 }

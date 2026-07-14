@@ -119,10 +119,15 @@ export async function getPaymentGate(
 
 /**
  * Lazily reconcile a payment row with the chain: expire it when end_at has
- * passed, and once an hour ask the Lockup contract whether the payer canceled.
- * Onchain read failures leave the row untouched (never lock out on RPC flake).
+ * passed, and once an hour (or immediately when `force`) ask the Lockup
+ * contract whether the payer canceled. Onchain read failures leave the row
+ * untouched (never lock out on RPC flake). `force` is used right after a user
+ * cancels in the UI so the change reflects without waiting out the hour.
  */
-async function refreshPaymentStatus(row: EcosystemPaymentRow): Promise<EcosystemPaymentRow> {
+async function refreshPaymentStatus(
+  row: EcosystemPaymentRow,
+  force = false,
+): Promise<EcosystemPaymentRow> {
   const db = getSupabaseAdmin();
   if (!db) return row;
 
@@ -131,7 +136,7 @@ async function refreshPaymentStatus(row: EcosystemPaymentRow): Promise<Ecosystem
     return { ...row, status: "ended" };
   }
 
-  if (Date.now() - new Date(row.last_checked_at).getTime() < RECHECK_AFTER_MS) return row;
+  if (!force && Date.now() - new Date(row.last_checked_at).getTime() < RECHECK_AFTER_MS) return row;
 
   try {
     const live = await liveStreamStatus(row.sablier_contract, row.stream_id);
@@ -156,6 +161,31 @@ async function refreshPaymentStatus(row: EcosystemPaymentRow): Promise<Ecosystem
     console.error("[payments] onchain re-check failed", e);
     return row;
   }
+}
+
+/**
+ * Force an immediate onchain re-check of the ecosystem's active payment and
+ * return the reconciled status. Called by the payment/refresh route right after
+ * a user cancels the stream in the UI. No-ops to "unpaid" when there's no
+ * active row (already canceled/ended).
+ */
+export async function reconcileEcosystemPayment(
+  ecosystemId: string,
+): Promise<"active" | "canceled" | "ended" | "unpaid"> {
+  const db = getSupabaseAdmin();
+  if (!db) return "unpaid";
+  const { data } = await db
+    .from("ecosystem_payments")
+    .select(PAYMENT_COLUMNS)
+    .eq("ecosystem_id", ecosystemId)
+    .eq("status", "active")
+    .order("verified_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const row = (data as EcosystemPaymentRow | null) ?? null;
+  if (!row) return "unpaid";
+  const reconciled = await refreshPaymentStatus(row, true);
+  return reconciled.status === "active" ? "active" : reconciled.status;
 }
 
 // ── Quotes ───────────────────────────────────────────────────────────────────

@@ -156,11 +156,11 @@ function ActivateFlowInner({ slug, consoleHref }: ActivateFlowProps) {
         doneLabel={consoleHref ? "Active — opening console…" : "Monitoring active"}
         helper={
           <>
-            Two transactions: an approval, then the Sablier stream. We verify the stream onchain —
-            token, recipient, amount, duration — before monitoring starts. No custody: cancel from
-            any Sablier interface and the unstreamed remainder returns to this wallet. Monitoring
-            runs while the stream does; renew by creating the next month&rsquo;s stream here (a
-            longer stream at the same monthly rate prepays more months).
+            Two transactions: an approval, then the payment stream. We verify it onchain (token,
+            recipient, amount, duration) before monitoring starts. No custody: cancel anytime from
+            the console and the unstreamed remainder returns to this wallet. Monitoring runs while
+            the stream does; renew by funding the next month&rsquo;s stream here (a longer stream at
+            the same monthly rate prepays more months).
           </>
         }
         success={!consoleHref ? <SuccessNote /> : undefined}

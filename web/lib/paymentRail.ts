@@ -97,7 +97,7 @@ export async function readStreamCreation(txHash: string): Promise<StreamReadResu
       }
     }
     if (!created) {
-      return { ok: false, reason: "transaction did not create a Sablier stream on this contract" };
+      return { ok: false, reason: "transaction did not create a payment stream on this contract" };
     }
     const cp = created.args.commonParams;
     const streamId = BigInt(created.args.streamId);

@@ -255,6 +255,16 @@ export const SABLIER_LOCKUP_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  // Sender-only: stops the stream, refunds the unstreamed remainder to the
+  // payer. The client calls this from the cancel button; the server then
+  // re-reads statusOf and flips the payment row.
+  {
+    inputs: [{ internalType: "uint256", name: "streamId", type: "uint256" }],
+    name: "cancel",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
   {
     inputs: [{ internalType: "uint256", name: "streamId", type: "uint256" }],
     name: "wasCanceled",

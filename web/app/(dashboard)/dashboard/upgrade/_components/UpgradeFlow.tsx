@@ -19,6 +19,7 @@ import {
   type PlanQuote,
 } from "@/lib/paymentConfig";
 import { WalletIsland } from "@/app/_components/wallet/WalletIsland";
+import { CancelStreamButton } from "@/app/_components/wallet/CancelStreamButton";
 import {
   formatTokens,
   ManualStreamVerify,
@@ -40,6 +41,8 @@ const SwapWidget = dynamic(
 export interface UpgradeFlowProps {
   userId: string;
   currentPlan: PlanId | "free";
+  /** The current plan's live stream, when on a paid plan — enables cancel. */
+  active?: { streamId: number; lockup: string } | null;
 }
 
 export function UpgradeFlow(props: UpgradeFlowProps) {
@@ -50,7 +53,7 @@ export function UpgradeFlow(props: UpgradeFlowProps) {
   );
 }
 
-function UpgradeFlowInner({ userId, currentPlan }: UpgradeFlowProps) {
+function UpgradeFlowInner({ userId, currentPlan, active }: UpgradeFlowProps) {
   const [plan, setPlan] = useState<PlanId>(currentPlan === "team" ? "team" : "indie");
   const [quote, setQuote] = useState<PlanQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
@@ -117,6 +120,22 @@ function UpgradeFlowInner({ userId, currentPlan }: UpgradeFlowProps) {
 
   return (
     <div>
+      {active && currentPlan !== "free" ? (
+        <div className="mb-6 border border-rule rounded-[4px] px-5 py-3.5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+          <p className="font-mono text-[12px] text-ink-muted">
+            You&rsquo;re on the <span className="text-ink uppercase">{currentPlan}</span> plan.
+            Paying again below extends it; canceling drops you back to free.
+          </p>
+          <CancelStreamButton
+            streamId={active.streamId}
+            lockup={active.lockup}
+            refreshUrl="/api/account/plan/refresh"
+            label="Cancel plan"
+            noun="the plan"
+          />
+        </div>
+      ) : null}
+
       <div className="mb-6 flex flex-wrap gap-3">
         {card("indie")}
         {card("team")}
@@ -162,14 +181,14 @@ function UpgradeFlowInner({ userId, currentPlan }: UpgradeFlowProps) {
         shapeTag={planShapeTag(userId)}
         verify={verify}
         idleLabel={`Stream ${POLYGRAPH_TOKEN_SYMBOL} for a month`}
-        doneLabel="Plan active — back to monitors…"
+        doneLabel="Plan active, back to monitors…"
         helper={
           <>
-            Two transactions: an approval, then the Sablier stream. We verify the stream onchain —
-            token, recipient, amount, duration — before the quota lifts. No custody: cancel from
-            any Sablier interface and the unstreamed remainder returns to this wallet; the plan
-            falls back to free when the stream stops. Renew by creating the next month&rsquo;s
-            stream here (a longer stream at the same monthly rate prepays more months).
+            Two transactions: an approval, then the payment stream. We verify it onchain (token,
+            recipient, amount, duration) before the quota lifts. No custody: cancel anytime above
+            and the unstreamed remainder returns to this wallet; the plan falls back to free when
+            the stream stops. Renew by funding the next month&rsquo;s stream here (a longer stream
+            at the same monthly rate prepays more months).
           </>
         }
       />
