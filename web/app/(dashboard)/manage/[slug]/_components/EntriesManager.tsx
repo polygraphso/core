@@ -157,8 +157,9 @@ function EntryRow({
           {/* Controls. Locked = read-only: the public report stays reachable,
               everything that mutates or is part of the paid layer goes. */}
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono text-[10px] uppercase tracking-[0.12em]">
+            {/* Curation cluster — left. */}
             {!locked ? (
-              <>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                 <button
                   onClick={() => patch({ visible: !vm.visible })}
                   disabled={busy}
@@ -188,22 +189,34 @@ function EntryRow({
                     {showFixes ? "hide fixes" : `fixes · ${vm.fixes.length}`}
                   </button>
                 ) : null}
-              </>
+              </div>
             ) : null}
-            {vm.reportPath ? (
-              <Link href={vm.reportPath} className="text-ink-muted hover:text-oxblood transition-colors">
-                report ↗
-              </Link>
-            ) : null}
-            {!locked ? (
-              <button
-                onClick={remove}
-                disabled={busy}
-                className="text-ink-faint hover:text-oxblood transition-colors disabled:opacity-50 ml-auto"
-              >
-                remove
-              </button>
-            ) : null}
+
+            {/* Report + destructive remove — right, set off by a rule so the
+                remove can't be misclicked next to the curation actions. */}
+            <div className="ml-auto flex items-center gap-x-4">
+              {vm.reportPath ? (
+                <Link href={vm.reportPath} className="text-ink-muted hover:text-oxblood transition-colors">
+                  report ↗
+                </Link>
+              ) : null}
+              {!locked ? (
+                <>
+                  {vm.reportPath ? (
+                    <span aria-hidden className="text-rule">
+                      |
+                    </span>
+                  ) : null}
+                  <button
+                    onClick={remove}
+                    disabled={busy}
+                    className="text-ink-faint hover:text-oxblood transition-colors disabled:opacity-50"
+                  >
+                    remove
+                  </button>
+                </>
+              ) : null}
+            </div>
           </div>
 
           {showFixes && !locked ? <FixList vm={vm} /> : null}

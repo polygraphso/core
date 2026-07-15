@@ -27,6 +27,8 @@ export interface MonitorEntry {
   currentVersion: string | null;
   /** The report link: /mcp/… for a server, /skill/… for a skill. */
   reportHref: string;
+  /** Active + current grade at or worse than this monitor's alert threshold. */
+  belowThreshold: boolean;
 }
 
 // One column template, shared by the header and every row so they stay aligned.
@@ -67,6 +69,7 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
   const [minGrade, setMinGrade] = useState<"C" | "D" | "F" | null>(monitor.alert_min_grade);
   const router = useRouter();
   const isActive = !monitor.unsubscribed_at;
+  const flagged = isActive && monitor.belowThreshold;
 
   async function saveThreshold(next: "C" | "D" | "F" | null) {
     const prev = minGrade;
@@ -128,7 +131,7 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
     <div
       className={`border-t hairline py-3 lg:py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 ${COLS} lg:gap-y-0 ${
         isActive ? "" : "opacity-55"
-      }`}
+      } ${flagged ? "pl-3 shadow-[inset_2px_0_0_0_var(--color-oxblood)]" : ""}`}
     >
       <Stamp grade={monitor.currentGrade} />
 
@@ -140,7 +143,11 @@ function MonitorRow({ monitor, onAction }: { monitor: MonitorEntry; onAction: ()
         >
           {monitor.target}
         </a>
-        {!isActive ? (
+        {flagged ? (
+          <span className="mt-0.5 inline-block font-mono text-[9px] uppercase tracking-[0.12em] text-oxblood border border-oxblood/40 rounded-full px-1.5 py-0.5">
+            below threshold
+          </span>
+        ) : !isActive ? (
           <span className="lg:hidden mt-0.5 inline-block font-mono text-[9px] uppercase tracking-[0.12em] text-ink-faint border hairline rounded-full px-1.5 py-0.5">
             paused
           </span>
@@ -245,9 +252,20 @@ export function MonitorsList({
       </div>
 
       {monitors.length === 0 ? (
-        <p className="border-t hairline py-6 text-ink-muted text-[14px]">
-          No monitors yet. Add an MCP server or a skill to get started.
-        </p>
+        <div className="border border-rule rounded-[4px] px-6 py-10 max-w-xl">
+          <p className="font-serif text-[19px] leading-snug text-ink">Watch a tool you depend on.</p>
+          <p className="mt-2 text-[14px] leading-relaxed text-ink-muted">
+            polygraph re-grades it on every new version and emails you if it slips below the grade
+            you set. Add an MCP server or a skill with the form above, or{" "}
+            <a
+              href="/mcp-index"
+              className="text-ink underline decoration-dotted underline-offset-2 hover:text-oxblood"
+            >
+              browse graded servers
+            </a>{" "}
+            to find one.
+          </p>
+        </div>
       ) : (
         <>
           {/* Column header — table from lg up; below that rows reflow to cards. */}
