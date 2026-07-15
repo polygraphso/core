@@ -8,7 +8,7 @@
 
 import type { Metadata } from "next";
 import { getSession } from "@/lib/session";
-import { getUserPlan } from "@/lib/userPlans";
+import { getStoppedPlanPayment, getUserPlan } from "@/lib/userPlans";
 import { PLAN_QUOTAS } from "@/lib/paymentConfig";
 import { SignOutButton } from "../_components/SignOutButton";
 import { UpgradeFlow } from "./_components/UpgradeFlow";
@@ -25,6 +25,9 @@ export default async function AccountPage() {
 
   const planState = await getUserPlan(session.userId);
   const hasActivePlan = planState.plan !== "free";
+  // An admin-stopped stream that is still running onchain: the payer gets a
+  // banner with the cancel button so the unstreamed remainder can be reclaimed.
+  const stoppedPayment = hasActivePlan ? null : await getStoppedPlanPayment(session.userId);
 
   return (
     <main className="px-6 sm:px-10 py-12">
@@ -73,6 +76,15 @@ export default async function AccountPage() {
             active={
               planState.payment
                 ? { streamId: planState.payment.stream_id, lockup: planState.payment.sablier_contract }
+                : null
+            }
+            stopped={
+              stoppedPayment
+                ? {
+                    streamId: stoppedPayment.stream_id,
+                    lockup: stoppedPayment.sablier_contract,
+                    endAt: stoppedPayment.end_at,
+                  }
                 : null
             }
           />

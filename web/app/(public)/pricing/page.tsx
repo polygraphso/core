@@ -5,6 +5,7 @@ import {
   PLAN_PRICES_USD,
   PLAN_QUOTAS,
   PRIORITY_GRADE_PRICE_USD,
+  YEARLY_BILLED_MONTHS,
 } from "@/lib/paymentConfig";
 
 // Static, server-rendered, no wallet JS: this page only describes and links
@@ -62,8 +63,9 @@ const TIERS: Tier[] = [
     points: [
       `Indie $${PLAN_PRICES_USD.indie}/mo: ${PLAN_QUOTAS.indie} monitors`,
       `Team $${PLAN_PRICES_USD.team}/mo: ${PLAN_QUOTAS.team} monitors`,
+      `Yearly: 12 months for the price of 10 — $${PLAN_PRICES_USD.indie * YEARLY_BILLED_MONTHS} indie, $${(PLAN_PRICES_USD.team * YEARLY_BILLED_MONTHS).toLocaleString("en-US")} team`,
       "Per-target grade thresholds and email alerts",
-      "Paid as a cancelable monthly $POLYGRAPH stream",
+      "Paid as a cancelable $POLYGRAPH stream",
     ],
     cta: { label: "See plans →", href: "/dashboard/account" },
   },
@@ -77,6 +79,7 @@ const TIERS: Tier[] = [
       "Fingerprint-drift alerts (the rug-pull signal)",
       "A public, branded ecosystem index page",
       "Weekly CVE digest and an escalation channel",
+      `Yearly: 12 months for the price of 10 — from $${(DEFAULT_MONTHLY_PRICE_USD * YEARLY_BILLED_MONTHS).toLocaleString("en-US")}`,
     ],
     cta: { label: "Ecosystems →", href: "/ecosystems" },
   },

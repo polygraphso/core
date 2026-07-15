@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { getUserPlan } from "@/lib/userPlans";
 import { EmptyNote } from "../../_components/ui";
 import { Pagination } from "../../_components/Pagination";
+import { StopSubscriptionButton } from "../../_components/StopSubscriptionButton";
 import { AdminToggleButton } from "./AdminToggleButton";
 
 export const dynamic = "force-dynamic";
@@ -49,9 +51,10 @@ export default async function AdminUserDetailPage({
   const db = getSupabaseAdmin();
   if (!db) return <main className="max-w-4xl mx-auto px-8 py-12"><EmptyNote>Supabase not configured.</EmptyNote></main>;
 
-  const [{ data: { user }, error }, profileResult] = await Promise.all([
+  const [{ data: { user }, error }, profileResult, planState] = await Promise.all([
     db.auth.admin.getUserById(id),
     db.from("profiles").select("is_admin").eq("id", id).maybeSingle(),
+    getUserPlan(id),
   ]);
   if (error || !user) notFound();
   const isAdmin = profileResult.data?.is_admin === true;
@@ -168,6 +171,30 @@ export default async function AdminUserDetailPage({
           </div>
         ))}
       </div>
+
+      {/* Plan */}
+      <section className="mb-10">
+        <div className="border-t hairline pt-5 mb-4">
+          <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">Plan</h2>
+        </div>
+        {planState.plan === "free" ? (
+          <EmptyNote>Free plan — no subscription.</EmptyNote>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-y border-rule py-3">
+            <div className="min-w-0">
+              <p className="font-mono text-xs text-ink">
+                {planState.plan} · {planState.quota} monitors
+              </p>
+              <p className="font-mono text-[10px] text-ink-faint mt-0.5">
+                stream #{planState.payment?.stream_id} · until {fmt(planState.endAt)}
+              </p>
+            </div>
+            <div className="shrink-0 font-mono text-[10px] uppercase tracking-[0.14em]">
+              <StopSubscriptionButton url={`/api/admin/users/${id}/plan/stop`} />
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* Monitors */}
       <section className="mb-10">
