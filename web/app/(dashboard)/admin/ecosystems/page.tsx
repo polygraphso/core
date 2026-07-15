@@ -9,6 +9,7 @@ import { listEcosystems } from "@/lib/ecosystemData";
 import { getPaymentGate } from "@/lib/ecosystemPayments";
 import { CreateEcosystemForm } from "./_components/CreateEcosystemForm";
 import { PriceForm } from "./_components/PriceForm";
+import { StopSubscriptionButton } from "../_components/StopSubscriptionButton";
 
 export const dynamic = "force-dynamic";
 
@@ -60,12 +61,17 @@ export default async function AdminEcosystemsPage() {
                   {gate.exempt ? (
                     <span className="text-ink-faint border border-rule rounded-full px-2.5 py-1">comped</span>
                   ) : gate.status === "active" ? (
-                    <span
-                      className="text-ink-muted border border-rule rounded-full px-2.5 py-1"
-                      title={gate.payment ? `stream until ${gate.payment.end_at.slice(0, 10)}` : undefined}
-                    >
-                      active{gate.payment ? ` · ${gate.payment.end_at.slice(0, 10)}` : ""}
-                    </span>
+                    <>
+                      <span
+                        className="text-ink-muted border border-rule rounded-full px-2.5 py-1"
+                        title={gate.payment ? `stream until ${gate.payment.end_at.slice(0, 10)}` : undefined}
+                      >
+                        active{gate.payment ? ` · ${gate.payment.end_at.slice(0, 10)}` : ""}
+                      </span>
+                      {gate.payment ? (
+                        <StopSubscriptionButton url={`/api/admin/ecosystems/${e.id}/payment/stop`} />
+                      ) : null}
+                    </>
                   ) : (
                     <span className="text-oxblood border border-oxblood/40 rounded-full px-2.5 py-1">unpaid</span>
                   )}

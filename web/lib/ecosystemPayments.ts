@@ -22,6 +22,7 @@ import { ethers } from "ethers";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import type { EcosystemRow } from "@/lib/ecosystemTypes";
 import {
+  billedMonths,
   DEFAULT_MONTHLY_PRICE_USD,
   DEPOSIT_TOLERANCE,
   MIN_STREAM_SECONDS,
@@ -31,7 +32,9 @@ import {
   POLYGRAPH_TOKEN_ADDRESS,
   POLYGRAPH_TOKEN_DECIMALS,
   SABLIER_LOCKUP_ADDRESS,
+  termDurationSeconds,
   TREASURY_ADDRESS,
+  type BillingTerm,
   type PaymentQuote,
 } from "@/lib/paymentConfig";
 import {
@@ -60,7 +63,7 @@ export interface EcosystemPaymentRow {
   payer_address: string;
   start_at: string;
   end_at: string;
-  status: "active" | "canceled" | "ended";
+  status: "active" | "canceled" | "ended" | "stopped";
   verified_at: string;
   last_checked_at: string;
   created_at: string;
@@ -171,9 +174,16 @@ async function refreshPaymentStatus(
  */
 export async function reconcileEcosystemPayment(
   ecosystemId: string,
-): Promise<"active" | "canceled" | "ended" | "unpaid"> {
+): Promise<"active" | "canceled" | "ended" | "stopped" | "unpaid"> {
   const db = getSupabaseAdmin();
   if (!db) return "unpaid";
+
+  // An admin-stopped stream the payer may just have canceled: reconcile it so
+  // the "cancel to reclaim" notice clears. refreshPaymentStatus never writes
+  // 'active', so a stopped row can only move to 'canceled'/'ended'.
+  const stopped = await getStoppedPayment(ecosystemId);
+  if (stopped) await refreshPaymentStatus(stopped, true);
+
   const { data } = await db
     .from("ecosystem_payments")
     .select(PAYMENT_COLUMNS)
@@ -188,22 +198,90 @@ export async function reconcileEcosystemPayment(
   return reconciled.status === "active" ? "active" : reconciled.status;
 }
 
+// ── Admin stop ───────────────────────────────────────────────────────────────
+
+/**
+ * Stop the ecosystem's active subscription server-side (admin action): the
+ * manage console locks now, but the payer's stream keeps running onchain until
+ * THEY cancel it — Sablier's cancel is sender-only, and the payer is the
+ * sender. Returns the stopped row, or null when there's nothing active to stop
+ * (including a concurrent cancel racing this — the guard only flips an
+ * 'active' row).
+ */
+export async function stopEcosystemPayment(
+  ecosystemId: string,
+): Promise<EcosystemPaymentRow | null> {
+  const db = getSupabaseAdmin();
+  if (!db) return null;
+  const { data } = await db
+    .from("ecosystem_payments")
+    .select(PAYMENT_COLUMNS)
+    .eq("ecosystem_id", ecosystemId)
+    .eq("status", "active")
+    .order("verified_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const row = (data as EcosystemPaymentRow | null) ?? null;
+  if (!row) return null;
+  const now = new Date().toISOString();
+  const { data: updated, error } = await db
+    .from("ecosystem_payments")
+    .update({ status: "stopped", last_checked_at: now })
+    .eq("id", row.id)
+    .eq("status", "active")
+    .select(PAYMENT_COLUMNS)
+    .maybeSingle();
+  if (error) {
+    console.error("[payments] stop failed", error);
+    return null;
+  }
+  return (updated as EcosystemPaymentRow | null) ?? null;
+}
+
+/**
+ * The newest admin-stopped monitoring stream that is still running onchain
+ * (end_at in the future) — the manage console's "cancel to reclaim the
+ * remainder" notice. A lapsed stream has nothing left to reclaim and is
+ * excluded.
+ */
+export async function getStoppedPayment(
+  ecosystemId: string,
+): Promise<EcosystemPaymentRow | null> {
+  const db = getSupabaseAdmin();
+  if (!db) return null;
+  const { data } = await db
+    .from("ecosystem_payments")
+    .select(PAYMENT_COLUMNS)
+    .eq("ecosystem_id", ecosystemId)
+    .eq("status", "stopped")
+    .gt("end_at", new Date().toISOString())
+    .order("verified_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as EcosystemPaymentRow | null) ?? null;
+}
+
 // ── Quotes ───────────────────────────────────────────────────────────────────
 
 const QUOTE_TTL_MS = 10 * 60 * 1000;
 
 /**
  * Build the live quote the activation page renders and the create tx uses.
- * The quote is for ONE month — the billing unit; renewal is the next stream.
+ * The quote is for ONE billing term — a month, or a year billed as 10 months;
+ * renewal is the next stream.
  */
 export async function buildPaymentQuote(
   ecosystem: Pick<EcosystemRow, "monthly_price_usd">,
+  term: BillingTerm = "monthly",
 ): Promise<PaymentQuote> {
   const usdMonthly = effectiveMonthlyPriceUsd(ecosystem);
-  const usdTotal = usdMonthly;
+  const durationSeconds = termDurationSeconds(term);
+  const usdTotal = Math.round(usdMonthly * billedMonths(durationSeconds / MONTH_SECONDS) * 100) / 100;
   const rate = await getTokenUsdRate();
   const raw = usdToRawTokens(usdTotal, rate);
   return {
+    term,
+    durationSeconds,
     usdMonthly,
     usdTotal,
     tokenAmount: raw.toString(),
@@ -293,10 +371,10 @@ export async function verifyStreamPayment(
 
   // Rate-based: the deposit must cover the monthly price for however long the
   // stream runs — a 1-month stream needs one month's worth, a 6-month stream
-  // six. Prepaying more months in one stream is fine at the same rate.
+  // six. Prepaying more months in one stream is fine at the same rate, and
+  // every full 12-month block bills as 10 (billedMonths — the yearly deal).
   const usdMonthly = effectiveMonthlyPriceUsd(ecosystem);
-  const months = durationSeconds / MONTH_SECONDS;
-  const usdTotal = Math.round(usdMonthly * months * 100) / 100;
+  const usdTotal = Math.round(usdMonthly * billedMonths(durationSeconds / MONTH_SECONDS) * 100) / 100;
   let rate: number;
   try {
     rate = await getTokenUsdRate();

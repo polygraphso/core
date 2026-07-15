@@ -351,7 +351,14 @@ export interface EcosystemRow {
   created_at: string;
 }
 
-export type EcosystemPaymentStatus = "active" | "canceled" | "ended";
+/**
+ * 'stopped' = polygraph ended the subscription server-side (admin action). The
+ * gate treats it like canceled/ended, but the payer's stream may still be
+ * running onchain — the UI keeps showing the cancel-your-stream affordance so
+ * the unstreamed remainder can be reclaimed. Flips to 'canceled'/'ended' when
+ * the payer cancels or the stream lapses; never back to 'active'.
+ */
+export type EcosystemPaymentStatus = "active" | "canceled" | "ended" | "stopped";
 
 /** Monitoring price when ecosystems.monthly_price_usd is null. 0 there = comped. */
 export const DEFAULT_MONTHLY_PRICE_USD = 199;

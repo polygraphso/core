@@ -20,7 +20,6 @@ import {
 } from "@wagmi/core";
 import {
   ERC20_ABI,
-  MONTH_SECONDS,
   PAYMENT_CHAIN_ID,
   POLYGRAPH_TOKEN_SYMBOL,
   SABLIER_LOCKUP_ABI,
@@ -128,7 +127,9 @@ export function StreamPayStep({
           },
           { start: BigInt(0), cliff: BigInt(0) },
           0, // granularity: 0 is Sablier's sentinel for per-second streaming
-          { cliff: 0, total: MONTH_SECONDS },
+          // One billing term — a month, or a year for the 12-for-10 deal; the
+          // verify route re-derives the charge from the onchain duration.
+          { cliff: 0, total: quote.durationSeconds },
         ],
         value: BigInt(0),
         chainId: PAYMENT_CHAIN_ID,

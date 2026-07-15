@@ -11,7 +11,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/session";
 import { getEcosystemRole, canManageEcosystem } from "@/lib/ecosystemAccess";
-import { getPaymentGate } from "@/lib/ecosystemPayments";
+import { getPaymentGate, getStoppedPayment } from "@/lib/ecosystemPayments";
 import { loadGradedEntries, listMembers } from "@/lib/ecosystemData";
 import { buildEntryVMs } from "@/lib/ecosystemViewModel";
 import { loadEcosystemAdvisories } from "@/lib/cveData";
@@ -25,6 +25,7 @@ import { AlertSettingsForm } from "./_components/AlertSettingsForm";
 import { MembersManager } from "./_components/MembersManager";
 import { SettingsForm } from "./_components/SettingsForm";
 import { MonitoringStatus } from "./_components/MonitoringStatus";
+import { StoppedMonitoringNotice } from "./_components/StoppedMonitoringNotice";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,9 @@ export default async function ManageConsolePage({
   const gate = await getPaymentGate(ecosystem);
   const unpaid = gate.status !== "active";
   const locked = unpaid && role !== "app-admin";
+  // An admin-stopped stream that is still running onchain: managers get a
+  // notice with the cancel button so the payer can reclaim the remainder.
+  const stopped = unpaid && manage ? await getStoppedPayment(ecosystem.id) : null;
 
   const [graded, members, advisories, alertSettings, recipients] = await Promise.all([
     loadGradedEntries(ecosystem.id),
@@ -110,6 +114,16 @@ export default async function ManageConsolePage({
           streamId={gate.payment.stream_id}
           lockup={gate.payment.sablier_contract}
           endAt={gate.payment.end_at}
+        />
+      ) : null}
+
+      {/* An admin-stopped subscription whose stream still runs: cancel to reclaim. */}
+      {stopped ? (
+        <StoppedMonitoringNotice
+          slug={ecosystem.slug}
+          streamId={stopped.stream_id}
+          lockup={stopped.sablier_contract}
+          endAt={stopped.end_at}
         />
       ) : null}
 

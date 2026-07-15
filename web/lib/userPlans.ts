@@ -17,6 +17,7 @@ import "server-only";
 import { ethers } from "ethers";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import {
+  billedMonths,
   DEPOSIT_TOLERANCE,
   MIN_STREAM_SECONDS,
   MONTH_SECONDS,
@@ -27,7 +28,9 @@ import {
   POLYGRAPH_TOKEN_ADDRESS,
   POLYGRAPH_TOKEN_DECIMALS,
   SABLIER_LOCKUP_ADDRESS,
+  termDurationSeconds,
   TREASURY_ADDRESS,
+  type BillingTerm,
   type PlanId,
   type PlanQuote,
 } from "@/lib/paymentConfig";
@@ -56,7 +59,7 @@ export interface UserPlanPaymentRow {
   payer_address: string;
   start_at: string;
   end_at: string;
-  status: "active" | "canceled" | "ended";
+  status: "active" | "canceled" | "ended" | "stopped";
   verified_at: string;
   last_checked_at: string;
   created_at: string;
@@ -157,6 +160,13 @@ async function refreshPlanStatus(
 export async function reconcileUserPlan(userId: string): Promise<UserPlanState> {
   const db = getSupabaseAdmin();
   if (!db) return FREE;
+
+  // An admin-stopped stream the payer may just have canceled: reconcile it so
+  // the "cancel to reclaim" banner clears. refreshPlanStatus never writes
+  // 'active', so a stopped row can only move to 'canceled'/'ended'.
+  const stopped = await getStoppedPlanPayment(userId);
+  if (stopped) await refreshPlanStatus(stopped, true);
+
   const { data } = await db
     .from("user_plan_payments")
     .select(PLAN_COLUMNS)
@@ -177,19 +187,83 @@ export async function reconcileUserPlan(userId: string): Promise<UserPlanState> 
   };
 }
 
+// ── Admin stop ───────────────────────────────────────────────────────────────
+
+/**
+ * Stop the user's active plan server-side (admin action): the quota gate
+ * closes now, but the payer's stream keeps running onchain until THEY cancel
+ * it — Sablier's cancel is sender-only, and the payer is the sender. Returns
+ * the stopped row, or null when there's nothing active to stop (including a
+ * concurrent cancel racing this — the guard only flips an 'active' row).
+ */
+export async function stopPlanPayment(userId: string): Promise<UserPlanPaymentRow | null> {
+  const db = getSupabaseAdmin();
+  if (!db) return null;
+  const { data } = await db
+    .from("user_plan_payments")
+    .select(PLAN_COLUMNS)
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .order("verified_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const row = (data as UserPlanPaymentRow | null) ?? null;
+  if (!row) return null;
+  const now = new Date().toISOString();
+  const { data: updated, error } = await db
+    .from("user_plan_payments")
+    .update({ status: "stopped", last_checked_at: now })
+    .eq("id", row.id)
+    .eq("status", "active")
+    .select(PLAN_COLUMNS)
+    .maybeSingle();
+  if (error) {
+    console.error("[plans] stop failed", error);
+    return null;
+  }
+  return (updated as UserPlanPaymentRow | null) ?? null;
+}
+
+/**
+ * The newest admin-stopped plan stream that is still running onchain (end_at
+ * in the future) — the account page's "cancel to reclaim the remainder"
+ * banner. A lapsed stream has nothing left to reclaim and is excluded.
+ */
+export async function getStoppedPlanPayment(userId: string): Promise<UserPlanPaymentRow | null> {
+  const db = getSupabaseAdmin();
+  if (!db) return null;
+  const { data } = await db
+    .from("user_plan_payments")
+    .select(PLAN_COLUMNS)
+    .eq("user_id", userId)
+    .eq("status", "stopped")
+    .gt("end_at", new Date().toISOString())
+    .order("verified_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as UserPlanPaymentRow | null) ?? null;
+}
+
 // ── Quotes ───────────────────────────────────────────────────────────────────
 
 const QUOTE_TTL_MS = 10 * 60 * 1000;
 
-/** Live quote for one month of a plan, same shape the activate page uses. */
-export async function buildPlanQuote(plan: PlanId): Promise<PlanQuote> {
+/** Live quote for one billing term of a plan, same shape the activate page uses. */
+export async function buildPlanQuote(
+  plan: PlanId,
+  term: BillingTerm = "monthly",
+): Promise<PlanQuote> {
   const usdMonthly = PLAN_PRICES_USD[plan];
+  const durationSeconds = termDurationSeconds(term);
+  const usdTotal = Math.round(usdMonthly * billedMonths(durationSeconds / MONTH_SECONDS) * 100) / 100;
   const rate = await getTokenUsdRate();
-  const raw = usdToRawTokens(usdMonthly, rate);
+  const raw = usdToRawTokens(usdTotal, rate);
   return {
     plan,
+    term,
+    durationSeconds,
     usdMonthly,
-    usdTotal: usdMonthly,
+    usdTotal,
     tokenAmount: raw.toString(),
     tokenAmountDisplay: Number(ethers.formatUnits(raw, POLYGRAPH_TOKEN_DECIMALS)),
     tokenUsdRate: rate,
@@ -272,8 +346,8 @@ export async function verifyPlanStreamPayment(
   }
 
   const usdMonthly = PLAN_PRICES_USD[plan];
-  const months = durationSeconds / MONTH_SECONDS;
-  const usdTotal = Math.round(usdMonthly * months * 100) / 100;
+  // Every full 12-month block bills as 10 (billedMonths — the yearly deal).
+  const usdTotal = Math.round(usdMonthly * billedMonths(durationSeconds / MONTH_SECONDS) * 100) / 100;
   let rate: number;
   try {
     rate = await getTokenUsdRate();
