@@ -69,37 +69,38 @@ export default async function ManageConsolePage({
 
   return (
     <main className="px-6 sm:px-10 py-12 max-w-4xl">
-      <header className="mb-8">
+      <header className="mb-6 border-b hairline pb-5">
         <a href="/manage" className="section-label mb-3 inline-block hover:text-oxblood transition-colors">
           ← Ecosystems
         </a>
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
-          <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight">{ecosystem.name}</h1>
-          <div className="flex items-center gap-3 font-mono text-[11px] text-ink-faint">
-            <a
-              href={`/ecosystems/${ecosystem.slug}`}
-              target="_blank"
-              className="uppercase tracking-[0.14em] hover:text-oxblood transition-colors"
-            >
-              Public page ↗
-            </a>
-            <span className="border border-rule rounded-full px-2.5 py-1 uppercase tracking-[0.14em] text-ink-muted">
-              {role === "app-admin" ? "app admin" : role}
-            </span>
-          </div>
+        <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight">{ecosystem.name}</h1>
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-[11px] text-ink-faint">
+          <span className="border border-rule rounded-full px-2.5 py-1 uppercase tracking-[0.14em] text-ink-muted">
+            {role === "app-admin" ? "app admin" : role}
+          </span>
+          <span className="tracking-[0.02em]">/{ecosystem.slug}</span>
+          <span aria-hidden className="text-rule-soft">·</span>
+          <a
+            href={`/ecosystems/${ecosystem.slug}`}
+            target="_blank"
+            className="uppercase tracking-[0.14em] hover:text-oxblood transition-colors"
+          >
+            Public page ↗
+          </a>
         </div>
         {ecosystem.blurb ? (
           <p className="mt-3 text-ink-muted text-[15px] leading-relaxed max-w-2xl">{ecosystem.blurb}</p>
         ) : null}
-        {unpaid && role === "app-admin" ? (
-          <p className="mt-3 font-mono text-[12px] text-oxblood">
-            monitoring inactive — members see a locked console; set a price or comp it in{" "}
-            <a href="/admin/ecosystems" className="underline decoration-dotted">
-              admin
-            </a>
-          </p>
-        ) : null}
       </header>
+
+      {unpaid && role === "app-admin" ? (
+        <p className="mb-6 font-mono text-[12px] text-oxblood">
+          monitoring inactive — members see a locked console; set a price or comp it in{" "}
+          <a href="/admin/ecosystems" className="underline decoration-dotted">
+            admin
+          </a>
+        </p>
+      ) : null}
 
       {/* Active-monitoring line + cancel, for managers on a paid (non-comped)
           ecosystem. Comped ecosystems have no stream, so nothing to cancel. */}
