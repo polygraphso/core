@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * The priority-grading checkout: fetch the one-time quote → (optionally swap
- * into $POLYGRAPH) → send ONE exact transfer to the treasury → server verify →
- * the request joins the 48h lane. Unlike the stream checkouts this is a single
+ * The grading-fee checkout: fetch the one-time quote → (optionally swap into
+ * $POLYGRAPH) → send ONE exact transfer to the treasury → server verify → the
+ * request's 48h clock starts. Unlike the stream checkouts this is a single
  * ERC-20 transfer, so it uses its own pay step (no approve, no Sablier). The
  * exact amount — carrying unique dust — is what attributes the payment, so
  * nothing signed here is trusted: the verify route re-reads the tx onchain.
@@ -213,12 +213,12 @@ function PriorityCheckoutInner({ requestId }: { requestId: string }) {
               ? "Sending…"
               : pay.id === "verifying"
                 ? "Verifying onchain…"
-                : `Pay ${POLYGRAPH_TOKEN_SYMBOL} for the 48h lane`}
+                : `Pay the fee in ${POLYGRAPH_TOKEN_SYMBOL}`}
           </button>
           <p className="mt-3 text-[13px] leading-relaxed text-ink-faint max-w-xl">
-            One transfer of the exact amount above. We verify it onchain before the request moves up.
-            Priority buys turnaround, never the grade: the battery, thresholds, and publication path
-            are identical to the free queue. Remote-only servers still cap at B.
+            One transfer of the exact amount above. We verify it onchain, then the 48h clock
+            starts. The fee buys the run, never the grade: the battery, thresholds, and publication
+            path are the same for everyone. Remote-only servers still cap at B.
           </p>
         </div>
       )}
@@ -280,7 +280,7 @@ function DoneNote({ deadlineAt }: { deadlineAt: string }) {
   return (
     <div className="border-l-2 pl-4" style={{ borderColor: "var(--color-oxblood)" }}>
       <p className="text-[15px] leading-relaxed text-ink">
-        Payment verified — your request is on the 48-hour lane
+        Payment verified — your request is on the 48-hour clock
         {when ? (
           <>
             , graded by <span className="font-mono">{when}</span>
