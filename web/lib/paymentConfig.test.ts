@@ -1,5 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { PLAN_PRICES_USD, PLAN_QUOTAS, paymentShapeTag, planShapeTag } from "./paymentConfig";
+import {
+  MONTH_SECONDS,
+  PLAN_PRICES_USD,
+  PLAN_QUOTAS,
+  YEAR_MONTHS,
+  YEARLY_BILLED_MONTHS,
+  billedMonths,
+  paymentShapeTag,
+  planShapeTag,
+  termDurationSeconds,
+} from "./paymentConfig";
 
 describe("planShapeTag", () => {
   const uuid = "3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b";
@@ -33,6 +43,35 @@ describe("planShapeTag", () => {
   it("rejects a non-uuid", () => {
     expect(() => planShapeTag("not-a-uuid")).toThrow();
     expect(() => planShapeTag("")).toThrow();
+  });
+});
+
+describe("billing terms", () => {
+  it("maps terms to stream durations", () => {
+    expect(termDurationSeconds("monthly")).toBe(MONTH_SECONDS);
+    expect(termDurationSeconds("yearly")).toBe(YEAR_MONTHS * MONTH_SECONDS);
+  });
+
+  it("bills sub-year streams at the plain monthly rate", () => {
+    expect(billedMonths(1)).toBe(1);
+    expect(billedMonths(6)).toBe(6);
+    // Deliberate discontinuity: no deal short of a full year. 11.5 months
+    // bills 11.5 — more than a year's 10; the UI never creates this.
+    expect(billedMonths(11.5)).toBe(11.5);
+  });
+
+  it("bills every full 12-month block as 10", () => {
+    expect(billedMonths(12)).toBe(YEARLY_BILLED_MONTHS);
+    expect(billedMonths(13)).toBe(YEARLY_BILLED_MONTHS + 1);
+    expect(billedMonths(24)).toBe(2 * YEARLY_BILLED_MONTHS);
+  });
+
+  it("credits a block within the ~3-day slop under a 12-month multiple", () => {
+    // Same tolerance philosophy as MIN_STREAM_SECONDS on the monthly check.
+    expect(billedMonths(11.95)).toBe(YEARLY_BILLED_MONTHS);
+    expect(billedMonths(23.95)).toBe(2 * YEARLY_BILLED_MONTHS);
+    // Just past the slop: no block credited.
+    expect(billedMonths(11.85)).toBe(11.85);
   });
 });
 

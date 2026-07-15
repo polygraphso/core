@@ -4,9 +4,10 @@
  * and ABI fragments the server verify route uses. Runtime logic (status checks,
  * quotes, onchain reads) lives in lib/ecosystemPayments (server-only).
  *
- * The payment rail: a monthly subscription paid as a cancelable Sablier Lockup
+ * The payment rail: a subscription paid as a cancelable Sablier Lockup
  * stream of $POLYGRAPH to the polygraph treasury on Base. One stream = one
- * month by default (renew by creating the next one); a longer stream at the
+ * billing term — a month by default, or a year billed as 10 months
+ * (billedMonths); renew by creating the next one. A longer stream at the
  * same monthly rate prepays more months. Verified onchain by the server; the
  * stream IS the subscription (cancel = unstreamed remainder refunds,
  * monitoring stops).
@@ -124,6 +125,35 @@ export const MONTH_SECONDS = 30 * 24 * 60 * 60;
 export const MIN_STREAM_SECONDS = 27 * 24 * 60 * 60;
 export const DEPOSIT_TOLERANCE = 0.95;
 
+// ── Billing terms ────────────────────────────────────────────────────────────
+
+export type BillingTerm = "monthly" | "yearly";
+
+/** A year of streaming spans 12 billing months… */
+export const YEAR_MONTHS = 12;
+/** …but bills as 10 — the yearly deal, 12 months for the price of 10. */
+export const YEARLY_BILLED_MONTHS = 10;
+
+/** Stream duration (the create tx's durations.total) for a billing term. */
+export function termDurationSeconds(term: BillingTerm): number {
+  return term === "yearly" ? YEAR_MONTHS * MONTH_SECONDS : MONTH_SECONDS;
+}
+
+/**
+ * Months to charge for a stream spanning `months`: every full 12-month block
+ * bills as YEARLY_BILLED_MONTHS, the remainder at the plain monthly rate. The
+ * slop term credits a block to a stream up to ~3 days short of a 12-month
+ * multiple — the same tolerance MIN_STREAM_SECONDS grants the monthly check.
+ * Deliberate discontinuity: an 11.5-month stream bills 11.5 (more than a
+ * year's 10); the UI only creates 1- or 12-month streams, and a hand-crafted
+ * in-between duration simply doesn't get the deal.
+ */
+export function billedMonths(months: number): number {
+  const slop = (MONTH_SECONDS - MIN_STREAM_SECONDS) / MONTH_SECONDS;
+  const years = Math.floor((months + slop) / YEAR_MONTHS);
+  return years * YEARLY_BILLED_MONTHS + Math.max(0, months - years * YEAR_MONTHS);
+}
+
 /** Lockup.Status enum order, from the verified source. */
 export const STREAM_STATUS = {
   PENDING: 0,
@@ -135,7 +165,11 @@ export const STREAM_STATUS = {
 
 /** What GET /api/manage/[slug]/payment/quote returns. */
 export interface PaymentQuote {
+  term: BillingTerm;
+  /** Stream duration the client must pass as the create tx's durations.total. */
+  durationSeconds: number;
   usdMonthly: number;
+  /** The charge for the whole term: usdMonthly × billedMonths(term). */
   usdTotal: number;
   /** Raw token units (18 decimals), as a decimal string. */
   tokenAmount: string;

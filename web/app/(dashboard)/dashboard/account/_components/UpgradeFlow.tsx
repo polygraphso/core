@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * The plan checkout: pick indie/team → live quote → (optionally swap into
- * $POLYGRAPH) → approve → create a one-month Sablier stream tagged to this
- * user → server verify → quota lifts. Same rail and the same shared island as
+ * The plan checkout: pick indie/team and a term (monthly, or yearly at 12
+ * months for the price of 10) → live quote → (optionally swap into
+ * $POLYGRAPH) → approve → create the Sablier stream tagged to this user →
+ * server verify → quota lifts. Same rail and the same shared island as
  * ecosystem activation; only the endpoints, the shape tag, and the copy
  * differ. Renewal = the next stream when this one runs out.
  */
@@ -15,6 +16,8 @@ import {
   PLAN_QUOTAS,
   planShapeTag,
   POLYGRAPH_TOKEN_SYMBOL,
+  YEARLY_BILLED_MONTHS,
+  type BillingTerm,
   type PlanId,
   type PlanQuote,
 } from "@/lib/paymentConfig";
@@ -43,6 +46,11 @@ export interface UpgradeFlowProps {
   currentPlan: PlanId | "free";
   /** The current plan's live stream, when on a paid plan — enables cancel. */
   active?: { streamId: number; lockup: string } | null;
+  /**
+   * An admin-stopped stream still running onchain: the plan is gone but the
+   * payer should cancel to reclaim the unstreamed remainder.
+   */
+  stopped?: { streamId: number; lockup: string; endAt: string } | null;
 }
 
 export function UpgradeFlow(props: UpgradeFlowProps) {
@@ -53,15 +61,18 @@ export function UpgradeFlow(props: UpgradeFlowProps) {
   );
 }
 
-function UpgradeFlowInner({ userId, currentPlan, active }: UpgradeFlowProps) {
+function UpgradeFlowInner({ userId, currentPlan, active, stopped }: UpgradeFlowProps) {
   const [plan, setPlan] = useState<PlanId>(currentPlan === "team" ? "team" : "indie");
+  const [term, setTerm] = useState<BillingTerm>("monthly");
   const [quote, setQuote] = useState<PlanQuote | null>(null);
   const [quoteError, setQuoteError] = useState<string | null>(null);
 
   const fetchQuote = useCallback(async () => {
     setQuoteError(null);
     try {
-      const res = await fetch(`/api/account/plan/quote?plan=${plan}`, { cache: "no-store" });
+      const res = await fetch(`/api/account/plan/quote?plan=${plan}&term=${term}`, {
+        cache: "no-store",
+      });
       const body = (await res.json()) as PlanQuote & { error?: string };
       if (!res.ok) throw new Error(body.error ?? `quote failed (${res.status})`);
       setQuote(body);
@@ -69,7 +80,7 @@ function UpgradeFlowInner({ userId, currentPlan, active }: UpgradeFlowProps) {
       setQuote(null);
       setQuoteError(e instanceof Error ? e.message : String(e));
     }
-  }, [plan]);
+  }, [plan, term]);
 
   useEffect(() => {
     void fetchQuote();
@@ -112,14 +123,55 @@ function UpgradeFlowInner({ userId, currentPlan, active }: UpgradeFlowProps) {
       <p className="font-serif text-2xl text-ink">
         ${PLAN_PRICES_USD[p]} <span className="text-[15px] text-ink-muted">/ month</span>
       </p>
+      {term === "yearly" ? (
+        <p className="mt-0.5 font-mono text-[11px] text-ink-muted">
+          ${(PLAN_PRICES_USD[p] * YEARLY_BILLED_MONTHS).toLocaleString("en-US")} / year
+        </p>
+      ) : null}
       <p className="mt-1.5 font-mono text-[11px] text-ink-muted">
         {PLAN_QUOTAS[p]} monitors · per-target thresholds · email alerts
       </p>
     </button>
   );
 
+  const termOption = (t: BillingTerm, label: string) => (
+    <button
+      type="button"
+      onClick={() => setTerm(t)}
+      aria-pressed={term === t}
+      className={`rounded-[3px] border px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.14em] transition-colors ${
+        term === t ? "border-ink bg-parchment-50 text-ink" : "border-rule text-ink-muted hover:border-ink/40"
+      }`}
+    >
+      {label}
+    </button>
+  );
+
   return (
     <div>
+      {stopped ? (
+        <div className="mb-6 border border-oxblood/40 rounded-[4px] px-5 py-3.5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+          <p className="font-mono text-[12px] text-ink-muted max-w-xl">
+            polygraph stopped this subscription. Your payment stream is still running until{" "}
+            <span className="text-ink">
+              {new Date(stopped.endAt).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
+            {" "}— cancel it to reclaim the unstreamed remainder.
+          </p>
+          <CancelStreamButton
+            streamId={stopped.streamId}
+            lockup={stopped.lockup}
+            refreshUrl="/api/account/plan/refresh"
+            label="Cancel stream"
+            noun="the stream"
+          />
+        </div>
+      ) : null}
+
       {active && currentPlan !== "free" ? (
         <div className="mb-6 border border-rule rounded-[4px] px-5 py-3.5 flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
           <p className="font-mono text-[12px] text-ink-muted">
@@ -141,18 +193,24 @@ function UpgradeFlowInner({ userId, currentPlan, active }: UpgradeFlowProps) {
         {card("team")}
       </div>
 
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        {termOption("monthly", "monthly")}
+        {termOption("yearly", "yearly · 12 months for the price of 10")}
+      </div>
+
       {/* The commitment, priced live. */}
       <div className="border border-rule rounded-[4px] px-6 py-5 mb-6">
         {quote ? (
           <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
             <div>
               <div className="font-serif text-2xl text-ink">
-                ${quote.usdMonthly.toLocaleString("en-US")} / month
+                ${quote.usdTotal.toLocaleString("en-US")} / {quote.term === "yearly" ? "year" : "month"}
               </div>
               <div className="mt-1 font-mono text-[12px] text-ink-muted">
                 ≈ {formatTokens(BigInt(quote.tokenAmount))} {POLYGRAPH_TOKEN_SYMBOL} at $
                 {quote.tokenUsdRate.toPrecision(3)} — streamed continuously to the polygraph
-                treasury over the month, cancelable anytime.
+                treasury over the {quote.term === "yearly" ? "year" : "month"}, cancelable anytime
+                {quote.term === "yearly" ? "; billed as 12 months for the price of 10" : ""}.
               </div>
             </div>
             <div className="font-mono text-[11px] text-ink-faint">rate refreshes automatically</div>
@@ -180,15 +238,16 @@ function UpgradeFlowInner({ userId, currentPlan, active }: UpgradeFlowProps) {
         quote={quote}
         shapeTag={planShapeTag(userId)}
         verify={verify}
-        idleLabel={`Stream ${POLYGRAPH_TOKEN_SYMBOL} for a month`}
+        idleLabel={`Stream ${POLYGRAPH_TOKEN_SYMBOL} for a ${term === "yearly" ? "year" : "month"}`}
         doneLabel="Plan active, back to monitors…"
         helper={
           <>
             Two transactions: an approval, then the payment stream. We verify it onchain (token,
             recipient, amount, duration) before the quota lifts. No custody: cancel anytime above
             and the unstreamed remainder returns to this wallet; the plan falls back to free when
-            the stream stops. Renew by funding the next month&rsquo;s stream here (a longer stream
-            at the same monthly rate prepays more months).
+            the stream stops. Renew by funding the next term&rsquo;s stream here. Yearly streams
+            the discounted total linearly over 12 months; cancel mid-year and the unstreamed
+            remainder returns at that rate.
           </>
         }
       />

@@ -1,6 +1,7 @@
 /**
- * GET /api/account/plan/quote?plan=indie|team — the live upgrade quote: the
- * plan's USD price converted to $POLYGRAPH at the current rate, plus the
+ * GET /api/account/plan/quote?plan=indie|team&term=monthly|yearly — the live
+ * upgrade quote: the plan's USD price for the chosen term (yearly bills 12
+ * months as 10) converted to $POLYGRAPH at the current rate, plus the
  * addresses the create tx needs.
  *
  * Session-required (proxy matcher + explicit check): the quote itself is
@@ -17,9 +18,14 @@ export async function GET(request: Request) {
   const session = await getSession();
   if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
 
-  const plan = new URL(request.url).searchParams.get("plan");
+  const searchParams = new URL(request.url).searchParams;
+  const plan = searchParams.get("plan");
   if (plan !== "indie" && plan !== "team") {
     return Response.json({ error: "plan must be indie or team" }, { status: 400 });
+  }
+  const term = searchParams.get("term") ?? "monthly";
+  if (term !== "monthly" && term !== "yearly") {
+    return Response.json({ error: "term must be monthly or yearly" }, { status: 400 });
   }
 
   if (!TREASURY_ADDRESS) {
@@ -30,7 +36,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const quote = await buildPlanQuote(plan);
+    const quote = await buildPlanQuote(plan, term);
     return Response.json(quote);
   } catch (e) {
     console.error("[account/plan] quote failed:", e);
