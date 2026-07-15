@@ -50,6 +50,14 @@ const GITHUB = "https://github.com/polygraphso";
 const NPM = "https://www.npmjs.com/package/@polygraphso/litmus";
 const GLAMA = "https://glama.ai/mcp/servers/polygraphso/litmus";
 
+// $POLYGRAPH on Base. Address hardcoded to match TokenNote/Footer — importing it
+// from lib/paymentConfig would pull that module's Sablier ABI fragments into the
+// nav bundle (shipped on every page) for no benefit. It's public and stable.
+const TOKEN_ADDR = "0x2878cfc54aabdadd9bb5d70dd24d6b91485afba3";
+const BANKR = `https://bankr.bot/discover/${TOKEN_ADDR}`;
+const BASESCAN = `https://basescan.org/token/${TOKEN_ADDR}`;
+const DEXSCREENER = `https://dexscreener.com/base/${TOKEN_ADDR}`;
+
 export const NAV_ITEMS: NavItem[] = [
   {
     key: "ecosystems",
@@ -212,6 +220,50 @@ export const NAV_ITEMS: NavItem[] = [
         title: "Read the methodology",
         desc: "Independent, reproducible, no pay-for-grade.",
         href: "/methodology",
+      },
+    },
+  },
+  {
+    key: "token",
+    label: "$POLYGRAPH",
+    // Trigger click → the on-site funding explainer (TokenNote, id="funding").
+    href: "/#funding",
+    menu: {
+      featuredLabel: "The token",
+      featured: [
+        {
+          glyph: "◈",
+          title: "How it funds grading",
+          desc: "Bankr's community launched it; we claim the dev fees and the work stays free to read.",
+          href: "/#funding",
+        },
+        {
+          glyph: "⇄",
+          title: "Acquire on Bankr",
+          desc: "View and swap $POLYGRAPH on Base.",
+          href: BANKR,
+          external: true,
+        },
+      ],
+      listLabel: "On-chain",
+      list: [
+        { name: "Contract", href: BASESCAN, meta: "Basescan", external: true },
+        { name: "Price chart", href: DEXSCREENER, meta: "chart", external: true },
+        { name: "Pay with $POLYGRAPH", href: "/pricing", meta: "pricing" },
+      ],
+      subLinks: [
+        { label: "Why we're paid in the token", href: "/blog/paid-in-the-token" },
+        {
+          label: "Funding open source",
+          href: "/blog/open-source-needs-new-funding-mechanisms",
+        },
+        { label: "Funding note", href: "/#funding" },
+      ],
+      cta: {
+        title: "View $POLYGRAPH on Bankr",
+        desc: "It funds the work; it doesn't move a grade.",
+        href: BANKR,
+        external: true,
       },
     },
   },
