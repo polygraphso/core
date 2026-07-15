@@ -52,11 +52,12 @@ export const DEFAULT_MONTHLY_PRICE_USD = 199;
 
 /**
  * Priority grading: the one-time fee for the 48h lane on the /request queue.
- * Buys a place in line, never the grade. Env-overridable while the price
- * finds its level ($99–299 band per the revenue map).
+ * Buys a place in line, never the grade. Priced as a nominal commitment fee,
+ * not a revenue line (supersedes the earlier $99–299 band): $1 per server or
+ * skill filters spam while keeping the lane open to everyone. Env-overridable.
  */
 export const PRIORITY_GRADE_PRICE_USD = Number.parseFloat(
-  process.env.NEXT_PUBLIC_PRIORITY_GRADE_PRICE_USD ?? "99",
+  process.env.NEXT_PUBLIC_PRIORITY_GRADE_PRICE_USD ?? "1",
 );
 
 /** What GET /api/grade-requests/[id]/priority/quote returns. */
