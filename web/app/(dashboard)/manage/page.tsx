@@ -168,9 +168,9 @@ export default async function ManageLandingPage() {
               ))}
             </section>
 
-            <aside className="flex w-full flex-col gap-6 xl:w-[300px] xl:flex-shrink-0">
-              <div className="rounded-[4px] border border-rule p-4">
-                <p className={`${MICRO_LABEL} mb-2.5`}>Provisioning</p>
+            <aside className="flex w-full flex-col gap-7 xl:w-[300px] xl:flex-shrink-0">
+              <div className="rounded-[4px] border border-rule bg-parchment-50 p-4">
+                <p className={`${MICRO_LABEL} mb-2`}>Provisioning</p>
                 <p className="text-[13px] leading-relaxed text-ink-muted">
                   Ecosystems are provisioned by polygraph. Email{" "}
                   <a
@@ -184,13 +184,13 @@ export default async function ManageLandingPage() {
               </div>
 
               <div>
-                <p className={`${MICRO_LABEL} mb-3`}>Reading this page</p>
-                <div className="flex flex-col gap-3">
+                <p className={`${MICRO_LABEL} mb-3.5`}>Reading this page</p>
+                <div className="flex flex-col gap-4">
                   <LegendRow badge="activation required" tone="oxblood">
-                    Billing not active — the public page stays hidden until activated.
+                    Billing isn&rsquo;t active. The public page stays hidden until it&rsquo;s activated.
                   </LegendRow>
                   <LegendRow badge="live" tone="grade-a">
-                    Monitoring active — the public page is available.
+                    Monitoring is active. The public page is available.
                   </LegendRow>
                   <LegendRow badge="app admin" tone="neutral">
                     Full control of settings, members, entries and CVEs.
@@ -199,18 +199,20 @@ export default async function ManageLandingPage() {
               </div>
 
               <div>
-                <p className={`${MICRO_LABEL} mb-2`}>Elsewhere</p>
+                <p className={`${MICRO_LABEL} mb-1`}>Elsewhere</p>
                 <a
                   href="/ecosystems"
-                  className="block font-mono text-[11px] tracking-[0.06em] text-ink-muted py-1 hover:text-oxblood transition-colors"
+                  className="flex items-center justify-between border-t border-rule-soft py-2 font-mono text-[11px] tracking-[0.06em] text-ink-muted hover:text-oxblood transition-colors"
                 >
-                  Public directory ↗
+                  Public directory
+                  <span aria-hidden className="text-ink-faint">↗</span>
                 </a>
                 <a
                   href="/dashboard"
-                  className="block font-mono text-[11px] tracking-[0.06em] text-ink-muted py-1 hover:text-oxblood transition-colors"
+                  className="flex items-center justify-between border-t border-rule-soft py-2 font-mono text-[11px] tracking-[0.06em] text-ink-muted hover:text-oxblood transition-colors"
                 >
-                  Your monitors ↗
+                  Your monitors
+                  <span aria-hidden className="text-ink-faint">↗</span>
                 </a>
               </div>
             </aside>
@@ -281,13 +283,13 @@ function LegendRow({
         ? "text-grade-a border-grade-a/40"
         : "text-ink-muted border-rule";
   return (
-    <div className="flex items-start gap-2.5">
+    <div>
       <span
-        className={`shrink-0 font-mono text-[9px] uppercase tracking-[0.1em] border rounded-full px-2 py-[3px] whitespace-nowrap ${toneClass}`}
+        className={`inline-block font-mono text-[9px] uppercase tracking-[0.1em] border rounded-full px-2 py-[3px] whitespace-nowrap ${toneClass}`}
       >
         {badge}
       </span>
-      <span className="text-[12px] leading-relaxed text-ink-muted">{children}</span>
+      <p className="mt-1.5 text-[12px] leading-relaxed text-ink-muted">{children}</p>
     </div>
   );
 }
