@@ -68,6 +68,13 @@ const widgetConfig: WidgetConfig = {
   providers: [EthereumProvider()],
   toChain: PAYMENT_CHAIN_ID,
   toToken: POLYGRAPH_TOKEN_ADDRESS,
+  // RFQ/intent solvers sign quotes with short deadlines; a checkout user
+  // reviews the wallet prompt for longer than the quote lives, and the swap
+  // reverts (observed live: a nordstern route failed onchain while a fresh
+  // quote for the same pair simulated fine). Deny the solver class so routes
+  // ride deterministic AMM aggregators (e.g. kyberswap over the token's
+  // Uniswap v4 pool), which don't expire.
+  exchanges: { deny: ["nordstern", "bitget"] },
   disabledUI: { toToken: true },
   hiddenUI: { toAddress: true, appearance: true, language: true },
   appearance: "light",
