@@ -16,6 +16,7 @@ import "server-only";
 
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { refToPath } from "@/lib/serverRef";
+import { skillRefToPath } from "@/lib/skillGrades";
 import {
   hostedRunnerConfig,
   postGrade,
@@ -86,7 +87,12 @@ export async function startGradeForRequest(requestId: string): Promise<void> {
 
 /** The /mcp or /skill report path for a completed target. */
 function reportUrlFor(target: string, targetKind: string): string {
-  return targetKind === "skill" ? `/skill/${target}` : `/mcp/${refToPath(target)}`;
+  // A skill ref carries a `#subpath`; skillRefToPath turns it into the
+  // path-safe `/skill/owner/repo/subpath` form (a raw `#` would be read as a
+  // URL fragment client-side and drop the subpath).
+  return targetKind === "skill"
+    ? `/skill/${skillRefToPath(target)}`
+    : `/mcp/${refToPath(target)}`;
 }
 
 /**
