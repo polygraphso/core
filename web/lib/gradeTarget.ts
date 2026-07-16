@@ -1,5 +1,6 @@
 import { ServerRefParseError, parseServerRef, serverKey } from "@/lib/identity";
 import { decodeSkillRef, githubUrlToSkillRef } from "@/lib/skillGrades";
+import { registryUrlToRef } from "@/lib/registryUrl";
 
 /**
  * Parse a grade-queue target into its canonical form. Shared by the human
@@ -9,8 +10,11 @@ import { decodeSkillRef, githubUrlToSkillRef } from "@/lib/skillGrades";
  * A registry ref (npm/… | pypi/… | github/owner/repo) collapses to its
  * versionless server key; a github skill (a `#`-scoped ref or a github.com
  * blob/tree URL to a SKILL.md) becomes its canonical `github/owner/repo#path`
- * skill ref; an https:// URL is kept as a remote MCP endpoint. Returns
- * `{ error }` with a user-facing message on anything else.
+ * skill ref; a registry PAGE URL (npmjs.com/package/…, github.com/owner/repo,
+ * pypi.org/project/…) collapses to the package it names — it's the package,
+ * not a remote endpoint, so it runs in the full sandbox with no B-cap; any
+ * other https:// URL is kept as a remote MCP endpoint. Returns `{ error }`
+ * with a user-facing message on anything else.
  */
 export type ParsedGradeTarget =
   | { target: string; kind: "registry_ref" | "remote_url" | "skill" }
@@ -26,6 +30,17 @@ export function parseGradeTarget(raw: string): ParsedGradeTarget {
     : githubUrlToSkillRef(raw);
   if (skillCandidate && skillCandidate.startsWith("github/") && skillCandidate.includes("#")) {
     return { target: skillCandidate, kind: "skill" };
+  }
+
+  // A registry page URL names a package — grade the package, not the page.
+  const registryRef = registryUrlToRef(raw);
+  if (registryRef) {
+    try {
+      return { target: serverKey(parseServerRef(registryRef)), kind: "registry_ref" };
+    } catch {
+      // A recognized host with an unparseable path: fall through to the
+      // remote-endpoint branch rather than guessing.
+    }
   }
 
   if (raw.startsWith("https://")) {

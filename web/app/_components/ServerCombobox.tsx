@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { registryUrlToRef } from "@/lib/registryUrl";
 
 /** A catalog candidate returned by /api/catalog/search. */
 export interface ComboboxResult {
@@ -16,9 +17,15 @@ const GRADE_COLOR: Record<string, string> = {
   A: "#2f5132", B: "#4f6b36", C: "#a86b19", D: "#b85024", F: "#7a1f2b",
 };
 
-/** Auto-prefix a bare package name as npm; leave explicit refs/URLs untouched. */
+/**
+ * Auto-prefix a bare package name as npm; collapse a registry page URL
+ * (npmjs.com/package/…, github.com/owner/repo, pypi.org/project/…) to the ref
+ * it names; leave explicit refs and other URLs untouched.
+ */
 export function normalizeServerRef(raw: string): string {
   const s = raw.trim();
+  const fromUrl = registryUrlToRef(s);
+  if (fromUrl) return fromUrl;
   if (/^(npm|pypi|github)\//.test(s) || s.startsWith("https://")) return s;
   return `npm/${s}`;
 }
