@@ -5,11 +5,17 @@ import { useRouter } from "next/navigation";
 import { HoneypotField } from "@/app/_components/HoneypotField";
 import { ServerCombobox, type ComboboxResult } from "@/app/_components/ServerCombobox";
 import { refToPath } from "@/lib/serverRef";
+import { registryUrlToRef } from "@/lib/registryUrl";
 import { PRIORITY_GRADE_PRICE_USD } from "@/lib/paymentConfig";
 
 function targetHint(raw: string): { text: string; warn: boolean } | null {
   const t = raw.trim();
   if (!t) return null;
+  // A registry page URL names a package — graded as that package, full sandbox.
+  const ref = registryUrlToRef(t);
+  if (ref) {
+    return { text: `${ref} — registry package, runs in the full sandbox`, warn: false };
+  }
   if (t.startsWith("https://")) {
     return { text: "remote server — its grade will cap at B (egress can't be verified)", warn: true };
   }
@@ -207,7 +213,7 @@ export function RequestForm({
             onValueChange={(v) => { setTarget(v); if (state !== "submitting") setState("idle"); }}
             onSelectResult={onSelectResult}
             onSubmitFreeform={(normalized) => setTarget(normalized)}
-            placeholder="context7 · npm/@scope/server · https://mcp.example.com"
+            placeholder="context7 · npm/@scope/server · github.com/owner/repo · https://mcp.example.com"
             freeformVerb="Request"
             aria-describedby="request-target-hint"
           />
