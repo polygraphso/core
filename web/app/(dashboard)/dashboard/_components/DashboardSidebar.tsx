@@ -9,12 +9,21 @@ type NavItem = {
 
 const USER_NAV: NavItem[] = [
   { href: "/dashboard", label: "Monitors", active: (p) => p === "/dashboard" || p.startsWith("/dashboard/monitors") },
-  { href: "/dashboard/account", label: "Account", active: (p) => p.startsWith("/dashboard/account") || p.startsWith("/dashboard/upgrade") },
 ];
 
 // Shown only to app admins and users who belong to at least one ecosystem — a
 // plain user with no ecosystem never sees a dead-end "Ecosystems" tab.
 const MANAGE_NAV: NavItem = { href: "/manage", label: "Ecosystems", active: (p) => p.startsWith("/manage") };
+
+// Account/plan/billing — meta, not a work surface, so it's pinned to the bottom
+// of the rail rather than sitting among the day-to-day sections. The /upgrade
+// clause keeps it highlighted for anyone landing on the legacy path before the
+// redirect resolves.
+const ACCOUNT_NAV: NavItem = {
+  href: "/dashboard/account",
+  label: "Account",
+  active: (p) => p.startsWith("/dashboard/account") || p.startsWith("/dashboard/upgrade"),
+};
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Metrics", active: (p) => p === "/admin" },
@@ -92,6 +101,11 @@ export function DashboardSidebar({ pathname, isAdmin, showManage }: Props) {
           )}
         </nav>
 
+        {/* Account is a real nav item but meta, so it's pinned to the bottom,
+            above the View-site link. */}
+        <div className="border-t border-rule py-2">
+          <NavLink item={ACCOUNT_NAV} pathname={pathname} />
+        </div>
         <div className="px-5 py-5 border-t border-rule flex flex-col gap-3">
           <a
             href="/"
