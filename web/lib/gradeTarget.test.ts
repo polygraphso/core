@@ -70,4 +70,44 @@ describe("parseGradeTarget", () => {
       kind: "registry_ref",
     });
   });
+
+  // Registry PAGE URLs name a package — graded as that package (full sandbox),
+  // never as a remote endpoint (which would wrongly cap at B).
+  it("collapses an npmjs.com package URL to its npm ref", () => {
+    expect(parseGradeTarget("https://www.npmjs.com/package/oathe-mcp")).toEqual({
+      target: "npm/oathe-mcp",
+      kind: "registry_ref",
+    });
+  });
+
+  it("collapses a scoped npmjs.com package URL with a version to the versionless key", () => {
+    expect(
+      parseGradeTarget("https://www.npmjs.com/package/@scope/some-mcp/v/1.2.3"),
+    ).toEqual({ target: "npm/@scope/some-mcp", kind: "registry_ref" });
+  });
+
+  it("collapses a pypi.org project URL to its pypi ref", () => {
+    expect(parseGradeTarget("https://pypi.org/project/mcp-server-git/")).toEqual({
+      target: "pypi/mcp-server-git",
+      kind: "registry_ref",
+    });
+  });
+
+  it("collapses a bare github.com repo URL to its github ref", () => {
+    expect(parseGradeTarget("https://github.com/owner/repo")).toEqual({
+      target: "github/owner/repo",
+      kind: "registry_ref",
+    });
+    expect(parseGradeTarget("https://github.com/owner/repo.git")).toEqual({
+      target: "github/owner/repo",
+      kind: "registry_ref",
+    });
+  });
+
+  it("still treats a non-registry https URL as a remote endpoint", () => {
+    expect(parseGradeTarget("https://mcp.example.com/mcp")).toEqual({
+      target: "https://mcp.example.com/mcp",
+      kind: "remote_url",
+    });
+  });
 });
