@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getUserPlan } from "@/lib/userPlans";
+import { getUserPayments } from "@/lib/revenueMetrics";
+import { formatUsd, buyLabel } from "@/lib/revenueAggregate";
 import { EmptyNote } from "../../_components/ui";
 import { Pagination } from "../../_components/Pagination";
 import { StopSubscriptionButton } from "../../_components/StopSubscriptionButton";
@@ -59,13 +61,18 @@ export default async function AdminUserDetailPage({
   if (error || !user) notFound();
   const isAdmin = profileResult.data?.is_admin === true;
 
-  // Load all monitors for this user (small per-user dataset; need all IDs for deliveries)
-  const monitorsResult = await db
-    .from("monitors")
-    .select("id, target, unsubscribed_at, created_at")
-    .eq("user_id", id)
-    .order("created_at", { ascending: false });
+  // Load all monitors for this user (small per-user dataset; need all IDs for
+  // deliveries) plus every payment attributable to them.
+  const [monitorsResult, payments] = await Promise.all([
+    db
+      .from("monitors")
+      .select("id, target, unsubscribed_at, created_at")
+      .eq("user_id", id)
+      .order("created_at", { ascending: false }),
+    getUserPayments(id, user.email ?? null),
+  ]);
   const monitors = (monitorsResult.data ?? []) as MonitorRow[];
+  const paidTotal = payments.reduce((s, p) => s + p.usd, 0);
 
   const monitorIds = monitors.map((m) => m.id);
 
@@ -193,6 +200,41 @@ export default async function AdminUserDetailPage({
               <StopSubscriptionButton url={`/api/admin/users/${id}/plan/stop`} />
             </div>
           </div>
+        )}
+      </section>
+
+      {/* Payments */}
+      <section className="mb-10">
+        <div className="border-t hairline pt-5 mb-4 flex items-baseline justify-between">
+          <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint">Payments</h2>
+          {payments.length > 0 && (
+            <span className="font-mono text-[10px] text-ink-faint">
+              {payments.length} · {formatUsd(paidTotal)} total
+            </span>
+          )}
+        </div>
+        {payments.length === 0 ? (
+          <EmptyNote>No payments.</EmptyNote>
+        ) : (
+          <ul className="divide-y divide-rule border-y border-rule">
+            {payments.map((p, i) => (
+              <li key={i} className="py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="font-mono text-xs text-ink truncate">{buyLabel(p)}</p>
+                  <p className="font-mono text-[10px] text-ink-faint mt-0.5">
+                    {fmtTime(p.at)}
+                    {p.recurring && p.endAt && <span className="ml-2">until {fmt(p.endAt)}</span>}
+                  </p>
+                </div>
+                <div className="shrink-0 flex items-center gap-2">
+                  <span className="font-mono text-xs text-ink tabular">{formatUsd(p.usd)}</span>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint border hairline px-1.5 py-0.5">
+                    {p.status}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
 
