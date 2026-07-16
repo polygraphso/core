@@ -52,15 +52,24 @@ describe("verifyRunnable", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("rejects a bare github ref — not a runnable package — without probing", async () => {
-    const probe = vi.fn();
+  it("accepts a github repo that exists (the harness clones and runs it)", async () => {
+    const probe = vi.fn().mockResolvedValue(true);
     const result = await verifyRunnable(
-      { target: "github/owner/repo", kind: "registry_ref" },
+      { target: "github/snyk/studio-mcp", kind: "registry_ref" },
+      probe,
+    );
+    expect(result).toEqual({ ok: true, target: "github/snyk/studio-mcp" });
+    expect(probe).toHaveBeenCalledWith("github", "snyk/studio-mcp");
+  });
+
+  it("rejects a github repo that does not exist, naming it", async () => {
+    const probe = vi.fn().mockResolvedValue(false);
+    const result = await verifyRunnable(
+      { target: "github/owner/nope-not-real", kind: "registry_ref" },
       probe,
     );
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.reason).toMatch(/npm|pypi|https/i);
-    expect(probe).not.toHaveBeenCalled();
+    if (!result.ok) expect(result.reason).toContain("owner/nope-not-real");
   });
 
   it("trusts a github skill ref without probing a registry", async () => {

@@ -3,10 +3,12 @@
  *
  * The request funnel lets a human type a free-form ref. `parseGradeTarget`
  * proves it's well-formed; this proves the harness could actually grade it:
- *   - https:// remote  → trusted (a live endpoint, graded up to B)
- *   - skill            → trusted (a github skill ref the runner clones + scans)
- *   - npm/… , pypi/…   → must exist on the registry (probe injected)
- *   - anything else     (a bare github repo, etc.) → not a runnable package yet
+ *   - https:// remote     → trusted (a live endpoint, graded up to B)
+ *   - skill               → trusted (a github skill ref the runner clones + scans)
+ *   - npm/… , pypi/…      → must exist on the registry (probe injected)
+ *   - github/owner/repo   → the repo must exist (the harness clones, builds,
+ *                           and runs github servers)
+ *   - anything else       → not a runnable package
  *
  * The registry probe is injected so the branching logic stays unit-testable
  * without network. `checkRegistryExists` is the production implementation.
@@ -20,7 +22,7 @@ export type RunnableCheck =
 
 /** Does `pkg` exist on `registry`? Injected so the logic is testable offline. */
 export type RegistryProbe = (
-  registry: "npm" | "pypi",
+  registry: "npm" | "pypi" | "github",
   pkg: string,
 ) => Promise<boolean>;
 
@@ -48,10 +50,17 @@ export async function verifyRunnable(
       : { ok: false, reason: `No PyPI package named "${pkg}" — check the spelling.` };
   }
 
+  if (parsed.target.startsWith("github/")) {
+    const repo = parsed.target.slice("github/".length);
+    return (await probe("github", repo))
+      ? { ok: true, target: parsed.target }
+      : { ok: false, reason: `No GitHub repository "${repo}" — check the spelling.` };
+  }
+
   return {
     ok: false,
     reason:
-      "We can only queue an npm/…, pypi/…, or https:// target — that ref isn't a runnable package yet.",
+      "We can only queue an npm/…, pypi/…, github/owner/repo, or https:// target — that ref isn't a runnable package.",
   };
 }
 
@@ -65,7 +74,11 @@ export const checkRegistryExists: RegistryProbe = async (registry, pkg) => {
   const url =
     registry === "npm"
       ? `https://registry.npmjs.org/${pkg.replace("/", "%2F")}`
-      : `https://pypi.org/pypi/${encodeURIComponent(pkg)}/json`;
+      : registry === "pypi"
+        ? `https://pypi.org/pypi/${encodeURIComponent(pkg)}/json`
+        : // github: pkg is "owner/repo"; the repos API 404s definitively, and
+          // an unauthenticated rate-limit answer is a 403 — which fails open.
+          `https://api.github.com/repos/${pkg}`;
   try {
     const res = await fetch(url, {
       method: "GET",
