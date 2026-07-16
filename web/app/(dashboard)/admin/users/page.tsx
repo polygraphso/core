@@ -10,6 +10,7 @@ export const metadata: Metadata = { title: "Users · Admin", robots: { index: fa
 const PAGE_SIZE = 25;
 
 interface MonitorRow { user_id: string | null; unsubscribed_at: string | null; }
+interface PlanRow { user_id: string; plan: string; status: string; end_at: string; }
 
 function githubUrl(u: { app_metadata?: Record<string, unknown>; user_metadata?: Record<string, unknown> }): string | null {
   const provider = u.app_metadata?.provider as string | undefined;
@@ -29,9 +30,10 @@ export default async function AdminUsersPage({
   const db = getSupabaseAdmin();
   if (!db) return <main className="w-full px-8 py-12"><EmptyNote>Supabase not configured.</EmptyNote></main>;
 
-  const [usersResult, monitorsResult] = await Promise.all([
+  const [usersResult, monitorsResult, plansResult] = await Promise.all([
     db.auth.admin.listUsers({ page, perPage: PAGE_SIZE }),
     db.from("monitors").select("user_id, unsubscribed_at"),
+    db.from("user_plan_payments").select("user_id, plan, status, end_at").eq("status", "active"),
   ]);
 
   const users = usersResult.data?.users ?? [];
@@ -46,6 +48,13 @@ export default async function AdminUsersPage({
     s.total++;
     if (!m.unsubscribed_at) s.active++;
     monitorStats.set(m.user_id, s);
+  }
+
+  // Active plan per user (end date still in the future). Newest wins if several.
+  const nowMs = Date.now();
+  const planByUser = new Map<string, string>();
+  for (const p of (plansResult.data ?? []) as PlanRow[]) {
+    if (new Date(p.end_at).getTime() > nowMs) planByUser.set(p.user_id, p.plan);
   }
 
   return (
@@ -66,6 +75,7 @@ export default async function AdminUsersPage({
                 <tr className="border-b hairline bg-parchment-50">
                   <th className="px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint">Email</th>
                   <th className="px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint hidden md:table-cell">Method</th>
+                  <th className="px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint hidden sm:table-cell">Plan</th>
                   <th className="px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint hidden sm:table-cell">Last sign in</th>
                   <th className="px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint hidden sm:table-cell">Joined</th>
                   <th className="px-4 py-2.5 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-faint text-right">Monitors</th>
@@ -75,6 +85,7 @@ export default async function AdminUsersPage({
                 {users.map((u) => {
                   const provider = u.app_metadata?.provider as string | undefined;
                   const stats = monitorStats.get(u.id);
+                  const plan = planByUser.get(u.id);
                   return (
                     <tr key={u.id} className="hover:bg-ink/[0.02] cursor-pointer transition-colors group">
                       <td className="px-4 py-3">
@@ -99,6 +110,15 @@ export default async function AdminUsersPage({
                           <span className="font-mono text-[10px] uppercase tracking-widest text-ink-faint border hairline px-1.5 py-0.5">
                             {provider}
                           </span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        {plan ? (
+                          <span className="font-mono text-[10px] uppercase tracking-widest text-oxblood border border-oxblood/40 px-1.5 py-0.5">
+                            {plan}
+                          </span>
+                        ) : (
+                          <span className="font-mono text-[11px] text-ink-faint">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 font-mono text-[11px] text-ink-muted hidden sm:table-cell tabular">
