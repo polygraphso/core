@@ -52,17 +52,18 @@ describe("verifyRunnable", () => {
     expect(result.ok).toBe(false);
   });
 
-  it("accepts a github repo that exists (the harness clones and runs it)", async () => {
-    const probe = vi.fn().mockResolvedValue(true);
+  it("accepts a github repo that exists AND is Node/Python-packaged", async () => {
+    const probe = vi.fn().mockResolvedValue(true); // exists + gradeable
     const result = await verifyRunnable(
-      { target: "github/snyk/studio-mcp", kind: "registry_ref" },
+      { target: "github/owner/node-mcp", kind: "registry_ref" },
       probe,
     );
-    expect(result).toEqual({ ok: true, target: "github/snyk/studio-mcp" });
-    expect(probe).toHaveBeenCalledWith("github", "snyk/studio-mcp");
+    expect(result).toEqual({ ok: true, target: "github/owner/node-mcp" });
+    expect(probe).toHaveBeenCalledWith("github", "owner/node-mcp");
+    expect(probe).toHaveBeenCalledWith("github-gradeable", "owner/node-mcp");
   });
 
-  it("rejects a github repo that does not exist, naming it", async () => {
+  it("rejects a github repo that does not exist, naming it — without the gradeable probe", async () => {
     const probe = vi.fn().mockResolvedValue(false);
     const result = await verifyRunnable(
       { target: "github/owner/nope-not-real", kind: "registry_ref" },
@@ -70,6 +71,21 @@ describe("verifyRunnable", () => {
     );
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.reason).toContain("owner/nope-not-real");
+    expect(probe).not.toHaveBeenCalledWith("github-gradeable", expect.anything());
+  });
+
+  it("rejects a github repo that exists but is not Node/Python (the Go-repo case)", async () => {
+    // exists → true; gradeable → false (e.g. a go.mod-only repo).
+    const probe = vi.fn(async (registry: string) => registry !== "github-gradeable");
+    const result = await verifyRunnable(
+      { target: "github/snyk/studio-mcp", kind: "registry_ref" },
+      probe,
+    );
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toContain("Node or Python");
+      expect(result.reason).toContain("snyk/studio-mcp");
+    }
   });
 
   it("trusts a github skill ref without probing a registry", async () => {

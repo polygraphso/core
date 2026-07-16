@@ -13,6 +13,7 @@ import { redirect } from "next/navigation";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { PRIORITY_GRADE_PRICE_USD } from "@/lib/paymentConfig";
 import { PriorityCheckout } from "./_components/PriorityCheckout";
+import { GradingProgress } from "./_components/GradingProgress";
 
 export const metadata: Metadata = {
   title: "Grading fee",
@@ -39,41 +40,21 @@ export default async function PriorityPage({ params }: { params: Promise<{ id: s
   return (
     <div className="mx-auto max-w-3xl">
       <header className="mb-10">
-        <p className="section-label mb-4">Grading fee · 48h</p>
+        <p className="section-label mb-4">Grading fee</p>
         <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
-          Start the clock.
+          Grade it now.
         </h1>
         <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug">
           {req.target as string}
         </p>
         <p className="mt-4 text-ink-muted leading-relaxed max-w-xl">
-          ${PRIORITY_GRADE_PRICE_USD} one-time, paid in $POLYGRAPH, and this request is graded
-          within 48 hours of payment. The fee buys the run, never the grade &mdash; the battery,
-          thresholds, and publication path are the same for everyone, and every grade stays
-          reproducible.
+          {`Pay the $${PRIORITY_GRADE_PRICE_USD} fee in $POLYGRAPH and the grade runs on the spot, usually in a minute or two. The fee buys the run, never the grade: the battery, thresholds, and publication path are the same for everyone, and every grade stays reproducible.`}
         </p>
       </header>
 
       {alreadyPaid ? (
-        <div className="border-l-2 pl-4" style={{ borderColor: "var(--color-oxblood)" }}>
-          <p className="text-[15px] leading-relaxed text-ink">
-            This request is already paid and on the 48-hour clock
-            {req.priority_deadline_at ? (
-              <>
-                , graded by{" "}
-                <span className="font-mono">
-                  {new Date(req.priority_deadline_at as string).toLocaleString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
-                </span>
-              </>
-            ) : null}
-            . We&rsquo;ll email you when the grade publishes.
-          </p>
-        </div>
+        // Already paid — show the live grading state (running / graded / failed).
+        <GradingProgress requestId={id} />
       ) : resolved ? (
         <div className="border-l-2 pl-4" style={{ borderColor: "var(--color-oxblood)" }}>
           <p className="text-[15px] leading-relaxed text-ink">

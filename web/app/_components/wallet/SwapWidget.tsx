@@ -59,6 +59,9 @@ if (typeof window !== "undefined" && !window.__lifiFocusPatched) {
   };
 }
 
+/** Canonical USDC on Base — the widget's default source token. */
+const USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+
 const widgetConfig: WidgetConfig = {
   integrator: "polygraph.so",
   variant: "drawer",
@@ -66,6 +69,11 @@ const widgetConfig: WidgetConfig = {
   // renders). In external mode this reuses the page's WagmiProvider; see the
   // file header for why it is required, not optional.
   providers: [EthereumProvider()],
+  // Default the source to USDC on Base — what most agents and payers already
+  // hold (and the x402 rail's currency), so the common path is a one-hop
+  // same-chain swap. The user can still change it.
+  fromChain: PAYMENT_CHAIN_ID,
+  fromToken: USDC_BASE_ADDRESS,
   toChain: PAYMENT_CHAIN_ID,
   toToken: POLYGRAPH_TOKEN_ADDRESS,
   // RFQ/intent solvers sign quotes with short deadlines; a checkout user
