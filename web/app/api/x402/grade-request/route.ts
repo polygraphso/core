@@ -32,6 +32,7 @@ import {
   type HTTPRequestContext,
 } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
+import { bazaarResourceServerExtension, declareDiscoveryExtension } from "@x402/extensions/bazaar";
 import { createFacilitatorConfig } from "@coinbase/x402";
 
 /** Base mainnet, CAIP-2 — the only network this rail accepts. */
@@ -53,7 +54,12 @@ function getX402Server(): Promise<x402HTTPResourceServer> {
       const facilitator = new HTTPFacilitatorClient(
         createFacilitatorConfig(process.env.CDP_API_KEY_ID, process.env.CDP_API_KEY_SECRET),
       );
-      const server = new x402ResourceServer(facilitator).register(NETWORK, new ExactEvmScheme());
+      const server = new x402ResourceServer(facilitator)
+        .register(NETWORK, new ExactEvmScheme())
+        // Bazaar discovery: with the extension registered, one settled payment
+        // through the CDP facilitator catalogs this endpoint (Agentic.Market,
+        // x402scan). Routes without a bazaar declaration stay private.
+        .registerExtension(bazaarResourceServerExtension);
       const httpServer = new x402HTTPResourceServer(server, {
         [ROUTE_PATTERN]: {
           accepts: {
@@ -66,6 +72,35 @@ function getX402Server(): Promise<x402HTTPResourceServer> {
           description:
             "polygraph grading fee: records the grade request and starts the 48h grading clock. The fee buys the run, never the grade.",
           mimeType: "application/json",
+          serviceName: "polygraph",
+          tags: ["security", "trust", "mcp", "grading"],
+          iconUrl: `${SITE_ORIGIN}/brand/mark-512.png`,
+          extensions: declareDiscoveryExtension({
+            input: { server_ref: "npm/@scope/server" },
+            inputSchema: {
+              properties: {
+                server_ref: {
+                  type: "string",
+                  description:
+                    "Target to grade: npm ref (npm/@scope/name), github/owner/repo, pypi/name, or an https:// MCP URL.",
+                },
+                email: { type: "string", description: "Optional email notified when the grade publishes." },
+                agent_id: { type: "string", description: "Optional stable identifier for the requesting agent." },
+                source: { type: "string", description: "Optional client name for attribution." },
+              },
+              required: ["server_ref"],
+            },
+            bodyType: "json",
+            output: {
+              example: {
+                status: "queued",
+                created: true,
+                requestId: "req_123",
+                paid: true,
+                deadlineAt: "2026-07-18T12:00:00Z",
+              },
+            },
+          }),
         },
       });
       await httpServer.initialize();
