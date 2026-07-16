@@ -238,7 +238,7 @@ pypi/mcp-server-fetch`}
 {`{
   "status": "not_available",
   "notify_url": "https://polygraph.so/notify?for=npm/some-owner/some-package",
-  "message": "No published polygraph for npm/some-owner/some-package yet — treat it as unevaluated (neither safe nor unsafe). To get it graded, call request_grade to add it to the public queue (free), or grade it yourself now with the self_grade command.",
+  "message": "No published polygraph for npm/some-owner/some-package yet — treat it as unevaluated (neither safe nor unsafe). To get it graded, call request_grade ($1 one-time fee; graded within 48h of payment), or grade it yourself now with the self_grade command.",
   "self_grade": "npx -y -p @polygraphso/litmus polygraphso-litmus litmus npm/some-owner/some-package"
 }`}
           </Code>
@@ -329,10 +329,14 @@ pypi/mcp-server-fetch`}
         <Section num="05" label="Request a grade" id="grade-request">
           <Method verb="POST" path="/api/cli/grade-request" />
           <p>
-            Adds an ungraded server to the public grading queue — the write
-            counterpart to <Inline>check</Inline>. Free and best-effort: we run
-            the litmus and publish the grade, which you then read with{" "}
-            <Inline>/api/cli/check</Inline>. Nothing is returned synchronously.
+            Records a grade request — the write counterpart to{" "}
+            <Inline>check</Inline>. Recording is free; grading starts once the
+            request&rsquo;s $1 one-time fee is paid (the response carries the
+            payment link — web checkout in $POLYGRAPH, or the x402 endpoint for
+            agents holding USDC on Base), and the grade publishes within 48
+            hours of payment. The fee buys the run, never the grade. Read the
+            result with <Inline>/api/cli/check</Inline>; nothing is returned
+            synchronously.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">Request</h3>
@@ -355,10 +359,26 @@ pypi/mcp-server-fetch`}
           <Code>
 {`{
   "status": "queued",
-  "created": true,   // false when the target was already queued
-  "demand": 3        // requests standing behind this target
+  "created": true,   // false when the target was already recorded
+  "demand": 3,       // requests standing behind this target
+  "requestId": "3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b",
+  "payment": {
+    "required": true,          // false once the fee is paid
+    "usdPrice": 1,
+    "payUrl": "https://www.polygraph.so/request/priority/3f2a1b4c-…",
+    "x402Url": "https://www.polygraph.so/api/x402/grade-request"
+  }
 }`}
           </Code>
+          <p className="text-sm">
+            <Inline>payUrl</Inline> is the web checkout (paid in $POLYGRAPH).
+            x402-capable clients can instead POST the same body to{" "}
+            <Inline>x402Url</Inline> — a bare request gets a 402 whose{" "}
+            <Inline>payment-required</Inline> header carries the requirements
+            ($1 USDC on Base), and a retry with an <Inline>X-PAYMENT</Inline>{" "}
+            header records the request, settles the fee, and starts the 48h
+            clock in one call.
+          </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">curl</h3>
           <Code>

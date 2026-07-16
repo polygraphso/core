@@ -122,9 +122,9 @@ export async function runCheck(serverRef: string, ctx: LookupContext): Promise<C
       notify_url: notifyUrl(refKey),
       message:
         `No published polygraph for ${refKey} yet — treat it as unevaluated ` +
-        `(neither safe nor unsafe). To get it graded, call request_grade to add ` +
-        `it to the public queue (free), or grade it yourself now with the ` +
-        `self_grade command.`,
+        `(neither safe nor unsafe). To get it graded, call request_grade ` +
+        `($1 one-time fee; graded within 48h of payment), or grade it yourself ` +
+        `now with the self_grade command.`,
       self_grade: selfGradeCommand(refKey),
     };
   }

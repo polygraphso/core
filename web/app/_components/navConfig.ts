@@ -128,7 +128,7 @@ export const NAV_ITEMS: NavItem[] = [
       ],
       cta: {
         title: "Add your server",
-        desc: "Request a free, best-effort grade from the public queue.",
+        desc: "Request a grade: $1 one-time, graded within 48h of payment.",
         href: "/request",
       },
     },
