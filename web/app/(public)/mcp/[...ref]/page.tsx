@@ -526,11 +526,8 @@ function Ungraded({
       </div>
 
       <p className="mt-3 font-mono text-[11px] text-ink-faint">
-        Free, on our own timeline. Need it in 48h? A{" "}
-        <Link href={`/request?target=${encodeURIComponent(serverKey)}`} className="text-ink-muted hover:text-oxblood underline decoration-dotted underline-offset-2">
-          paid priority lane
-        </Link>{" "}
-        is offered once it&rsquo;s queued.
+        $1 in $POLYGRAPH per server, graded within 48h of payment. The fee buys the run, never the
+        grade.
       </p>
 
       <AdoptionSignals adoption={adoption} />

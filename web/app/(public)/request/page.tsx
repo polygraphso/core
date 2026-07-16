@@ -5,12 +5,12 @@ import { RequestForm } from "./_components/RequestForm";
 export const metadata: Metadata = {
   title: "Request a grade",
   description:
-    "Ask us to run the litmus battery on an MCP server you care about. Free — add it to the queue and we'll email you when its grade publishes.",
+    "Ask us to run the litmus battery on an MCP server you care about. $1 in $POLYGRAPH per server or skill, graded within 48 hours of payment.",
   alternates: { canonical: "/request" },
   openGraph: {
     title: "Request a grade · polygraph.so",
     description:
-      "Ask us to run the litmus battery on an MCP server you care about. Free — we'll email you when its grade publishes.",
+      "Ask us to run the litmus battery on an MCP server you care about. $1 per server or skill, graded within 48 hours of payment.",
     url: "/request",
   },
 };
@@ -32,15 +32,15 @@ export default async function RequestPage({
   return (
       <div className="mx-auto max-w-3xl">
         <header className="mb-10">
-          <p className="section-label mb-4">Grade queue · free</p>
+          <p className="section-label mb-4">Request a grade · $1 · 48h</p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             Request a grade.
           </h1>
           <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug">
-            Want a server graded that isn&rsquo;t up yet? Add it to the bench.
-            We work the queue on our own timeline &mdash; demand moves servers
-            up &mdash; and email you when the grade publishes. A paid 48-hour
-            lane is offered once it&rsquo;s queued.
+            Want a server graded that isn&rsquo;t up yet? Request it, pay the $1
+            fee in $POLYGRAPH, and it&rsquo;s graded within 48 hours. The fee
+            buys the run, never the grade &mdash; and every grade stays
+            reproducible with the open harness.
           </p>
         </header>
 

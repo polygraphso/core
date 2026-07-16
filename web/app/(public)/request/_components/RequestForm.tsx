@@ -38,7 +38,12 @@ export function RequestForm({
   const [company, setCompany] = useState(""); // honeypot
   const [state, setState] = useState<"idle" | "submitting" | "ok" | "error" | "redirecting">("idle");
   const [message, setMessage] = useState("");
-  const [result, setResult] = useState<{ created: boolean; demand: number; requestId: string | null } | null>(null);
+  const [result, setResult] = useState<{
+    created: boolean;
+    demand: number;
+    requestId: string | null;
+    paid: boolean;
+  } | null>(null);
   const router = useRouter();
 
   // A catalog pick that we've already graded needs no request — send the user
@@ -87,11 +92,17 @@ export function RequestForm({
         created?: boolean;
         demand?: number;
         requestId?: string | null;
+        paid?: boolean;
       };
       if (!res.ok || !body.ok) {
         throw new Error(body.message ?? "Couldn't save your request.");
       }
-      setResult({ created: body.created ?? true, demand: body.demand ?? 1, requestId: body.requestId ?? null });
+      setResult({
+        created: body.created ?? true,
+        demand: body.demand ?? 1,
+        requestId: body.requestId ?? null,
+        paid: body.paid ?? false,
+      });
       setState("ok");
     } catch (err) {
       setState("error");
@@ -111,41 +122,51 @@ export function RequestForm({
         <div className="p-5 md:p-7">
           <p className="font-serif text-xl md:text-2xl text-ink leading-snug">
             {result.created
-              ? "Added to the queue."
-              : "Already on the queue — your request is counted."}
+              ? "Request recorded — one step left."
+              : "Already requested — your ask is counted."}
           </p>
           <p className="mt-3 text-ink-muted leading-relaxed">
+            {result.paid ? (
+              <>The fee is already paid &mdash; this request is on the 48-hour clock. </>
+            ) : (
+              <>
+                Grading starts once the{" "}
+                <span className="font-mono text-ink">${PRIORITY_GRADE_PRICE_USD}</span> fee is
+                paid &mdash; then it&rsquo;s graded within 48 hours.{" "}
+              </>
+            )}
             {result.demand > 1 ? (
               <>
-                <span className="font-mono text-ink">{result.demand}</span>{" "}
-                people have asked for this server — demand moves it up the bench.
+                <span className="font-mono text-ink">{result.demand}</span> people have asked for
+                this server.{" "}
               </>
-            ) : (
-              <>You&rsquo;re the first to ask for this one.</>
-            )}{" "}
+            ) : null}
             We&rsquo;ll email you at{" "}
-            <span className="font-mono text-ink">{sessionEmail ?? email.trim()}</span> when its
+            <span className="font-mono text-ink">{sessionEmail ?? email.trim()}</span> when the
             grade publishes.
           </p>
-          {result.requestId ? (
+          {result.paid ? null : result.requestId ? (
             <div className="mt-6 border-t hairline pt-5">
-              <p className="font-serif text-lg text-ink leading-snug">
-                Need it inside 48 hours?
-              </p>
               <p className="mt-1.5 text-ink-muted leading-relaxed text-[15px]">
-                Priority grading runs the same battery on the same timeline everyone else&rsquo;s
-                grade is held to, just sooner &mdash;{" "}
-                <span className="font-mono text-ink">${PRIORITY_GRADE_PRICE_USD}</span> one-time, paid
-                in $POLYGRAPH. It buys turnaround, never the grade.
+                Paid in $POLYGRAPH on Base. The fee buys the run, never the grade &mdash; the
+                battery, thresholds, and publication path are the same for everyone.
               </p>
               <a
                 href={`/request/priority/${result.requestId}`}
                 className="mt-4 inline-flex items-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors"
               >
-                Grade it within 48h →
+                Pay ${PRIORITY_GRADE_PRICE_USD} · start the 48h clock →
               </a>
             </div>
-          ) : null}
+          ) : (
+            <p className="mt-4 text-[14px] text-ink-muted leading-relaxed">
+              We couldn&rsquo;t open the payment page for this request &mdash; email{" "}
+              <a href="mailto:hello@polygraph.so" className="underline decoration-dotted">
+                hello@polygraph.so
+              </a>{" "}
+              and we&rsquo;ll sort it out.
+            </p>
+          )}
           <button
             type="button"
             onClick={() => {
@@ -170,7 +191,7 @@ export function RequestForm({
       <HoneypotField value={company} onChange={setCompany} />
       <div className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
         <span>request a grade</span>
-        <span className="hidden sm:inline">free</span>
+        <span className="hidden sm:inline">${PRIORITY_GRADE_PRICE_USD} · 48h</span>
       </div>
       <div className="p-4 md:p-6 space-y-4">
         <div className="block">
@@ -243,10 +264,11 @@ export function RequestForm({
                 ? "Adding…"
                 : state === "redirecting"
                   ? "Opening report…"
-                  : "Add to the queue"}
+                  : "Request the grade"}
             </button>
             <p className="font-mono text-[10.5px] text-ink-faint">
-              Free. We grade it on our own timeline.
+              ${PRIORITY_GRADE_PRICE_USD} in $POLYGRAPH per server or skill. Graded within 48h of
+              payment.
             </p>
           </div>
           {sessionEmail && (

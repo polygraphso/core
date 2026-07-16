@@ -12,6 +12,18 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { getPriorityLane } from "@/lib/priorityPayments";
 import { Panel, KpiCard, MiniBars, BarList, EmptyNote, RecentList } from "./_components/ui";
 
+/** Open requests whose $1 fee hasn't been paid — recorded demand, not queue. */
+async function getAwaitingPaymentCount(): Promise<number> {
+  const db = getSupabaseAdmin();
+  if (!db) return 0;
+  const { count } = await db
+    .from("grade_requests")
+    .select("id", { count: "exact", head: true })
+    .is("priority_paid_at", null)
+    .in("status", ["queued", "in_progress"]);
+  return count ?? 0;
+}
+
 async function getUserCount() {
   const db = getSupabaseAdmin();
   if (!db) return { users: 0, activeMonitors: 0 };
@@ -30,12 +42,13 @@ export const revalidate = 0;
 export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 
 export default async function AdminPage() {
-  const [top, waitlist, grades, priorityLane, notify, untracked, lookups, agents, userCount] =
+  const [top, waitlist, grades, priorityLane, awaitingPayment, notify, untracked, lookups, agents, userCount] =
     await Promise.all([
       getTopline(),
       getWaitlistMetrics(),
       getGradeRequestMetrics(),
       getPriorityLane(),
+      getAwaitingPaymentCount(),
       getNotifyMetrics(),
       getUntrackedDemand(),
       getLookupStats(),
@@ -114,7 +127,7 @@ export default async function AdminPage() {
               {priorityLane.length > 0 ? (
                 <div className="border border-oxblood/30 rounded-[4px] p-3">
                   <p className="section-label mb-2 text-oxblood">
-                    Priority lane · 48h SLA ({priorityLane.length})
+                    Paid queue · 48h SLA ({priorityLane.length})
                   </p>
                   <div className="space-y-1.5">
                     {priorityLane.map((r) => {
@@ -137,6 +150,12 @@ export default async function AdminPage() {
                     })}
                   </div>
                 </div>
+              ) : null}
+              {awaitingPayment > 0 ? (
+                <p className="font-mono text-[11px] text-ink-faint">
+                  awaiting payment · {awaitingPayment} (recorded demand — not graded until the $1
+                  fee is paid)
+                </p>
               ) : null}
               <MiniBars data={grades.perDay} />
               <div>

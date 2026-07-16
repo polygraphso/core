@@ -1,19 +1,24 @@
 import "server-only";
 
 /**
- * Priority grading: the paid 48h lane on the /request queue. Unlike ecosystem
- * monitoring and plans (streams), this is a ONE-TIME transfer, so it can't ride
- * the Sablier shape-tag binding. Attribution instead rides a unique EXACT
- * amount: each quote's raw token amount carries randomized atto-scale dust
- * digits, kept unique among open quotes by a partial unique index, so a
- * Transfer of exactly that amount to the treasury can only be the payment for
- * that one quote. (Same trick commerce processors use with unique cents.) The
- * dust is sub-attodollar — far below the 6-decimal pricing granularity — so it
- * costs the payer nothing and never rounds into the price.
+ * The grading fee: every /request needs its $1 paid before grading starts, and
+ * payment starts the 48h clock. Unlike ecosystem monitoring and plans
+ * (streams), this is a ONE-TIME transfer, so it can't ride the Sablier
+ * shape-tag binding. Attribution instead rides a unique EXACT amount: each
+ * quote's raw token amount carries randomized atto-scale dust digits, kept
+ * unique among open quotes by a partial unique index, so a Transfer of exactly
+ * that amount to the treasury can only be the payment for that one quote.
+ * (Same trick commerce processors use with unique cents.) The dust is
+ * sub-attodollar — far below the 6-decimal pricing granularity — so it costs
+ * the payer nothing and never rounds into the price.
  *
- * The fee buys turnaround, never the grade: on payment we stamp
+ * The fee buys the run, never the grade: on payment we stamp
  * grade_requests.priority_paid_at + a 48h deadline; fulfillment is the same
- * manual drain, priority rows first.
+ * manual drain, paid rows first. (Column names keep the priority_ prefix from
+ * when this was an optional fast lane on a free queue.) Knowing a request's
+ * uuid is the only capability needed to pay — paying someone else's request
+ * just gifts them the fee, so the routes don't demand a session. The x402
+ * twin of this rail (USDC, for agents) lives in /api/x402/grade-request.
  */
 
 import { ethers } from "ethers";
@@ -77,23 +82,6 @@ function applyDust(base: bigint, seed: number): bigint {
 }
 
 /**
- * Whether a grade request belongs to this email. The priority routes are no
- * longer proxy-gated (the /request funnel is public), so they enforce
- * session + ownership in-code before quoting or verifying a payment.
- */
-export async function requestBelongsTo(requestId: string, email: string): Promise<boolean> {
-  const db = getSupabaseAdmin();
-  if (!db) return false;
-  const { data } = await db
-    .from("grade_requests")
-    .select("email")
-    .eq("id", requestId)
-    .maybeSingle();
-  const owner = (data as { email?: string } | null)?.email;
-  return !!owner && owner.toLowerCase() === email.toLowerCase();
-}
-
-/**
  * Build (or reuse) a pending quote for a request's priority upgrade. Retries on
  * the rare dust collision (the partial unique index rejects a duplicate open
  * amount). Returns null if the request is already paid or gone.
@@ -111,7 +99,7 @@ export async function buildPriorityQuote(
     .eq("id", requestId)
     .maybeSingle();
   if (!reqRow) return { ok: false, reason: "unknown request" };
-  if (reqRow.priority_paid_at) return { ok: false, reason: "already on the priority lane" };
+  if (reqRow.priority_paid_at) return { ok: false, reason: "already paid — this request is on the 48h clock" };
   if (reqRow.status === "completed" || reqRow.status === "declined") {
     return { ok: false, reason: "this request is already resolved" };
   }
@@ -319,7 +307,74 @@ export async function verifyTransferPayment(
   return { ok: true, deadlineAt: deadline };
 }
 
-/** Open priority requests for the admin lane, soonest deadline first. */
+/**
+ * Record an already-settled fee payment (the x402/USDC rail) and start the
+ * request's 48h clock. The x402 facilitator verified and settled the transfer
+ * before this runs, so there is no quote to match — we write the paid row
+ * directly (token/amount as settled) and stamp the request. Idempotent per
+ * settlement tx (unique tx_hash) and per request (already-paid short-circuit).
+ */
+export async function recordSettledFeePayment(
+  requestId: string,
+  payment: {
+    txHash: string;
+    payerAddress: string | null;
+    token: string;
+    tokenDecimals: number;
+    amountRaw: string;
+    usdPrice: number;
+  },
+): Promise<PriorityVerifyResult> {
+  const db = getSupabaseAdmin();
+  if (!db) return { ok: false, reason: "storage unconfigured" };
+
+  const { data: reqRow } = await db
+    .from("grade_requests")
+    .select("id, priority_paid_at, priority_deadline_at")
+    .eq("id", requestId)
+    .maybeSingle();
+  if (!reqRow) return { ok: false, reason: "unknown request" };
+  if (reqRow.priority_paid_at && reqRow.priority_deadline_at) {
+    return { ok: true, deadlineAt: reqRow.priority_deadline_at as string };
+  }
+
+  const now = new Date();
+  const deadline = new Date(now.getTime() + PRIORITY_SLA_MS).toISOString();
+
+  const { error: payErr } = await db.from("grade_request_payments").insert({
+    grade_request_id: requestId,
+    chain_id: PAYMENT_CHAIN_ID,
+    token: payment.token,
+    token_decimals: payment.tokenDecimals,
+    treasury: TREASURY_ADDRESS,
+    expected_amount: payment.amountRaw,
+    usd_price: payment.usdPrice,
+    token_usd_rate: 1,
+    status: "paid",
+    tx_hash: payment.txHash.toLowerCase(),
+    payer_address: payment.payerAddress,
+    expires_at: now.toISOString(),
+    paid_at: now.toISOString(),
+  });
+  // 23505 = the settlement tx was already recorded (a retry) — fall through to
+  // stamping the request, which is itself idempotent.
+  if (payErr && payErr.code !== "23505") {
+    console.error("[x402] settled payment insert failed", payErr);
+    return { ok: false, reason: "settled onchain but could not be recorded — email hello@polygraph.so" };
+  }
+
+  const { error: reqErr } = await db
+    .from("grade_requests")
+    .update({ priority_paid_at: now.toISOString(), priority_deadline_at: deadline })
+    .eq("id", requestId);
+  if (reqErr) {
+    console.error("[x402] request stamp failed", reqErr);
+    return { ok: false, reason: "payment recorded but the request could not be flagged — email hello@polygraph.so" };
+  }
+  return { ok: true, deadlineAt: deadline };
+}
+
+/** Open paid requests for the admin lane, soonest deadline first. */
 export interface PriorityLaneRow {
   id: string;
   target: string;

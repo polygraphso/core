@@ -29,7 +29,15 @@ import { runCheck } from "./check";
 import { runGradeRequest } from "./gradeRequest";
 
 function fakeSupabase(rpc: Mock = vi.fn(async () => ({ data: null, error: null }))) {
-  return { rpc } as unknown as SupabaseClient & { rpc: Mock };
+  // Minimal chainable .from() so runGradeRequest's post-RPC request-row lookup
+  // resolves (to "no row") without a real client.
+  const chain = {
+    select: () => chain,
+    eq: () => chain,
+    is: () => chain,
+    maybeSingle: async () => ({ data: null, error: null }),
+  };
+  return { rpc, from: () => chain } as unknown as SupabaseClient & { rpc: Mock };
 }
 
 const identity = (source: AgentIdentity["source"], agentId = "claude-code/2.1.0"): AgentIdentity => ({
