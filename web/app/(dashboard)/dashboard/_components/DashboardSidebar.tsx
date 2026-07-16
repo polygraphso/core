@@ -9,6 +9,7 @@ type NavItem = {
 
 const USER_NAV: NavItem[] = [
   { href: "/dashboard", label: "Monitors", active: (p) => p === "/dashboard" || p.startsWith("/dashboard/monitors") },
+  { href: "/dashboard/requests", label: "Requests", active: (p) => p.startsWith("/dashboard/requests") },
 ];
 
 // Shown only to app admins and users who belong to at least one ecosystem — a
@@ -27,6 +28,8 @@ const ACCOUNT_NAV: NavItem = {
 
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Metrics", active: (p) => p === "/admin" },
+  { href: "/admin/revenue", label: "Revenue", active: (p) => p.startsWith("/admin/revenue") },
+  { href: "/admin/grade-requests", label: "Grade requests", active: (p) => p.startsWith("/admin/grade-requests") },
   { href: "/admin/attestations", label: "Attestations", active: (p) => p.startsWith("/admin/attestations") },
   { href: "/admin/twitter", label: "Twitter", active: (p) => p.startsWith("/admin/twitter") },
   { href: "/admin/users", label: "Users", active: (p) => p.startsWith("/admin/users") },

@@ -10,6 +10,8 @@ import {
 } from "@/lib/adminMetrics";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { getPriorityLane } from "@/lib/priorityPayments";
+import { getRevenueMetrics } from "@/lib/revenueMetrics";
+import { formatUsd } from "@/lib/revenueAggregate";
 import { Panel, KpiCard, MiniBars, BarList, EmptyNote, RecentList } from "./_components/ui";
 
 /** Open requests whose $1 fee hasn't been paid — recorded demand, not queue. */
@@ -42,7 +44,7 @@ export const revalidate = 0;
 export const metadata: Metadata = { title: "Admin", robots: { index: false } };
 
 export default async function AdminPage() {
-  const [top, waitlist, grades, priorityLane, awaitingPayment, notify, untracked, lookups, agents, userCount] =
+  const [top, waitlist, grades, priorityLane, awaitingPayment, notify, untracked, lookups, agents, userCount, revenue] =
     await Promise.all([
       getTopline(),
       getWaitlistMetrics(),
@@ -54,6 +56,7 @@ export default async function AdminPage() {
       getLookupStats(),
       getAgentMetrics(),
       getUserCount(),
+      getRevenueMetrics(),
     ]);
 
   const now = Date.now();
@@ -67,6 +70,18 @@ export default async function AdminPage() {
 
       {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-10">
+        <KpiCard
+          label="Booked"
+          value={revenue?.totalBooked ?? 0}
+          format={formatUsd}
+          sub={revenue ? `${formatUsd(revenue.bookedThisMonth)} this month` : "cash in, all-time"}
+        />
+        <KpiCard
+          label="MRR"
+          value={revenue?.mrr ?? 0}
+          format={formatUsd}
+          sub={revenue ? `${revenue.activeSubs.total} active subs` : "recurring run-rate"}
+        />
         <KpiCard label="Waitlist" value={top.waitlist} />
         <KpiCard label="Grade requests" value={top.gradeRequests} sub={`${top.gradeQueued} queued`} />
         <KpiCard label="Notify requests" value={top.notify} sub={`${top.notifyUnfulfilled} unfulfilled`} />
@@ -279,6 +294,31 @@ export default async function AdminPage() {
             </div>
           ) : (
             <EmptyNote>No agents recorded yet.</EmptyNote>
+          )}
+        </Panel>
+
+        {/* Revenue */}
+        <Panel
+          label="§7"
+          title="Revenue"
+          note="Booked cash per day (last 30d). Prepaid streams count at their full deposit."
+        >
+          {revenue ? (
+            <div className="space-y-5">
+              <MiniBars data={revenue.bookedPerDay} format={formatUsd} />
+              <div>
+                <p className="section-label mb-2">By surface</p>
+                <BarList data={revenue.bySurface} format={formatUsd} empty="No revenue yet." />
+              </div>
+              <a
+                href="/admin/revenue"
+                className="inline-block font-mono text-[11px] uppercase tracking-[0.18em] text-oxblood hover:opacity-80 transition-opacity"
+              >
+                Revenue dashboard →
+              </a>
+            </div>
+          ) : (
+            <EmptyNote>No revenue data (or Supabase not configured).</EmptyNote>
           )}
         </Panel>
       </div>
