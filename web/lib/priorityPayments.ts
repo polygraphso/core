@@ -33,6 +33,7 @@ import {
   type PriorityQuote,
 } from "@/lib/paymentConfig";
 import { getTokenUsdRate, paymentProvider, usdToRawTokens } from "@/lib/paymentRail";
+import { startGradeForRequest } from "@/lib/paidGrading";
 
 // Column-for-column mirror of grade_request_payments (see packages/core/src/types.ts).
 export interface GradeRequestPaymentRow {
@@ -304,6 +305,8 @@ export async function verifyTransferPayment(
     return { ok: false, reason: "payment recorded but the request could not be flagged — email hello@polygraph.so" };
   }
 
+  // Kick off grading now (best-effort; the request stays paid regardless).
+  await startGradeForRequest(requestId);
   return { ok: true, deadlineAt: deadline };
 }
 
@@ -371,6 +374,8 @@ export async function recordSettledFeePayment(
     console.error("[x402] request stamp failed", reqErr);
     return { ok: false, reason: "payment recorded but the request could not be flagged — email hello@polygraph.so" };
   }
+  // Kick off grading now (best-effort; the request stays paid regardless).
+  await startGradeForRequest(requestId);
   return { ok: true, deadlineAt: deadline };
 }
 
