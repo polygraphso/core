@@ -41,9 +41,11 @@ const INSTRUCTIONS = [
   "Use check_server as the pre-flight check before recommending or installing a server —",
   "it returns the published grade in well under a second and runs nothing. A not_available",
   "result means the server is unevaluated (neither safe nor unsafe), not that it failed;",
-  "call request_grade to add it to the public grading queue (free). list_servers returns",
-  "every server that carries a published grade. Every grade is reproducible — the report",
-  "page carries a one-command re-run. This endpoint does not grade servers itself.",
+  "call request_grade to get it graded (a $1 one-time fee applies — the response carries",
+  "the payment link; graded within 48h of payment; the fee buys the run, never the grade).",
+  "list_servers returns every server that carries a published grade. Every grade is",
+  "reproducible — the report page carries a one-command re-run. This endpoint does not",
+  "grade servers itself.",
 ].join(" ");
 
 /** Build the caller identity from the MCP initialize handshake (name/version,
@@ -122,8 +124,17 @@ const LIST_OUTPUT = {
 const REQUEST_OUTPUT = {
   status: z.literal("queued"),
   server_ref: z.string(),
-  created: z.boolean().describe("false if the server was already in the queue."),
+  created: z.boolean().describe("false if the server was already recorded."),
   demand: z.number().describe("How many times this server has been requested."),
+  requestId: z.string().nullable().describe("The recorded request's id."),
+  payment: z
+    .object({
+      required: z.boolean().describe("false when the fee is already paid."),
+      usdPrice: z.number(),
+      payUrl: z.string().nullable().describe("Web checkout for this request ($POLYGRAPH)."),
+      x402Url: z.string().describe("x402 endpoint — POST with an X-PAYMENT header ($1 USDC on Base)."),
+    })
+    .describe("How grading is paid for: the fee buys the run, never the grade."),
 };
 
 function registerTools(server: McpServer): void {
@@ -148,7 +159,8 @@ function registerTools(server: McpServer): void {
       if (r.status === "not_available") {
         return dataResult(
           `${server_ref}: not_available — unevaluated (neither safe nor unsafe). ` +
-            `Add it to the public queue with request_grade, or grade it yourself: ${r.self_grade}`,
+            `Request it with request_grade ($1 fee, graded within 48h of payment), ` +
+            `or grade it yourself: ${r.self_grade}`,
           { status: "not_available", server_ref, report_url: r.notify_url, self_grade: r.self_grade },
         );
       }
@@ -196,10 +208,13 @@ function registerTools(server: McpServer): void {
   server.registerTool(
     "request_grade",
     {
-      title: "Queue an ungraded server for grading",
+      title: "Request a polygraph grade for an MCP server",
       description:
-        "Add an ungraded MCP server to polygraph.so's public grading queue (free, best-effort). " +
-        "Read the result later with check_server. Only real, plausibly-MCP targets are accepted.",
+        "Record a grade request with polygraph.so. Recording is free; grading starts once the " +
+        "request's one-time fee (about $1) is paid — the result carries the payment link (web " +
+        "checkout in $POLYGRAPH, or x402/USDC for agents) — and the grade publishes within 48h " +
+        "of payment. The fee buys the run, never the grade. Read the result later with " +
+        "check_server. Only real, plausibly-MCP targets are accepted.",
       inputSchema: { server_ref: z.string().min(1).max(512).describe(SERVER_REF_DESC) },
       outputSchema: REQUEST_OUTPUT,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
@@ -210,11 +225,24 @@ function registerTools(server: McpServer): void {
       if (!c.allowed) return errResult(TOO_MANY);
       const r = await runGradeRequest({ serverRef: server_ref }, c.ctx);
       if (r.status === "error") return errResult(r.error);
-      const lead = r.created ? "Queued" : "Already queued";
+      const lead = r.created ? "Recorded" : "Already recorded";
+      const next = !r.payment.required
+        ? "Its fee is already paid — graded within 48h of that payment. Check back with check_server."
+        : r.payment.payUrl
+          ? `Grading starts once the one-time $${r.payment.usdPrice} fee is paid — pay at ${r.payment.payUrl} ` +
+            `(x402 clients: POST with an X-PAYMENT header, $${r.payment.usdPrice} USDC on Base, to ${r.payment.x402Url}). ` +
+            `Graded within 48h of payment; check back with check_server.`
+          : "Check back with check_server.";
       return dataResult(
-        `${lead}: ${server_ref} (${r.demand} request${r.demand === 1 ? "" : "s"} so far). ` +
-          `Check back with check_server.`,
-        { status: "queued", server_ref, created: r.created, demand: r.demand },
+        `${lead}: ${server_ref} (${r.demand} request${r.demand === 1 ? "" : "s"} so far). ${next}`,
+        {
+          status: "queued",
+          server_ref,
+          created: r.created,
+          demand: r.demand,
+          requestId: r.requestId,
+          payment: r.payment,
+        },
       );
     },
   );
