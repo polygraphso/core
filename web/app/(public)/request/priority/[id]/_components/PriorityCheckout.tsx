@@ -22,6 +22,7 @@ import {
 } from "@/lib/paymentConfig";
 import { WalletIsland } from "@/app/_components/wallet/WalletIsland";
 import { formatTokens } from "@/app/_components/wallet/StreamPayStep";
+import { GradingProgress } from "./GradingProgress";
 
 const SwapWidget = dynamic(
   () => import("@/app/_components/wallet/SwapWidget").then((m) => m.SwapWidget),
@@ -139,8 +140,9 @@ function PriorityCheckoutInner({ requestId }: { requestId: string }) {
     }
   }, [address, chainId, config, quote, verify]);
 
-  if (pay.id === "done") return <DoneNote deadlineAt={pay.deadlineAt} />;
-  if (manualState.id === "done") return <DoneNote deadlineAt={manualState.deadlineAt} />;
+  if (pay.id === "done" || manualState.id === "done") {
+    return <GradingProgress requestId={requestId} />;
+  }
 
   const busy = pay.id === "paying" || pay.id === "verifying";
 
@@ -264,34 +266,6 @@ function PriorityCheckoutInner({ requestId }: { requestId: string }) {
           <p className="mt-2 text-[13px] text-ink leading-relaxed max-w-xl">{manualState.message}</p>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-function DoneNote({ deadlineAt }: { deadlineAt: string }) {
-  const when = deadlineAt
-    ? new Date(deadlineAt).toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-      })
-    : null;
-  return (
-    <div className="border-l-2 pl-4" style={{ borderColor: "var(--color-oxblood)" }}>
-      <p className="text-[15px] leading-relaxed text-ink">
-        Payment verified — your request is on the 48-hour clock
-        {when ? (
-          <>
-            , graded by <span className="font-mono">{when}</span>
-          </>
-        ) : null}
-        . We&rsquo;ll email you when the grade publishes. Questions:{" "}
-        <a href="mailto:hello@polygraph.so" className="underline decoration-dotted hover:text-oxblood">
-          hello@polygraph.so
-        </a>
-        .
-      </p>
     </div>
   );
 }

@@ -1,17 +1,22 @@
 /**
- * Confirm a parsed grade target is actually *runnable* before we queue it.
+ * Confirm a parsed grade target is actually *runnable* before we queue it — the
+ * gate that runs at request intake, so an ungradeable target is rejected before
+ * a payment is ever taken for it.
  *
  * The request funnel lets a human type a free-form ref. `parseGradeTarget`
  * proves it's well-formed; this proves the harness could actually grade it:
  *   - https:// remote     → trusted (a live endpoint, graded up to B)
  *   - skill               → trusted (a github skill ref the runner clones + scans)
  *   - npm/… , pypi/…      → must exist on the registry (probe injected)
- *   - github/owner/repo   → the repo must exist (the harness clones, builds,
- *                           and runs github servers)
+ *   - github/owner/repo   → the repo must exist AND be Node- or Python-packaged
+ *                           (package.json / pyproject.toml / setup.py at root) —
+ *                           litmus v1 clones + builds + runs those only; a Go or
+ *                           Rust repo would fail on the box, so we don't take
+ *                           money for it
  *   - anything else       → not a runnable package
  *
- * The registry probe is injected so the branching logic stays unit-testable
- * without network. `checkRegistryExists` is the production implementation.
+ * The probe is injected so the branching logic stays unit-testable without
+ * network. `checkRegistryExists` is the production implementation.
  */
 
 const REGISTRY_TIMEOUT_MS = 4000;
@@ -20,9 +25,13 @@ export type RunnableCheck =
   | { ok: true; target: string }
   | { ok: false; reason: string };
 
-/** Does `pkg` exist on `registry`? Injected so the logic is testable offline. */
+/**
+ * A registry membership question, injected so the logic is testable offline.
+ * `"github-gradeable"` asks the extra question a github repo needs: does its
+ * root carry a Node or Python manifest the harness can build?
+ */
 export type RegistryProbe = (
-  registry: "npm" | "pypi" | "github",
+  registry: "npm" | "pypi" | "github" | "github-gradeable",
   pkg: string,
 ) => Promise<boolean>;
 
@@ -52,9 +61,18 @@ export async function verifyRunnable(
 
   if (parsed.target.startsWith("github/")) {
     const repo = parsed.target.slice("github/".length);
-    return (await probe("github", repo))
-      ? { ok: true, target: parsed.target }
-      : { ok: false, reason: `No GitHub repository "${repo}" — check the spelling.` };
+    if (!(await probe("github", repo))) {
+      return { ok: false, reason: `No GitHub repository "${repo}" — check the spelling.` };
+    }
+    if (!(await probe("github-gradeable", repo))) {
+      return {
+        ok: false,
+        reason:
+          `"${repo}" isn't a Node or Python package (no package.json, pyproject.toml, or setup.py at its root). ` +
+          `litmus v1 grades Node and Python servers — request it as its npm/PyPI package, or its https:// endpoint, instead.`,
+      };
+    }
+    return { ok: true, target: parsed.target };
   }
 
   return {
@@ -64,13 +82,35 @@ export async function verifyRunnable(
   };
 }
 
+/** Node/Python manifests the harness builds from; presence at repo root = gradeable. */
+const GRADEABLE_MANIFESTS = new Set(["package.json", "pyproject.toml", "setup.py"]);
+
 /**
- * Production registry probe: a GET against the public registry. We only report
- * "does not exist" on a definitive 404 — a 2xx means it exists, and any other
- * outcome (5xx, rate-limit, network error, timeout) fails *open* so a registry
- * blip never rejects an otherwise-valid request.
+ * Production probe. For npm/pypi/github it answers existence off the public
+ * registry (only a definitive 404 → false; any other outcome — 5xx, rate-limit,
+ * network error, timeout — fails *open* so a blip never rejects a valid
+ * request). For `"github-gradeable"` it reads the repo's root listing and
+ * answers whether a Node/Python manifest is there; it fails *open* too, so a
+ * GitHub API hiccup lets the request through to the box rather than wrongly
+ * blocking a real Node/Python repo (the box is the final arbiter).
  */
 export const checkRegistryExists: RegistryProbe = async (registry, pkg) => {
+  if (registry === "github-gradeable") {
+    try {
+      const res = await fetch(`https://api.github.com/repos/${pkg}/contents/`, {
+        method: "GET",
+        signal: AbortSignal.timeout(REGISTRY_TIMEOUT_MS),
+        headers: { accept: "application/json" },
+      });
+      if (!res.ok) return true; // rate-limited / error → don't block
+      const entries = (await res.json()) as Array<{ name?: string }>;
+      if (!Array.isArray(entries)) return true;
+      return entries.some((e) => e.name && GRADEABLE_MANIFESTS.has(e.name));
+    } catch {
+      return true; // couldn't check — the box will catch a truly ungradeable repo
+    }
+  }
+
   const url =
     registry === "npm"
       ? `https://registry.npmjs.org/${pkg.replace("/", "%2F")}`
