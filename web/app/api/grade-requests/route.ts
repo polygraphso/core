@@ -1,15 +1,17 @@
 /**
- * POST /api/grade-requests — add a server to the public grading queue.
+ * POST /api/grade-requests — record a grade request.
  *
  * Body: { target: string, email: string, note?: string }
  *   target = registry ref (npm/… | pypi/… | github/…) or https:// MCP URL
  *
- * Free, anonymous-but-email-gated. Writes a grade_requests row (idempotent
- * on target+email) and returns the current demand for that target so the
- * UI can show "N people have asked for this."
+ * Recording is anonymous-but-email-gated and free — it's the demand signal.
+ * Grading starts once the request's $1 fee is paid (the response carries
+ * requestId + paid so the form can route to the checkout). Idempotent on
+ * target+email; returns the current demand for the target so the UI can show
+ * "N people have asked for this."
  *
  * Contract: grade_requests migration (record_grade_request RPC). Rúben
- * drains the queue manually.
+ * drains the paid queue manually.
  */
 
 import { NextResponse } from "next/server";
@@ -174,11 +176,11 @@ export async function POST(request: Request) {
   }
 
   // The RPC returns a single row: { created, demand } — no row id, so look it
-  // up (unique on target+email) for the priority-upgrade link.
+  // up (unique on target+email) for the checkout link.
   const row = Array.isArray(data) ? data[0] : data;
   const { data: reqRow } = await supabase
     .from("grade_requests")
-    .select("id")
+    .select("id, priority_paid_at")
     .eq("target", parsed.target)
     .eq("email", normalizedEmail)
     .maybeSingle();
@@ -189,5 +191,6 @@ export async function POST(request: Request) {
     demand: row?.demand ?? 1,
     target: parsed.target,
     requestId: (reqRow as { id?: string } | null)?.id ?? null,
+    paid: Boolean((reqRow as { priority_paid_at?: string | null } | null)?.priority_paid_at),
   });
 }

@@ -1,26 +1,26 @@
 /**
- * POST /api/grade-requests/[id]/priority/verify — record the priority payment.
- *
- * Body: { txHash } — the transfer transaction. The /api/grade-requests funnel
- * is public, so this enforces session + ownership itself. Safe on top of that
- * because the payment is bound by the exact quoted amount (unique among open
- * quotes): the tx must carry a $POLYGRAPH Transfer of exactly that amount to
- * the treasury. Idempotent for a tx already recorded on this request.
+ * POST /api/grade-requests/[id]/priority/verify — record the grading-fee
+ * payment. Body: { txHash } — the transfer transaction. Public: the request
+ * uuid is the capability (paying someone else's request just gifts them the
+ * fee), and the payment is bound by the exact quoted amount (unique among
+ * open quotes) — the tx must carry a $POLYGRAPH Transfer of exactly that
+ * amount to the treasury, so nothing here trusts the caller. Idempotent for a
+ * tx already recorded on this request.
  */
 
-import { getSession } from "@/lib/session";
-import { verifyTransferPayment, requestBelongsTo } from "@/lib/priorityPayments";
+import { enforceRateLimit } from "@/lib/rateLimit";
+import { verifyTransferPayment } from "@/lib/priorityPayments";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) {
     return Response.json({ error: "bad request id" }, { status: 400 });
   }
-  const session = await getSession();
-  if (!session) return Response.json({ error: "Unauthorized" }, { status: 401 });
-  if (!(await requestBelongsTo(id, session.email))) {
-    return Response.json({ error: "Not your request" }, { status: 403 });
-  }
+  const limited = await enforceRateLimit(request, "priority-verify", {
+    max: 10,
+    windowSeconds: 60,
+  });
+  if (limited) return limited;
 
   let body: { txHash?: unknown };
   try {

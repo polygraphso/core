@@ -59,6 +59,9 @@ importers:
 
   web:
     dependencies:
+      '@coinbase/x402':
+        specifier: ^2.1.0
+        version: 2.1.0(typescript@5.9.3)
       '@ethereum-attestation-service/eas-sdk':
         specifier: ^2.9.1
         version: 2.9.1(typescript@5.9.3)(zod@3.25.76)
@@ -89,6 +92,12 @@ importers:
       '@wagmi/core':
         specifier: ^3.6.1
         version: 3.6.1(@tanstack/query-core@5.101.2)(@types/react@19.2.14)(react@19.2.4)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.4))(viem@2.55.0(typescript@5.9.3)(zod@3.25.76))
+      '@x402/core':
+        specifier: ^2.18.0
+        version: 2.18.0
+      '@x402/evm':
+        specifier: ^2.18.0
+        version: 2.18.0(typescript@5.9.3)
       ethers:
         specifier: ^6.16.0
         version: 6.17.0
@@ -216,6 +225,9 @@ packages:
 
   '@coinbase/wallet-sdk@4.3.6':
     resolution: {integrity: sha512-4q8BNG1ViL4mSAAvPAtpwlOs1gpC+67eQtgIwNvT3xyeyFFd+guwkc8bcX5rTmQhXpqnhzC4f0obACbP9CqMSA==}
+
+  '@coinbase/x402@2.1.0':
+    resolution: {integrity: sha512-aKeM+cz//+FjzPVu/zgz7830x0KLtKarwCyxoeC71QgCn+Xcf0NhFpn3Qyw0H496y5YOuR/IQ67gP8DZ/hXFqQ==}
 
   '@emnapi/runtime@1.10.0':
     resolution: {integrity: sha512-ewvYlk86xUoGI0zQRNq/mC+16R1QeDlKQy21Ki3oSYXNgLb45GV1P6A0M+/s6nyCuNDqe5VpaY84BzXGwVbwFA==}
@@ -2226,6 +2238,12 @@ packages:
 
   '@walletconnect/window-metadata@1.0.1':
     resolution: {integrity: sha512-9koTqyGrM2cqFRW517BPY/iEtUDx2r1+Pwwu5m7sJ7ka79wi3EyqhqcICk/yDmv6jAS1rjKgTKXlEhanYjijcA==}
+
+  '@x402/core@2.18.0':
+    resolution: {integrity: sha512-3LB5m0Yx7C38ks8jDqTGYPZ2FnLzlH9pTlGvE8er2ujS1ri12sXXvWwnmYsmh3ZkXSDbV3BKU8oRKULatPp0Hg==}
+
+  '@x402/evm@2.18.0':
+    resolution: {integrity: sha512-iiA5zqqJMcFdMEO+nvdctiWHcSn1EBpN8Dic0beGoxmoWX2Y8DnDHEROL/E0S3bUFpQlwTKkp4rie4wvqhsBvg==}
 
   abitype@1.0.6:
     resolution: {integrity: sha512-MMSqYh4+C/aVqI2RQaWqbvI4Kxo5cQV40WQ4QFtDnNzCkqChm8MuENhElmynZlO0qUy/ObkEUaXtKqYnx1Kp3A==}
@@ -5085,7 +5103,6 @@ snapshots:
       - fastestsmallesttextencoderdecoder
       - typescript
       - utf-8-validate
-    optional: true
 
   '@coinbase/wallet-sdk@4.3.6(@types/react@19.2.14)(react@19.2.4)(typescript@5.9.3)(use-sync-external-store@1.6.0(react@19.2.4))(zod@3.25.76)':
     dependencies:
@@ -5107,6 +5124,19 @@ snapshots:
       - utf-8-validate
       - zod
     optional: true
+
+  '@coinbase/x402@2.1.0(typescript@5.9.3)':
+    dependencies:
+      '@coinbase/cdp-sdk': 1.52.0(typescript@5.9.3)
+      '@x402/core': 2.18.0
+      viem: 2.55.0(typescript@5.9.3)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - debug
+      - fastestsmallesttextencoderdecoder
+      - typescript
+      - utf-8-validate
 
   '@emnapi/runtime@1.10.0':
     dependencies:
@@ -6609,12 +6639,10 @@ snapshots:
   '@solana-program/system@0.10.0(@solana/kit@5.5.1(typescript@5.9.3))':
     dependencies:
       '@solana/kit': 5.5.1(typescript@5.9.3)
-    optional: true
 
   '@solana-program/token@0.9.0(@solana/kit@5.5.1(typescript@5.9.3))':
     dependencies:
       '@solana/kit': 5.5.1(typescript@5.9.3)
-    optional: true
 
   '@solana/accounts@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6628,7 +6656,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/addresses@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6641,21 +6668,18 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/assertions@5.5.1(typescript@5.9.3)':
     dependencies:
       '@solana/errors': 5.5.1(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/codecs-core@5.5.1(typescript@5.9.3)':
     dependencies:
       '@solana/errors': 5.5.1(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/codecs-data-structures@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6664,7 +6688,6 @@ snapshots:
       '@solana/errors': 5.5.1(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/codecs-numbers@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6672,7 +6695,6 @@ snapshots:
       '@solana/errors': 5.5.1(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/codecs-strings@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6681,7 +6703,6 @@ snapshots:
       '@solana/errors': 5.5.1(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/codecs@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6694,7 +6715,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/errors@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6702,17 +6722,14 @@ snapshots:
       commander: 14.0.2
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/fast-stable-stringify@5.5.1(typescript@5.9.3)':
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/functional@5.5.1(typescript@5.9.3)':
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/instruction-plans@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6726,7 +6743,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/instructions@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6734,7 +6750,6 @@ snapshots:
       '@solana/errors': 5.5.1(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/keys@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6747,7 +6762,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/kit@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6779,12 +6793,10 @@ snapshots:
       - bufferutil
       - fastestsmallesttextencoderdecoder
       - utf-8-validate
-    optional: true
 
   '@solana/nominal-types@5.5.1(typescript@5.9.3)':
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/offchain-messages@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6800,7 +6812,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/options@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6813,12 +6824,10 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/plugin-core@5.5.1(typescript@5.9.3)':
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/programs@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6828,12 +6837,10 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/promises@5.5.1(typescript@5.9.3)':
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/rpc-api@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6852,17 +6859,14 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/rpc-parsed-types@5.5.1(typescript@5.9.3)':
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/rpc-spec-types@5.5.1(typescript@5.9.3)':
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/rpc-spec@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6870,7 +6874,6 @@ snapshots:
       '@solana/rpc-spec-types': 5.5.1(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/rpc-subscriptions-api@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6885,7 +6888,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/rpc-subscriptions-channel-websocket@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6899,7 +6901,6 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
-    optional: true
 
   '@solana/rpc-subscriptions-spec@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6909,7 +6910,6 @@ snapshots:
       '@solana/subscribable': 5.5.1(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/rpc-subscriptions@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6930,7 +6930,6 @@ snapshots:
       - bufferutil
       - fastestsmallesttextencoderdecoder
       - utf-8-validate
-    optional: true
 
   '@solana/rpc-transformers@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6943,7 +6942,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/rpc-transport-http@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6953,7 +6951,6 @@ snapshots:
       undici-types: 7.28.0
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/rpc-types@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6967,7 +6964,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/rpc@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -6984,7 +6980,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/signers@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -7001,14 +6996,12 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/subscribable@5.5.1(typescript@5.9.3)':
     dependencies:
       '@solana/errors': 5.5.1(typescript@5.9.3)
     optionalDependencies:
       typescript: 5.9.3
-    optional: true
 
   '@solana/sysvars@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -7020,7 +7013,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/transaction-confirmation@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -7040,7 +7032,6 @@ snapshots:
       - bufferutil
       - fastestsmallesttextencoderdecoder
       - utf-8-validate
-    optional: true
 
   '@solana/transaction-messages@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -7057,7 +7048,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@solana/transactions@5.5.1(typescript@5.9.3)':
     dependencies:
@@ -7077,7 +7067,6 @@ snapshots:
       typescript: 5.9.3
     transitivePeerDependencies:
       - fastestsmallesttextencoderdecoder
-    optional: true
 
   '@supabase/auth-js@2.106.0':
     dependencies:
@@ -7752,11 +7741,24 @@ snapshots:
       '@walletconnect/window-getters': 1.0.1
       tslib: 1.14.1
 
+  '@x402/core@2.18.0':
+    dependencies:
+      zod: 3.25.76
+
+  '@x402/evm@2.18.0(typescript@5.9.3)':
+    dependencies:
+      '@x402/core': 2.18.0
+      viem: 2.55.0(typescript@5.9.3)(zod@3.25.76)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - bufferutil
+      - typescript
+      - utf-8-validate
+
   abitype@1.0.6(typescript@5.9.3)(zod@3.25.76):
     optionalDependencies:
       typescript: 5.9.3
       zod: 3.25.76
-    optional: true
 
   abitype@1.2.3(typescript@5.9.3)(zod@3.22.4):
     optionalDependencies:
@@ -7832,8 +7834,7 @@ snapshots:
 
   assertion-error@2.0.1: {}
 
-  asynckit@0.4.0:
-    optional: true
+  asynckit@0.4.0: {}
 
   atomic-sleep@1.0.0: {}
 
@@ -7845,7 +7846,6 @@ snapshots:
     dependencies:
       axios: 1.16.0
       is-retry-allowed: 2.2.0
-    optional: true
 
   axios@1.16.0:
     dependencies:
@@ -7854,7 +7854,6 @@ snapshots:
       proxy-from-env: 2.1.0
     transitivePeerDependencies:
       - debug
-    optional: true
 
   babel-plugin-macros@3.1.0:
     dependencies:
@@ -8020,8 +8019,7 @@ snapshots:
 
   character-reference-invalid@2.0.1: {}
 
-  charenc@0.0.2:
-    optional: true
+  charenc@0.0.2: {}
 
   check-error@2.1.3: {}
 
@@ -8089,7 +8087,6 @@ snapshots:
   combined-stream@1.0.8:
     dependencies:
       delayed-stream: 1.0.0
-    optional: true
 
   comma-separated-tokens@2.0.3: {}
 
@@ -8097,8 +8094,7 @@ snapshots:
 
   commander@11.1.0: {}
 
-  commander@14.0.2:
-    optional: true
+  commander@14.0.2: {}
 
   commander@3.0.2: {}
 
@@ -8172,8 +8168,7 @@ snapshots:
     dependencies:
       uncrypto: 0.1.3
 
-  crypt@0.0.2:
-    optional: true
+  crypt@0.0.2: {}
 
   csstype@3.2.3: {}
 
@@ -8205,8 +8200,7 @@ snapshots:
 
   defu@6.1.7: {}
 
-  delayed-stream@1.0.0:
-    optional: true
+  delayed-stream@1.0.0: {}
 
   depd@2.0.0: {}
 
@@ -8307,7 +8301,6 @@ snapshots:
       get-intrinsic: 1.3.0
       has-tostringtag: 1.0.2
       hasown: 2.0.4
-    optional: true
 
   es-toolkit@1.44.0: {}
 
@@ -8580,7 +8573,6 @@ snapshots:
       es-set-tostringtag: 2.1.0
       hasown: 2.0.4
       mime-types: 2.1.35
-    optional: true
 
   forwarded@0.2.0: {}
 
@@ -8771,7 +8763,6 @@ snapshots:
   hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
-    optional: true
 
   hast-util-to-jsx-runtime@2.3.6:
     dependencies:
@@ -8909,8 +8900,7 @@ snapshots:
     dependencies:
       binary-extensions: 2.3.0
 
-  is-buffer@1.1.6:
-    optional: true
+  is-buffer@1.1.6: {}
 
   is-callable@1.2.7: {}
 
@@ -8942,8 +8932,7 @@ snapshots:
 
   is-promise@4.0.0: {}
 
-  is-retry-allowed@2.2.0:
-    optional: true
+  is-retry-allowed@2.2.0: {}
 
   is-typed-array@1.1.15:
     dependencies:
@@ -9141,7 +9130,6 @@ snapshots:
       charenc: 0.0.2
       crypt: 0.0.2
       is-buffer: 1.1.6
-    optional: true
 
   mdast-util-find-and-replace@3.0.2:
     dependencies:
@@ -9497,15 +9485,13 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  mime-db@1.52.0:
-    optional: true
+  mime-db@1.52.0: {}
 
   mime-db@1.54.0: {}
 
   mime-types@2.1.35:
     dependencies:
       mime-db: 1.52.0
-    optional: true
 
   mime-types@3.0.2:
     dependencies:
@@ -9864,8 +9850,7 @@ snapshots:
 
   proxy-compare@3.0.1: {}
 
-  proxy-from-env@2.1.0:
-    optional: true
+  proxy-from-env@2.1.0: {}
 
   qrcode@1.5.3:
     dependencies:
@@ -10480,8 +10465,7 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici-types@7.28.0:
-    optional: true
+  undici-types@7.28.0: {}
 
   undici@5.29.0:
     dependencies:
