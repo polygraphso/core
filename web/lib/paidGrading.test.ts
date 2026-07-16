@@ -35,6 +35,7 @@ vi.mock("@/lib/hostedRunner", () => ({
   runnerKindFor: (k: string) => (k === "skill" ? "skill" : "server"),
 }));
 vi.mock("@/lib/serverRef", () => ({ refToPath: (k: string) => k }));
+vi.mock("@/lib/skillGrades", () => ({ skillRefToPath: (t: string) => t.replace("#", "/") }));
 
 import { pollAndReconcile } from "./paidGrading";
 
@@ -111,12 +112,13 @@ describe("pollAndReconcile", () => {
     expect(r).toMatchObject({ state: "graded", grade: "B", reportUrl: "/mcp/npm/some-mcp" });
   });
 
-  it("routes a skill target to the /skill report path", async () => {
+  it("routes a skill target to the /skill report path with the # encoded as a subpath", async () => {
     state.maybeSingleQueue = [
       { data: paidRow({ target: "github/o/r#p", target_kind: "skill", status: "completed", hosted_run_id: "HR-2" }), error: null },
       { data: { grade: "A" }, error: null },
     ];
     const r = await pollAndReconcile("req-1");
-    expect(r).toMatchObject({ state: "graded", reportUrl: "/skill/github/o/r#p" });
+    // # → / so the client link keeps the subpath (a raw # would be a fragment).
+    expect(r).toMatchObject({ state: "graded", reportUrl: "/skill/github/o/r/p" });
   });
 });
