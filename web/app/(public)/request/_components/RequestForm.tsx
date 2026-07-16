@@ -49,6 +49,8 @@ export function RequestForm({
     demand: number;
     requestId: string | null;
     paid: boolean;
+    /** The canonical ref the server resolved (a pasted URL collapses to it). */
+    target: string;
   } | null>(null);
   const router = useRouter();
 
@@ -99,6 +101,7 @@ export function RequestForm({
         demand?: number;
         requestId?: string | null;
         paid?: boolean;
+        target?: string;
       };
       if (!res.ok || !body.ok) {
         throw new Error(body.message ?? "Couldn't save your request.");
@@ -108,6 +111,7 @@ export function RequestForm({
         demand: body.demand ?? 1,
         requestId: body.requestId ?? null,
         paid: body.paid ?? false,
+        target: body.target ?? target.trim(),
       });
       setState("ok");
     } catch (err) {
@@ -122,56 +126,55 @@ export function RequestForm({
     return (
       <div className="border hairline bg-parchment-50">
         <div className="flex items-center justify-between px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-          <span>on the bench</span>
-          <span className="text-ink">{target.trim()}</span>
+          <span>request recorded</span>
+          <span className="text-ink">{result.target}</span>
         </div>
         <div className="p-5 md:p-7">
-          <p className="font-serif text-xl md:text-2xl text-ink leading-snug">
-            {result.created
-              ? "Request recorded — one step left."
-              : "Already requested — your ask is counted."}
-          </p>
-          <p className="mt-3 text-ink-muted leading-relaxed">
-            {result.paid ? (
-              <>The fee is already paid &mdash; this request is on the 48-hour clock. </>
-            ) : (
-              <>
-                Grading starts once the{" "}
-                <span className="font-mono text-ink">${PRIORITY_GRADE_PRICE_USD}</span> fee is
-                paid &mdash; then it&rsquo;s graded within 48 hours.{" "}
-              </>
-            )}
-            {result.demand > 1 ? (
-              <>
-                <span className="font-mono text-ink">{result.demand}</span> people have asked for
-                this server.{" "}
-              </>
-            ) : null}
-            We&rsquo;ll email you at{" "}
-            <span className="font-mono text-ink">{sessionEmail ?? email.trim()}</span> when the
-            grade publishes.
-          </p>
-          {result.paid ? null : result.requestId ? (
-            <div className="mt-6 border-t hairline pt-5">
-              <p className="mt-1.5 text-ink-muted leading-relaxed text-[15px]">
-                Paid in $POLYGRAPH on Base. The fee buys the run, never the grade &mdash; the
-                battery, thresholds, and publication path are the same for everyone.
+          {result.paid ? (
+            <>
+              <p className="font-serif text-xl md:text-2xl text-ink leading-snug">
+                Already paid &mdash; the clock is running.
               </p>
-              <a
-                href={`/request/priority/${result.requestId}`}
-                className="mt-4 inline-flex items-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors"
-              >
-                Pay ${PRIORITY_GRADE_PRICE_USD} · start the 48h clock →
-              </a>
-            </div>
+              <p className="mt-3 text-ink-muted leading-relaxed">
+                This server&rsquo;s fee is covered, so it&rsquo;s graded within 48 hours of that
+                payment. We&rsquo;ll email{" "}
+                <span className="font-mono text-ink">{sessionEmail ?? email.trim()}</span> when
+                the grade publishes.
+              </p>
+            </>
           ) : (
-            <p className="mt-4 text-[14px] text-ink-muted leading-relaxed">
-              We couldn&rsquo;t open the payment page for this request &mdash; email{" "}
-              <a href="mailto:hello@polygraph.so" className="underline decoration-dotted">
-                hello@polygraph.so
-              </a>{" "}
-              and we&rsquo;ll sort it out.
-            </p>
+            <>
+              <p className="font-serif text-xl md:text-2xl text-ink leading-snug">
+                One step left: the ${PRIORITY_GRADE_PRICE_USD} fee.
+              </p>
+              <p className="mt-3 text-ink-muted leading-relaxed">
+                Pay <span className="font-mono text-ink">${PRIORITY_GRADE_PRICE_USD}</span> in
+                $POLYGRAPH and it&rsquo;s graded within 48 hours. We&rsquo;ll email{" "}
+                <span className="font-mono text-ink">{sessionEmail ?? email.trim()}</span> when
+                the grade publishes.
+              </p>
+              {result.demand > 1 ? (
+                <p className="mt-2 font-mono text-[12px] text-ink-faint">
+                  {result.demand} people have asked for this server.
+                </p>
+              ) : null}
+              {result.requestId ? (
+                <a
+                  href={`/request/priority/${result.requestId}`}
+                  className="mt-6 inline-flex items-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors"
+                >
+                  Pay ${PRIORITY_GRADE_PRICE_USD} · start the 48h clock →
+                </a>
+              ) : (
+                <p className="mt-4 text-[14px] text-ink-muted leading-relaxed">
+                  We couldn&rsquo;t open the payment page for this request &mdash; email{" "}
+                  <a href="mailto:hello@polygraph.so" className="underline decoration-dotted">
+                    hello@polygraph.so
+                  </a>{" "}
+                  and we&rsquo;ll sort it out.
+                </p>
+              )}
+            </>
           )}
           <button
             type="button"
