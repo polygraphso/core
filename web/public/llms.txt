@@ -98,6 +98,7 @@ No graded party pays us. No graded party gets review or approval rights over the
 - Methodology spec: https://www.polygraph.so/methodology
 - The index (all published grades): https://www.polygraph.so/mcp-index
 - Ecosystem monitoring: https://www.polygraph.so/ecosystems
+- Token & revenue transparency (team vesting, treasury, booked revenue, live onchain): https://www.polygraph.so/transparency
 - Builder tooling (CLI, CI gate, badges): https://www.polygraph.so/builders
 - API documentation: https://www.polygraph.so/docs/api
 - Blog: https://www.polygraph.so/blog

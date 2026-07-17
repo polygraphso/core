@@ -101,7 +101,18 @@ const widgetConfig: WidgetConfig = {
   },
 };
 
-export function SwapWidget() {
+/**
+ * `inline` (default) is the subtle in-checkout text trigger. `button` is a
+ * prominent oxblood CTA for standalone "buy the token" contexts (the
+ * transparency page). Both open the same drawer over the same wallet session.
+ */
+export function SwapWidget({
+  label,
+  variant = "inline",
+}: {
+  label?: string;
+  variant?: "inline" | "button";
+} = {}) {
   const drawerRef = useRef<WidgetDrawer>(null);
   const { open } = useAppKit();
   const pin = useRef<{ y: number; sawOpen: boolean; timer: number; stop: () => void } | null>(null);
@@ -147,9 +158,13 @@ export function SwapWidget() {
           armScrollPin();
           drawerRef.current?.toggleDrawer();
         }}
-        className="font-mono text-[12px] uppercase tracking-[0.16em] text-ink-muted border-b hairline border-dotted pb-0.5 hover:text-oxblood transition-colors"
+        className={
+          variant === "button"
+            ? "inline-flex items-center gap-2 rounded-[4px] bg-oxblood px-6 py-3 font-mono text-[13px] uppercase tracking-[0.16em] text-parchment-50 hover:bg-oxblood-soft transition-colors"
+            : "font-mono text-[12px] uppercase tracking-[0.16em] text-ink-muted border-b hairline border-dotted pb-0.5 hover:text-oxblood transition-colors"
+        }
       >
-        + need {POLYGRAPH_TOKEN_SYMBOL}? swap any token
+        {label ?? `+ need ${POLYGRAPH_TOKEN_SYMBOL}? swap any token`}
       </button>
       <LiFiWidget
         ref={drawerRef}
