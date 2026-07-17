@@ -238,6 +238,12 @@ export const NAV_ITEMS: NavItem[] = [
           href: "/#funding",
         },
         {
+          glyph: "▤",
+          title: "Transparency & revenue",
+          desc: "Team vesting, treasury, and booked revenue, read live onchain.",
+          href: "/transparency",
+        },
+        {
           glyph: "⇄",
           title: "Acquire on Bankr",
           desc: "View and swap $POLYGRAPH on Base.",
@@ -247,6 +253,7 @@ export const NAV_ITEMS: NavItem[] = [
       ],
       listLabel: "On-chain",
       list: [
+        { name: "Transparency & revenue", href: "/transparency", meta: "onchain" },
         { name: "Contract", href: BASESCAN, meta: "Basescan", external: true },
         { name: "Price chart", href: DEXSCREENER, meta: "chart", external: true },
         { name: "Pay with $POLYGRAPH", href: "/pricing", meta: "pricing" },
