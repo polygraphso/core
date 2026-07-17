@@ -17,6 +17,7 @@ import "server-only";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import { refToPath } from "@/lib/serverRef";
 import { skillRefToPath } from "@/lib/skillGrades";
+import { settleAuthorizedFeePayment, voidAuthorizedFeePayment } from "@/lib/x402Fee";
 import {
   hostedRunnerConfig,
   postGrade,
@@ -158,6 +159,9 @@ export async function pollAndReconcile(requestId: string): Promise<GradeProgress
 
   if (job.status === "error") {
     const reason = job.error?.trim() || "the harness couldn't grade this target";
+    // A failed run never charges: void the x402 authorization (no-op for the
+    // web rail, whose fee settled upfront and buys the run either way).
+    await voidAuthorizedFeePayment(requestId, reason);
     await db
       .from("grade_requests")
       .update({
@@ -167,10 +171,37 @@ export async function pollAndReconcile(requestId: string): Promise<GradeProgress
       })
       .eq("id", requestId)
       .eq("status", "queued");
-    return { state: "failed", target: row.target, reason };
+    return { state: "failed", target: row.target, reason: `${reason} — you were not charged` };
   }
 
   if (job.status === "done" && job.hosted_run_id) {
+    // A grade landed. On the x402 rail the fee settles NOW, before the grade
+    // is published — an authorization we can no longer collect must not buy a
+    // grade. The web rail (settled upfront) reports no_authorization and
+    // publishes as before.
+    const settle = await settleAuthorizedFeePayment(requestId);
+    if (settle.state === "retry") {
+      // Transient facilitator trouble inside the authorization window — keep
+      // the run unpublished and let the next poll (or the cron sweep) settle.
+      return { state: "grading", target: row.target };
+    }
+    if (settle.state === "failed") {
+      await db
+        .from("grade_requests")
+        .update({
+          status: "declined",
+          fulfilled_at: new Date().toISOString(),
+          note: appendNote(row.note, `x402 settlement failed: ${settle.reason}`),
+        })
+        .eq("id", requestId)
+        .in("status", ["queued", "in_progress"]);
+      return {
+        state: "failed",
+        target: row.target,
+        reason: `the grade completed but ${settle.reason} — you were not charged; request again to retry`,
+      };
+    }
+
     // Publish the grade-only row the runner wrote, then close the request.
     const nowIso = new Date().toISOString();
     const { data: hr } = await db
