@@ -416,12 +416,23 @@ export interface GradeRequestPaymentRow {
   expected_amount: number;
   usd_price: number;
   token_usd_rate: number;
-  status: "pending" | "paid" | "expired";
+  /**
+   * 'pending'/'paid'/'expired' = the web rail's quote lifecycle. The x402 rail
+   * (deferred settlement) adds: 'authorized' (verified authorization held, not
+   * charged), 'settling' (a reconciler's atomic claim), 'voided' (run failed —
+   * never charged), 'settle_failed' (grade landed but the authorization could
+   * no longer settle; the run is not published).
+   */
+  status: "pending" | "paid" | "expired" | "authorized" | "settling" | "voided" | "settle_failed";
   tx_hash: string | null;
   payer_address: string | null;
   expires_at: string;
   paid_at: string | null;
   created_at: string;
+  /** x402 rail only: the verified payment payload, held until settlement. */
+  x402_payload: unknown | null;
+  /** x402 rail only: the exact requirements the payload was signed against. */
+  x402_requirements: unknown | null;
 }
 
 /** What a paying user bought. Free tier is the absence of a live row. */

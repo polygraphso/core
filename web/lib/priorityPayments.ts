@@ -46,7 +46,7 @@ export interface GradeRequestPaymentRow {
   expected_amount: string;
   usd_price: number;
   token_usd_rate: number;
-  status: "pending" | "paid" | "expired";
+  status: "pending" | "paid" | "expired" | "authorized" | "settling" | "voided" | "settle_failed";
   tx_hash: string | null;
   payer_address: string | null;
   expires_at: string;
@@ -310,74 +310,8 @@ export async function verifyTransferPayment(
   return { ok: true, deadlineAt: deadline };
 }
 
-/**
- * Record an already-settled fee payment (the x402/USDC rail) and start the
- * request's 48h clock. The x402 facilitator verified and settled the transfer
- * before this runs, so there is no quote to match — we write the paid row
- * directly (token/amount as settled) and stamp the request. Idempotent per
- * settlement tx (unique tx_hash) and per request (already-paid short-circuit).
- */
-export async function recordSettledFeePayment(
-  requestId: string,
-  payment: {
-    txHash: string;
-    payerAddress: string | null;
-    token: string;
-    tokenDecimals: number;
-    amountRaw: string;
-    usdPrice: number;
-  },
-): Promise<PriorityVerifyResult> {
-  const db = getSupabaseAdmin();
-  if (!db) return { ok: false, reason: "storage unconfigured" };
-
-  const { data: reqRow } = await db
-    .from("grade_requests")
-    .select("id, priority_paid_at, priority_deadline_at")
-    .eq("id", requestId)
-    .maybeSingle();
-  if (!reqRow) return { ok: false, reason: "unknown request" };
-  if (reqRow.priority_paid_at && reqRow.priority_deadline_at) {
-    return { ok: true, deadlineAt: reqRow.priority_deadline_at as string };
-  }
-
-  const now = new Date();
-  const deadline = new Date(now.getTime() + PRIORITY_SLA_MS).toISOString();
-
-  const { error: payErr } = await db.from("grade_request_payments").insert({
-    grade_request_id: requestId,
-    chain_id: PAYMENT_CHAIN_ID,
-    token: payment.token,
-    token_decimals: payment.tokenDecimals,
-    treasury: TREASURY_ADDRESS,
-    expected_amount: payment.amountRaw,
-    usd_price: payment.usdPrice,
-    token_usd_rate: 1,
-    status: "paid",
-    tx_hash: payment.txHash.toLowerCase(),
-    payer_address: payment.payerAddress,
-    expires_at: now.toISOString(),
-    paid_at: now.toISOString(),
-  });
-  // 23505 = the settlement tx was already recorded (a retry) — fall through to
-  // stamping the request, which is itself idempotent.
-  if (payErr && payErr.code !== "23505") {
-    console.error("[x402] settled payment insert failed", payErr);
-    return { ok: false, reason: "settled onchain but could not be recorded — email hello@polygraph.so" };
-  }
-
-  const { error: reqErr } = await db
-    .from("grade_requests")
-    .update({ priority_paid_at: now.toISOString(), priority_deadline_at: deadline })
-    .eq("id", requestId);
-  if (reqErr) {
-    console.error("[x402] request stamp failed", reqErr);
-    return { ok: false, reason: "payment recorded but the request could not be flagged — email hello@polygraph.so" };
-  }
-  // Kick off grading now (best-effort; the request stays paid regardless).
-  await startGradeForRequest(requestId);
-  return { ok: true, deadlineAt: deadline };
-}
+// (The x402 rail's fee recording moved to lib/x402Fee.ts with deferred
+// settlement: authorizations are held and settled only when a grade lands.)
 
 /** Open paid requests for the admin lane, soonest deadline first. */
 export interface PriorityLaneRow {
