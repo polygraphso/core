@@ -82,7 +82,7 @@ export interface PriorityQuote {
 export type PlanId = "indie" | "team";
 
 /** USD/month, paid as the same Sablier stream rail as ecosystem monitoring. */
-export const PLAN_PRICES_USD: Record<PlanId, number> = { indie: 15, team: 79 };
+export const PLAN_PRICES_USD: Record<PlanId, number> = { indie: 15, team: 59 };
 
 /**
  * Active monitor slots per plan. The free tier's 1 and these numbers are
