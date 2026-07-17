@@ -61,13 +61,18 @@ export async function POST(request: Request) {
     return Response.json({ error: "Payments aren't configured (treasury address unset)." }, { status: 503 });
   }
 
-  let body: GradeRequestBody;
+  // Parse leniently: an unauthenticated probe (x402scan, Bazaar crawlers, any
+  // discovery client) POSTs an empty or schema-less body expecting to reach
+  // the 402 challenge — body validation must not preempt it. Only a request
+  // that actually carries a payment is held to the schema.
+  let body: GradeRequestBody = {};
   try {
     body = (await request.json()) as GradeRequestBody;
   } catch {
-    return Response.json({ error: "Invalid JSON body." }, { status: 400 });
+    // tolerated — probes send no body
   }
-  if (typeof body.server_ref !== "string" || body.server_ref.length === 0) {
+  const serverRef = typeof body.server_ref === "string" && body.server_ref.length > 0 ? body.server_ref : null;
+  if (!serverRef && request.headers.get("x-payment")) {
     return Response.json({ error: "server_ref is required." }, { status: 400 });
   }
 
@@ -98,8 +103,8 @@ export async function POST(request: Request) {
   // Before returning it, short-circuit the one case where no payment is due:
   // this caller's request for this target already has its fee paid.
   if (processed.type === "payment-error") {
-    if (!request.headers.get("x-payment")) {
-      const result = await runGradeRequest({ serverRef: body.server_ref, email }, { supabase, identity });
+    if (!request.headers.get("x-payment") && serverRef) {
+      const result = await runGradeRequest({ serverRef, email }, { supabase, identity });
       if (result.status === "error") {
         return Response.json({ error: result.error }, { status: result.code });
       }
@@ -108,6 +113,7 @@ export async function POST(request: Request) {
       }
       // Recorded but unpaid — fall through to the 402 so the client can pay.
     }
+    // No server_ref (a discovery probe) → the bare 402 challenge.
     const { status, headers, body: responseBody } = processed.response;
     return Response.json(responseBody ?? null, { status, headers });
   }
@@ -118,10 +124,15 @@ export async function POST(request: Request) {
     return Response.json({ error: "Payment processing failed, retry." }, { status: 500 });
   }
 
+  if (!serverRef) {
+    // Can't happen: paid requests were schema-checked above. Guard anyway.
+    return Response.json({ error: "server_ref is required." }, { status: 400 });
+  }
+
   // Payment verified (NOT settled — the authorization is held and the dollar
   // moves only when a grade lands): run the same gates as every intake. A
   // rejected target returns here without even an authorization on file.
-  const result = await runGradeRequest({ serverRef: body.server_ref, email }, { supabase, identity });
+  const result = await runGradeRequest({ serverRef, email }, { supabase, identity });
   if (result.status === "error") {
     return Response.json({ error: result.error }, { status: result.code });
   }
