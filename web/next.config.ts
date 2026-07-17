@@ -28,6 +28,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
+  // The x402 discovery fan-out lives at the spec's /.well-known/x402, but the
+  // App Router ignores dot-directories — serve it from a normal API route.
+  async rewrites() {
+    return [{ source: "/.well-known/x402", destination: "/api/wellknown/x402" }];
+  },
   // The MCP Security Index moved from /rankings to /mcp-index (matching the
   // "The Polygraph Index" brand). Permanent redirect so existing inbound links
   // — the litmus README, embeddable badges, search-engine equity — keep resolving.
