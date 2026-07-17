@@ -39,6 +39,7 @@ const datasetJsonLd = {
   url: `${SITE_ORIGIN}/mcp-index`,
   creator: { "@id": `${SITE_ORIGIN}/#org` },
   isAccessibleForFree: true,
+  license: "https://creativecommons.org/licenses/by/4.0/",
   keywords: ["MCP", "Model Context Protocol", "MCP server security", "agent security", "Agent Skills"],
   distribution: [
     {
@@ -162,6 +163,18 @@ export default async function RankingsPage() {
         </header>
 
         <GradesIndex serverRows={rows} skillRows={skillRows} />
+
+        <p className="mt-10 font-mono text-[11px] text-ink-faint leading-relaxed">
+          Index data is published under{" "}
+          <a
+            href="https://creativecommons.org/licenses/by/4.0/"
+            rel="license"
+            className="underline decoration-dotted underline-offset-2 hover:text-oxblood transition-colors"
+          >
+            CC BY 4.0
+          </a>
+          : reuse it freely, with attribution to polygraph.so.
+        </p>
       </article>
   );
 }
