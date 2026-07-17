@@ -35,6 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${ORIGIN}/mcp-index`, changeFrequency: "daily", priority: 0.9 },
     { url: `${ORIGIN}/builders`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${ORIGIN}/pricing`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${ORIGIN}/transparency`, changeFrequency: "daily", priority: 0.7 },
     { url: `${ORIGIN}/methodology`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${ORIGIN}/about`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${ORIGIN}/docs/api`, changeFrequency: "monthly", priority: 0.5 },

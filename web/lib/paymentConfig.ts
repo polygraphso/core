@@ -291,6 +291,32 @@ export const SABLIER_LOCKUP_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  // Read-only, for the public transparency page's team-vesting panel: how much
+  // of stream #716 has vested per schedule (streamed) and been pulled out
+  // (getWithdrawnAmount), plus its cliff. locked = deposited − streamed. Names
+  // vendored from the verified v4 source — it's getWithdrawnAmount/getCliffTime,
+  // NOT the withdrawnAmountOf spelling.
+  {
+    inputs: [{ internalType: "uint256", name: "streamId", type: "uint256" }],
+    name: "streamedAmountOf",
+    outputs: [{ internalType: "uint128", name: "", type: "uint128" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "streamId", type: "uint256" }],
+    name: "getWithdrawnAmount",
+    outputs: [{ internalType: "uint128", name: "", type: "uint128" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "streamId", type: "uint256" }],
+    name: "getCliffTime",
+    outputs: [{ internalType: "uint40", name: "", type: "uint40" }],
+    stateMutability: "view",
+    type: "function",
+  },
   // Sender-only: stops the stream, refunds the unstreamed remainder to the
   // payer. The client calls this from the cancel button; the server then
   // re-reads statusOf and flips the payment row.
@@ -413,6 +439,14 @@ export const ERC20_ABI = [
   {
     inputs: [{ internalType: "address", name: "account", type: "address" }],
     name: "balanceOf",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  // Read-only, for the public transparency page: total supply + treasury holdings.
+  {
+    inputs: [],
+    name: "totalSupply",
     outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
     stateMutability: "view",
     type: "function",
