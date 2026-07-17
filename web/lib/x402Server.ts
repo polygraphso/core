@@ -37,6 +37,41 @@ export const ROUTE_PATTERN = "POST /api/x402/grade-request";
 export const AUTHORIZATION_WINDOW_SECONDS = 7200;
 
 /**
+ * The Bazaar discovery declaration, hoisted so BOTH halves see it: the route
+ * config serves it in the 402, and settleX402Payment forwards it to
+ * processSettlement as declaredExtensions — the extension's settlement hook
+ * only fires when the declaration is passed there, and the facilitator only
+ * catalogs the endpoint from a settlement that carries it.
+ */
+const BAZAAR_DISCOVERY = declareDiscoveryExtension({
+  input: { server_ref: "npm/@scope/server" },
+  inputSchema: {
+    properties: {
+      server_ref: {
+        type: "string",
+        description:
+          "Target to grade: npm ref (npm/@scope/name), github/owner/repo, pypi/name, or an https:// MCP URL.",
+      },
+      email: { type: "string", description: "Optional email notified when the grade publishes." },
+      agent_id: { type: "string", description: "Optional stable identifier for the requesting agent." },
+      source: { type: "string", description: "Optional client name for attribution." },
+    },
+    required: ["server_ref"],
+  },
+  bodyType: "json",
+  output: {
+    example: {
+      status: "grading",
+      created: true,
+      requestId: "req_123",
+      charged: false,
+      statusUrl: "https://www.polygraph.so/api/grade-requests/req_123/status",
+      deadlineAt: "2026-07-18T12:00:00Z",
+    },
+  },
+});
+
+/**
  * Lazy singleton: initialize() fetches the facilitator's supported schemes,
  * so build it once per instance and retry on failure instead of caching a
  * rejection.
@@ -73,33 +108,7 @@ export function getX402Server(): Promise<x402HTTPResourceServer> {
           serviceName: "polygraph",
           tags: ["security", "trust", "mcp", "grading"],
           iconUrl: `${SITE_ORIGIN}/brand/mark-512.png`,
-          extensions: declareDiscoveryExtension({
-            input: { server_ref: "npm/@scope/server" },
-            inputSchema: {
-              properties: {
-                server_ref: {
-                  type: "string",
-                  description:
-                    "Target to grade: npm ref (npm/@scope/name), github/owner/repo, pypi/name, or an https:// MCP URL.",
-                },
-                email: { type: "string", description: "Optional email notified when the grade publishes." },
-                agent_id: { type: "string", description: "Optional stable identifier for the requesting agent." },
-                source: { type: "string", description: "Optional client name for attribution." },
-              },
-              required: ["server_ref"],
-            },
-            bodyType: "json",
-            output: {
-              example: {
-                status: "grading",
-                created: true,
-                requestId: "req_123",
-                charged: false,
-                statusUrl: "https://www.polygraph.so/api/grade-requests/req_123/status",
-                deadlineAt: "2026-07-18T12:00:00Z",
-              },
-            },
-          }),
+          extensions: BAZAAR_DISCOVERY,
         },
       });
       await httpServer.initialize();
@@ -130,11 +139,17 @@ export function requestContext(request: Request): HTTPRequestContext {
   };
 }
 
-/** Settle a previously verified authorization (the reconciler's half). */
+/**
+ * Settle a previously verified authorization (the reconciler's half). The
+ * discovery declaration rides along as declaredExtensions — this is what makes
+ * a settlement catalog the endpoint in the Bazaar; without it the extension's
+ * settlement hook never fires (the pre-deferred-settlement route settled with
+ * two args, which is why the first settled payment listed nothing).
+ */
 export async function settleX402Payment(
   payload: PaymentPayload,
   requirements: PaymentRequirements,
 ): Promise<ProcessSettleResultResponse> {
   const httpServer = await getX402Server();
-  return httpServer.processSettlement(payload, requirements);
+  return httpServer.processSettlement(payload, requirements, BAZAAR_DISCOVERY);
 }
