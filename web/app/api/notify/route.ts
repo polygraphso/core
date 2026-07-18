@@ -9,8 +9,8 @@
  * Idempotent on (server_ref, email_or_user_id) — handled by the partial
  * unique indexes + ON CONFLICT DO NOTHING inside record_notify_request.
  *
- * Contract: see core-contracts.md §"API surface" and onboarding-brief.md
- * §"Notify funnel (untracked servers)".
+ * Contract: see the "API surface" section of core-contracts.md and the
+ * "Notify funnel (untracked servers)" section of onboarding-brief.md.
  */
 
 import { NextResponse } from "next/server";

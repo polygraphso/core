@@ -192,7 +192,7 @@ export const NAV_ITEMS: NavItem[] = [
       featuredLabel: "The method",
       featured: [
         {
-          glyph: "§",
+          glyph: "◎",
           title: "How grading works",
           desc: "Behavioral tests, reproducible, evidence anyone can re-run.",
           href: "/methodology#what",

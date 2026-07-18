@@ -2,7 +2,7 @@ import { MinimalSignup } from "./MinimalSignup";
 
 // Quiet down-page signup — one field, "notify me about new polygraphs."
 // Lives here as its own block because the matrix section it used to live
-// inside (§04) is pulled until real polygraphs exist.
+// inside (section 04) is pulled until real polygraphs exist.
 export function GradesUpdates() {
   return (
     <section id="updates" className="mx-auto max-w-6xl px-6 py-16 md:py-20">

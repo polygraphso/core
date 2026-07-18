@@ -1,7 +1,7 @@
 import { SectionHeader } from "./SectionHeader";
 import { METHODOLOGY_VERSION } from "@/lib/site";
 
-// §04 — where this is going. Status is honest: "now" means built and
+// Section 04 — where this is going. Status is honest: "now" means built and
 // running, everything else is sequenced intent, no dates promised.
 
 const steps: Array<{
@@ -41,7 +41,7 @@ export function Timeline() {
   return (
     <section id="timeline" className="mx-auto max-w-6xl px-6 py-20 md:py-28">
       <SectionHeader
-        number="§ 06"
+        number="06"
         label="Timeline"
         title="Where this is going."
       >

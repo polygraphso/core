@@ -77,7 +77,7 @@ function Unavailable({ what }: { what: string }) {
 export function TokenPanel({ stats }: { stats: TokenStats | null }) {
   return (
     <Section
-      label="§1 · Token"
+      label="01 · Token"
       title="$POLYGRAPH on Base"
       note="Supply, treasury holdings, and price, read live from Base mainnet and the deepest onchain market."
     >
@@ -158,7 +158,7 @@ export function TokenPanel({ stats }: { stats: TokenStats | null }) {
 export function VestingPanel({ vesting }: { vesting: VestingStatus | null }) {
   return (
     <Section
-      label="§2 · Team vesting"
+      label="02 · Team vesting"
       title="Team tokens, locked onchain"
       note="The team's allocation is locked in a Sablier stream on Base: a contract, not a promise. It unlocks strictly on the schedule below, and nothing can be pulled forward."
     >
@@ -219,7 +219,7 @@ export function VestingPanel({ vesting }: { vesting: VestingStatus | null }) {
 export function RevenuePanel({ revenue }: { revenue: PublicRevenue | null }) {
   return (
     <Section
-      label="§3 · Revenue"
+      label="03 · Revenue"
       title="What the work has earned"
       note="Every paid surface, booked from onchain settlement. Prepaid subscription streams count at their full deposit on the day they verify; MRR is the recurring lens."
     >

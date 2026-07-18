@@ -78,7 +78,7 @@ export const metadata: Metadata = {
 // Grades change on a daily-ish cadence, so an hourly re-render is plenty fresh.
 export const revalidate = 3600;
 
-// The one ask this page exists to trigger. Shared by the hero CTA, the § 01
+// The one ask this page exists to trigger. Shared by the hero CTA, the section 01
 // "not listed" tile, and (via its own subject) the closing EcosystemCta, so the
 // conversation always opens the same way.
 // The address shown in plain text beside the hero mailto (a copy-able fallback).
@@ -138,7 +138,7 @@ export default async function EcosystemsPage() {
     monitoredSlugSet(),
   ]);
 
-  // Monitored ecosystems (active clients) lead § 01 — their place at the top
+  // Monitored ecosystems (active clients) lead section 01 — their place at the top
   // is part of what monitoring buys; the free public indexes follow.
   const allCards = [
     ...shownLegacy.map((e, i) => ({ eco: e, stats: stats[i]!, monitored: monitored.has(e.slug) })),
@@ -148,7 +148,7 @@ export default async function EcosystemsPage() {
     stats.reduce((sum, s) => sum + s.graded, 0) + dbCards.reduce((sum, c) => sum + c.stats.graded, 0);
   const networkCount = shownLegacy.length + dbCards.length;
   // The most recent re-grade anywhere in the index — the "last refreshed" stamp the
-  // § 05 CTA turns into its hook. Per-ecosystem dates (YYYY-MM-DD) already sort
+  // Section 05 CTA turns into its hook. Per-ecosystem dates (YYYY-MM-DD) already sort
   // lexicographically, so max() is the latest. null when nothing is graded yet.
   const lastRefreshed = stats
     .map((s) => s.lastRefreshed)
@@ -196,9 +196,9 @@ export default async function EcosystemsPage() {
           </p>
         </header>
 
-        {/* § 01 — Proof first: the live indexes. */}
+        {/* Section 01 — Proof first: the live indexes. */}
         <section id="live-indexes" className="mb-16 scroll-mt-24">
-          <SectionHeader number="§ 01" label="Live indexes" title="What a trust index looks like.">
+          <SectionHeader number="01" label="Live indexes" title="What a trust index looks like.">
             Every grade below is read live from the same evidence the per-network pages show:
             current, reproducible, and yours to re-run against the open harness.
           </SectionHeader>
@@ -215,10 +215,10 @@ export default async function EcosystemsPage() {
           </div>
         </section>
 
-        {/* § 02 — Why continuous: the snapshot-goes-stale argument. */}
+        {/* Section 02 — Why continuous: the snapshot-goes-stale argument. */}
         <section className="mb-16">
           <SectionHeader
-            number="§ 02"
+            number="02"
             label="Why continuous"
             title="An index is only as good as its last run."
           >
@@ -240,10 +240,10 @@ export default async function EcosystemsPage() {
           </figure>
         </section>
 
-        {/* § 03 — How monitoring works: the offering, step by step. */}
+        {/* Section 03 — How monitoring works: the offering, step by step. */}
         <section className="mb-16">
           <SectionHeader
-            number="§ 03"
+            number="03"
             label="How monitoring works"
             title="Re-grade, detect, alert."
           >
@@ -268,10 +268,10 @@ export default async function EcosystemsPage() {
           </ol>
         </section>
 
-        {/* § 04 — What holds: the trust anchors a paying client can't move. */}
+        {/* Section 04 — What holds: the trust anchors a paying client can't move. */}
         <section className="mb-16">
           <SectionHeader
-            number="§ 04"
+            number="04"
             label="What holds"
             title="What a monitoring client can't change."
           >
@@ -288,9 +288,9 @@ export default async function EcosystemsPage() {
           </div>
         </section>
 
-        {/* § 05 — The ask: an honest, mailto conversation-starter. */}
+        {/* Section 05 — The ask: an honest, mailto conversation-starter. */}
         <section id="get-monitored" className="scroll-mt-24">
-          <SectionHeader number="§ 05" label="Get monitored" title="Keep this index from going stale.">
+          <SectionHeader number="05" label="Get monitored" title="Keep this index from going stale.">
             {lastRefreshed ? (
               <>
                 Every grade above was last re-run on{" "}

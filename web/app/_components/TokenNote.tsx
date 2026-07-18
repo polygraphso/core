@@ -1,6 +1,6 @@
 import { SectionHeader } from "./SectionHeader";
 
-// § 04 — the funding note. Compact by design: the token is stated as fact
+// Section 04 — the funding note. Compact by design: the token is stated as fact
 // and kept off the hero. The believer who wants it finds it; the
 // security reader who doesn't care scrolls past in one beat.
 //
@@ -13,7 +13,7 @@ const BANKR_URL =
 export function TokenNote() {
   return (
     <section id="funding" className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-      <SectionHeader number="§ 04" label="Funding" title="How polygraph gets funded.">
+      <SectionHeader number="04" label="Funding" title="How polygraph gets funded.">
         Free to read, and not paid for by anyone we grade. Here&rsquo;s where
         the money comes from instead.
       </SectionHeader>

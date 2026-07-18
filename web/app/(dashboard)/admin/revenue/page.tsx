@@ -55,7 +55,7 @@ export default async function RevenuePage() {
           <div className="grid gap-6 md:grid-cols-2">
             {/* Latest buys */}
             <Panel
-              label="§1"
+              label="01"
               title="Latest buys"
               note="Every completed purchase across all surfaces, newest first."
             >
@@ -72,7 +72,7 @@ export default async function RevenuePage() {
 
             {/* Booked revenue over time */}
             <Panel
-              label="§2"
+              label="02"
               title="Booked revenue"
               note="Cash in per day (last 30d). Prepaid streams count at their full deposit on the verify date."
             >
@@ -80,13 +80,13 @@ export default async function RevenuePage() {
             </Panel>
 
             {/* Revenue by surface */}
-            <Panel label="§3" title="By surface" note="All-time booked $ per revenue line.">
+            <Panel label="03" title="By surface" note="All-time booked $ per revenue line.">
               <BarList data={m.bySurface} format={formatUsd} empty="No revenue yet." />
             </Panel>
 
             {/* Active subscriptions */}
             <Panel
-              label="§4"
+              label="04"
               title="Active subscriptions"
               note="Streams still active with an end date in the future."
             >
@@ -101,13 +101,13 @@ export default async function RevenuePage() {
             </Panel>
 
             {/* Top payers */}
-            <Panel label="§5" title="Top payers" note="Booked $ by paying wallet.">
+            <Panel label="05" title="Top payers" note="Booked $ by paying wallet.">
               <BarList data={m.topPayers} format={formatUsd} empty="No payers yet." />
             </Panel>
 
             {/* Churn */}
             <Panel
-              label="§6"
+              label="06"
               title="Churn"
               note="Streams canceled onchain or lapsed past their end date."
             >

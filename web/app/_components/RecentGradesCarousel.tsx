@@ -93,7 +93,7 @@ export function RecentGradesCarousel({ runs }: { runs: Run[] }) {
       aria-roledescription="carousel"
       aria-label="Recent grades"
     >
-      <SectionHeader number="§ 02" label="Recent grades" title="Fresh from the harness.">
+      <SectionHeader number="02" label="Recent grades" title="Fresh from the harness.">
         The latest checks we&rsquo;ve published, newest first &mdash; each one a real litmus run you
         can reproduce. Browse every grade, MCP servers and skills, in the index.
       </SectionHeader>

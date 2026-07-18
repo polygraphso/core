@@ -64,7 +64,7 @@ export default async function FixPage({ searchParams }: { searchParams: SearchPa
       <section className="mx-auto max-w-3xl">
         <div className="border-t hairline pt-6 mb-10">
           <div className="flex items-baseline gap-4">
-            <span className="section-label tabular">§ Fix</span>
+            <span className="section-label tabular">Fix</span>
             <span className="section-label">/</span>
             <span className="section-label">Remediation</span>
           </div>

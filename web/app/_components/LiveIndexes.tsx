@@ -5,7 +5,7 @@ import { SectionHeader } from "./SectionHeader";
 import { EcosystemCard, NotListedTile } from "./EcosystemCards";
 
 /**
- * § 01 — the proof: live example indexes, read from the same grade-only
+ * Section 01 — the proof: live example indexes, read from the same grade-only
  * hosted_runs rows the per-network pages show. The homepage carries a FEATURED
  * subset: MONITORED ecosystems (active clients) always take the slots first —
  * their place on the homepage is part of what monitoring buys — with the
@@ -16,7 +16,7 @@ import { EcosystemCard, NotListedTile } from "./EcosystemCards";
  */
 
 // The fallback networks surfaced while there are fewer monitored ecosystems
-// than homepage slots. Keeping home to a few keeps §01 a teaser, not a hub.
+// than homepage slots. Keeping home to a few keeps section 01 a teaser, not a hub.
 const DEFAULT_FEATURED = new Set(["base", "bankr", "virtuals"]);
 const FEATURED_SLOTS = 3;
 
@@ -35,7 +35,7 @@ export async function LiveIndexes() {
 
   return (
     <section id="live-indexes" className="mx-auto max-w-6xl px-6 py-16 md:py-20 scroll-mt-24">
-      <SectionHeader number="§ 01" label="What we watch" title="Live indexes, read from real evidence.">
+      <SectionHeader number="01" label="What we watch" title="Live indexes, read from real evidence.">
         Each index below is read live from the same reproducible grades the per-network pages show.
       </SectionHeader>
 
