@@ -191,9 +191,9 @@ function registerTools(server: McpServer): void {
     {
       title: "Check a server's published polygraph grade",
       description:
-        "Read a server's published behavioral grade (A-F) from polygraph.so in under a second — " +
+        "Read a server's published behavioral grade (A-F) from polygraph.so in under a second; " +
         "no execution. The pre-flight check before recommending or installing an MCP server. On a " +
-        "miss it returns not_available (unevaluated — neither safe nor unsafe) with next steps.",
+        "miss it returns not_available (unevaluated: neither safe nor unsafe) with next steps.",
       inputSchema: { server_ref: z.string().min(1).max(512).describe(SERVER_REF_DESC) },
       outputSchema: CHECK_OUTPUT,
       annotations: { readOnlyHint: true, openWorldHint: true },
@@ -217,7 +217,7 @@ function registerTools(server: McpServer): void {
       const ver = r.version_match === false ? ` (graded ${d.resolved_version}, not the current version)` : "";
       return dataResult(
         `${server_ref}: grade ${r.polygraph}${ver}. ${cats}. ` +
-          `Report: https://polygraph.so/mcp/${server_ref}. A grade is a measurement, not a guarantee — reproduce it with the open harness.`,
+          `Report: https://polygraph.so/mcp/${server_ref}. A grade is a measurement, not a guarantee; reproduce it with the open harness.`,
         {
           status: "graded",
           server_ref,
