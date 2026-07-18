@@ -86,10 +86,10 @@ export function BuildersTooling() {
 
   return (
     <>
-      {/* § 01 — install & run */}
+      {/* Section 01 — install & run */}
       <section id="install" className="mx-auto max-w-6xl px-6 pb-16 md:pb-20 scroll-mt-24">
         <SectionHeader
-          number="§ 01"
+          number="01"
           label="Install & run"
           title="Run polygraph in your agent, or grade a server from your terminal."
         >
@@ -175,10 +175,10 @@ export function BuildersTooling() {
         </div>
       </section>
 
-      {/* § 02 — gate your CI */}
+      {/* Section 02 — gate your CI */}
       <section id="gate" className="mx-auto max-w-6xl px-6 pb-16 md:pb-20 scroll-mt-24">
         <SectionHeader
-          number="§ 02"
+          number="02"
           label="Gate your CI"
           title="Fail a build when a tool grades D/F."
         >
@@ -207,10 +207,10 @@ export function BuildersTooling() {
         </div>
       </section>
 
-      {/* § 03 — get a badge */}
+      {/* Section 03 — get a badge */}
       <section id="badge" className="mx-auto max-w-6xl px-6 pb-16 md:pb-20 scroll-mt-24">
         <SectionHeader
-          number="§ 03"
+          number="03"
           label="Get a badge"
           title="Show your grade where developers look."
         >
@@ -281,10 +281,10 @@ export function BuildersTooling() {
         </div>
       </section>
 
-      {/* § 04 — manual setup */}
+      {/* Section 04 — manual setup */}
       <section id="manual" className="mx-auto max-w-6xl px-6 pb-4 scroll-mt-24">
         <SectionHeader
-          number="§ 04"
+          number="04"
           label="Manual setup"
           title="One config, every MCP client."
         >

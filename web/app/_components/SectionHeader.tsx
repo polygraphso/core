@@ -1,5 +1,5 @@
 type Props = {
-  number: string; // "§ 02"
+  number: string; // "02"
   label: string; // "How we test"
   title?: string; // optional larger title
   children?: React.ReactNode;

@@ -103,7 +103,7 @@ export default async function AdminPage() {
       <div className="grid gap-6 md:grid-cols-2">
         {/* Waitlist */}
         <Panel
-          label="§1"
+          label="01"
           title="Waitlist"
           note="New emails per day (last 30d), by first_seen_at. Repeat submits count once."
         >
@@ -136,7 +136,7 @@ export default async function AdminPage() {
         </Panel>
 
         {/* Grade requests */}
-        <Panel label="§2" title="Grade-request queue" note="Requests per day (last 30d).">
+        <Panel label="02" title="Grade-request queue" note="Requests per day (last 30d).">
           {grades ? (
             <div className="space-y-5">
               {priorityLane.length > 0 ? (
@@ -199,7 +199,7 @@ export default async function AdminPage() {
         </Panel>
 
         {/* Notify funnel */}
-        <Panel label="§3" title="Notify funnel" note="Requests per day (last 30d).">
+        <Panel label="03" title="Notify funnel" note="Requests per day (last 30d).">
           {notify ? (
             <div className="space-y-5">
               <MiniBars data={notify.perDay} />
@@ -218,7 +218,7 @@ export default async function AdminPage() {
 
         {/* Untracked demand */}
         <Panel
-          label="§4"
+          label="04"
           title="Untracked demand"
           note="CLI checks for servers we don't grade yet. Counter — no time-series."
         >
@@ -237,7 +237,7 @@ export default async function AdminPage() {
 
         {/* Lookup activity */}
         <Panel
-          label="§5"
+          label="05"
           title="Lookup activity"
           note="Every /api/cli/check — hits (a graded server) vs misses. Counter — no time-series."
         >
@@ -264,7 +264,7 @@ export default async function AdminPage() {
 
         {/* Agents */}
         <Panel
-          label="§6"
+          label="06"
           title="Agents"
           note="Who calls /api/cli — MCP clients by handshake identity, CLI, and raw callers by User-Agent. Calls per day (last 30d)."
         >
@@ -299,7 +299,7 @@ export default async function AdminPage() {
 
         {/* Revenue */}
         <Panel
-          label="§7"
+          label="07"
           title="Revenue"
           note="Booked cash per day (last 30d). Prepaid streams count at their full deposit."
         >

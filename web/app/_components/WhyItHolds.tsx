@@ -1,7 +1,7 @@
 import { SectionHeader } from "./SectionHeader";
 
 /**
- * § 02 — why the index is worth trusting: it's continuous (a grade decays, so we
+ * Section 02 — why the index is worth trusting: it's continuous (a grade decays, so we
  * keep grading) and it's unbuyable (a subscription changes what we watch, never
  * the letter). Two paired blockquotes, the /ecosystems figure styling reused so
  * the argument reads the same across surfaces.
@@ -25,7 +25,7 @@ const FIGURES = [
 export function WhyItHolds() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-      <SectionHeader number="§ 02" label="Why it holds" title="Continuous, and impossible to buy." />
+      <SectionHeader number="02" label="Why it holds" title="Continuous, and impossible to buy." />
 
       <div className="grid gap-10 md:grid-cols-2 md:gap-14">
         {FIGURES.map((f) => (

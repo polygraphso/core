@@ -32,7 +32,7 @@ export type CheckResult = CheckGraded | CheckNotAvailable | LookupError;
 const NOTIFY_BASE = "https://polygraph.so/notify";
 
 function notifyUrl(serverRef: string): string {
-  // `/` and `@` are legal in query components (RFC 3986 §3.4) and the brief
+  // `/` and `@` are legal in query components (RFC 3986 section 3.4) and the brief
   // mandates the unencoded form for readability. encodeURIComponent would
   // mangle them into %2F / %40.
   return `${NOTIFY_BASE}?for=${serverRef}`;

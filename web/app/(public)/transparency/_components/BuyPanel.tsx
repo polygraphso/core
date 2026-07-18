@@ -26,7 +26,7 @@ export function BuyPanel() {
     <section className="rounded-[4px] border hairline bg-parchment-50 p-6">
       <div className="grid items-center gap-6 md:grid-cols-[1fr_auto]">
         <div>
-          <p className="section-label mb-1">§4 · Acquire</p>
+          <p className="section-label mb-1">04 · Acquire</p>
           <h2 className="font-serif text-xl text-ink leading-tight">Buy $POLYGRAPH</h2>
           <p className="mt-1.5 max-w-xl text-[13px] text-ink-muted leading-relaxed">
             The team is locked, the treasury is onchain, and the revenue is real and reproducible.

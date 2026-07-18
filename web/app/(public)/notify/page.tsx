@@ -5,8 +5,8 @@
  * → polygraph.so/notify?for=<server_ref>") and from a soon-to-ship MCP tool.
  *
  * Distinct from the landing newsletter (which lives on the homepage). This
- * page is targeted: one ref, one notify request. See landing-brief.md
- * §"Signup lanes (do not blur)" for the separation rule.
+ * page is targeted: one ref, one notify request. See the "Signup lanes (do
+ * not blur)" section of landing-brief.md for the separation rule.
  */
 
 import type { Metadata } from "next";
@@ -48,7 +48,7 @@ export default async function NotifyPage({
       <section className="mx-auto max-w-3xl">
         <div className="border-t hairline pt-6 mb-10">
           <div className="flex items-baseline gap-4">
-            <span className="section-label tabular">§ NOTIFY</span>
+            <span className="section-label tabular">NOTIFY</span>
             <span className="section-label">/</span>
             <span className="section-label">Per-server</span>
           </div>

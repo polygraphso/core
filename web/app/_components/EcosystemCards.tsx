@@ -5,7 +5,7 @@ import { GRADE_HEX } from "@/lib/gradeColors";
 /**
  * The shared live-index card units, read from grade-only hosted_runs rows via
  * each ecosystem's own loader. Both the /ecosystems hub and the ecosystem-first
- * homepage (§ 01) render these, so a card can never drift between the two
+ * homepage (section 01) render these, so a card can never drift between the two
  * surfaces — one source of card truth. Pure render over `EcosystemStats`; no
  * server-only imports, so it composes in any server component.
  */

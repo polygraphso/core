@@ -1,6 +1,6 @@
 /**
  * Published grades for the CLI/lookup, read from `hosted_runs` — the SAME
- * source the website's §03 / hero card read. This is what keeps the CLI
+ * source the website's section 03 / hero card read. This is what keeps the CLI
  * in sync with the site: there is no separate grade store. (The old
  * `behavioral_grades` table is unused — the grader writes hosted_runs.)
  *

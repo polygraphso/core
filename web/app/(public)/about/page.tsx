@@ -42,7 +42,7 @@ function Section({
     <section className="mt-14 first:mt-0">
       <div className="flex items-baseline gap-3 mb-4">
         <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint tabular">
-          §{num}
+          {num}
         </span>
         <h2 className="font-serif text-2xl md:text-3xl text-ink tracking-tight">{label}</h2>
       </div>
