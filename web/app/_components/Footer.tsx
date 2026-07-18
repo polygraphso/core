@@ -64,6 +64,8 @@ export function Footer() {
             <p className="mt-3 text-ink-faint font-sans text-[11.5px] leading-relaxed">
               <code className="text-ink-muted">npm i -g @polygraphso/litmus</code>,
               or <code className="text-ink-muted">npx -p @polygraphso/litmus</code>.
+              Lookups without installing: point an MCP client at{" "}
+              <code className="text-ink-muted">polygraph.so/api/mcp</code>.
             </p>
             <p className="mt-3 font-sans text-[11.5px] leading-relaxed">
               <a

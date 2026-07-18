@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/app/_components/JsonLd";
 import { SITE_ORIGIN, METHODOLOGY_VERSION } from "@/lib/site";
+import { PRIORITY_GRADE_PRICE_USD } from "@/lib/paymentConfig";
 
 export const metadata: Metadata = {
   title: "API",
@@ -130,14 +131,110 @@ export default function ApiDocsPage() {
             <Inline>npx polygraphso check &lt;ref&gt;</Inline>,{" "}
             <Inline>npx polygraphso list</Inline>, and{" "}
             <Inline>npx polygraphso request &lt;ref&gt;</Inline>. The CLI hits
-            these same routes, and so do the polygraph MCP tools
-            (<Inline>check_server</Inline> / <Inline>list_servers</Inline> /{" "}
-            <Inline>request_grade</Inline>, shipped with{" "}
-            <Inline>@polygraphso/litmus</Inline>).
+            these same routes. So does the hosted MCP endpoint just below, the
+            fastest path in for an agent (no install step), and the polygraph
+            MCP tools shipped with <Inline>@polygraphso/litmus</Inline> for
+            local use (<Inline>check_server</Inline> /{" "}
+            <Inline>list_servers</Inline> / <Inline>request_grade</Inline>).
           </p>
         </Section>
 
-        <Section num="02" label="Server-ref format" id="server-ref">
+        <Section num="02" label="MCP endpoint (hosted)" id="mcp-endpoint">
+          <p>
+            The fastest way in for an agent: the same three lookups, served as
+            a hosted MCP server over Streamable HTTP. Any MCP-capable client,
+            an agent, an IDE, a connector directory, reads polygraph grades
+            without installing anything.
+          </p>
+          <Method verb="POST" path="/api/mcp" />
+          <p>
+            Point an MCP client at{" "}
+            <Inline>https://polygraph.so/api/mcp</Inline>. It serves exactly
+            three tools, <Inline>check_server</Inline>,{" "}
+            <Inline>list_servers</Inline>, and <Inline>request_grade</Inline>:
+            the read/queue surface, and nothing that runs a server&rsquo;s
+            code. Grading is deliberately not offered here: it executes the
+            target, which has no place on a hosted, anonymous endpoint. To
+            grade a server yourself, run the open harness (
+            <Inline>npx @polygraphso/litmus</Inline>) locally.
+          </p>
+          <h3 className="font-serif text-lg text-ink mt-6 mb-2">
+            Add it to a client
+          </h3>
+          <Code>
+{`{
+  "mcpServers": {
+    "polygraph": { "url": "https://polygraph.so/api/mcp" }
+  }
+}`}
+          </Code>
+          <p className="text-sm">
+            <span className="text-ink-faint">Note · </span>the tools return
+            the same grades as the HTTP endpoints below; a{" "}
+            <Inline>not_available</Inline> result means unevaluated (neither
+            safe nor unsafe), not a failing grade. For local, one-command
+            grading and the CLI, install the{" "}
+            <a
+              target="_blank" rel="noreferrer" href="https://github.com/polygraphso/litmus"
+              className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
+            >
+              polygraph plugin
+            </a>
+            .
+          </p>
+
+          <h3 className="font-serif text-lg text-ink mt-6 mb-2">
+            Listing without the whole corpus
+          </h3>
+          <p>
+            <Inline>list_servers</Inline> defaults to the first 25 rows
+            (capped at 100 per call), so a single call doesn&rsquo;t spend an
+            agent&rsquo;s whole context budget. Pass <Inline>grade</Inline> to
+            restrict to one letter, and <Inline>limit</Inline> /{" "}
+            <Inline>offset</Inline> to page further.{" "}
+            <Inline>summary</Inline> (a total plus a count per grade) always
+            covers the full graded corpus, regardless of filtering or paging.
+            See{" "}
+            <a
+              href="#list"
+              className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
+            >
+              the full list_servers reference
+            </a>{" "}
+            below for the shared response shape.
+          </p>
+
+          <h3 className="font-serif text-lg text-ink mt-6 mb-2">
+            Paying for a grade request from an agent
+          </h3>
+          <p>
+            <Inline>request_grade</Inline> returns a{" "}
+            <Inline>payment</Inline> object with two ways to pay:{" "}
+            <Inline>payUrl</Inline>, a human/browser checkout paid in
+            $POLYGRAPH, and <Inline>x402Url</Inline>, the agent rail. POST the
+            same request body to <Inline>x402Url</Inline> with an
+            x402-capable client; a bare POST returns a 402 with the exact
+            payment requirements, and a retry with an{" "}
+            <Inline>X-PAYMENT</Inline> header pays the one-time{" "}
+            {`$${PRIORITY_GRADE_PRICE_USD}`} fee in USDC on Base mainnet (
+            <Inline>eip155:8453</Inline>). Paying starts the 48h grading
+            clock. Settlement itself is deferred: the fee is taken only once a
+            grade lands, and a run the harness cannot complete voids the
+            authorization, so nothing is charged. After paying, poll{" "}
+            <Inline>check_server</Inline> with the same{" "}
+            <Inline>server_ref</Inline> for the published result, or poll the
+            response&rsquo;s <Inline>statusUrl</Inline>. See{" "}
+            <a
+              href="#grade-request"
+              className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
+            >
+              the full request_grade reference
+            </a>{" "}
+            below for the settlement mechanics in detail.
+          </p>
+        </Section>
+
+        <Section num="03" label="Server-ref format" id="server-ref">
           <p>
             Every server we track is addressed by a registry-prefixed reference.
             Three variants, each matching its registry's native namespace:
@@ -164,7 +261,7 @@ pypi/mcp-server-fetch`}
           </p>
         </Section>
 
-        <Section num="03" label="Check a server" id="check">
+        <Section num="04" label="Check a server" id="check">
           <Method verb="POST" path="/api/cli/check" />
           <p>
             Looks up one server&rsquo;s published polygraph grade, or a notify
@@ -281,13 +378,39 @@ pypi/mcp-server-fetch`}
           </ul>
         </Section>
 
-        <Section num="04" label="List graded servers" id="list">
+        <Section num="05" label="List graded servers" id="list">
           <Method verb="GET" path="/api/cli/list" />
           <p>
             Returns every server with a published polygraph grade, sorted by
-            grade (A first), then alphabetically. No pagination in v0 — the
-            graded set is small and the payload is well under a megabyte. We'll
-            add pagination here if it grows past that.
+            grade (A first), then alphabetically. With no query params this is
+            the full set, unpaged, matching the original v0 shape. Three
+            optional query params narrow and page it:
+          </p>
+          <ul className="list-none space-y-1 mt-2">
+            <li>
+              <Inline>grade</Inline>
+              <span className="text-ink-faint"> · </span>one of{" "}
+              <Inline>A</Inline>, <Inline>B</Inline>, <Inline>C</Inline>,{" "}
+              <Inline>D</Inline>, <Inline>F</Inline>; restricts the listing to
+              that letter.
+            </li>
+            <li>
+              <Inline>limit</Inline>
+              <span className="text-ink-faint"> · </span>a positive integer.
+              Unset returns every matching row.
+            </li>
+            <li>
+              <Inline>offset</Inline>
+              <span className="text-ink-faint"> · </span>a non-negative
+              integer, rows to skip before taking <Inline>limit</Inline>.
+            </li>
+          </ul>
+          <p>
+            <Inline>summary</Inline> is always computed over the full graded
+            corpus, total plus a count per grade, regardless of{" "}
+            <Inline>grade</Inline>, <Inline>limit</Inline>, or{" "}
+            <Inline>offset</Inline>, so a filtered or paged caller can still
+            see the shape of the whole set.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">
@@ -305,7 +428,11 @@ pypi/mcp-server-fetch`}
       "polygraph": "D"
     }
   ],
-  "total": 6
+  "total": 6,
+  "summary": {
+    "total": 111,
+    "byGrade": { "A": 88, "B": 12, "C": 3, "D": 6, "F": 2 }
+  }
 }`}
           </Code>
           <p className="text-sm">
@@ -318,25 +445,35 @@ pypi/mcp-server-fetch`}
             >
               rubric
             </a>
-            ). Only graded servers appear; check a specific ungraded server
-            with <Inline>/api/cli/check</Inline>.
+            ). <Inline>total</Inline> counts rows matching{" "}
+            <Inline>grade</Inline> before paging (it equals{" "}
+            <Inline>summary.total</Inline> when <Inline>grade</Inline> is
+            omitted). Only graded servers appear; check a specific ungraded
+            server with <Inline>/api/cli/check</Inline>.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">curl</h3>
-          <Code>{`curl https://polygraph.so/api/cli/list`}</Code>
+          <Code>
+{`curl https://polygraph.so/api/cli/list
+
+curl "https://polygraph.so/api/cli/list?grade=A&limit=5"`}
+          </Code>
         </Section>
 
-        <Section num="05" label="Request a grade" id="grade-request">
+        <Section num="06" label="Request a grade" id="grade-request">
           <Method verb="POST" path="/api/cli/grade-request" />
           <p>
-            Records a grade request — the write counterpart to{" "}
-            <Inline>check</Inline>. Recording is free; grading starts once the
-            request&rsquo;s $1 one-time fee is paid (the response carries the
-            payment link — web checkout in $POLYGRAPH, or the x402 endpoint for
-            agents holding USDC on Base), and the grade publishes within 48
-            hours of payment. The fee buys the run, never the grade. Read the
-            result with <Inline>/api/cli/check</Inline>; nothing is returned
-            synchronously.
+            Records a grade request: the write counterpart to{" "}
+            <Inline>check</Inline>. Recording is free. Paying the
+            request&rsquo;s one-time {`$${PRIORITY_GRADE_PRICE_USD}`} fee, via
+            the payment link in the response, starts the 48h grading clock.
+            Two rails: the web checkout settles up front in $POLYGRAPH, while
+            the x402 endpoint (for agents holding USDC on Base) takes an
+            authorization that is charged only once a grade lands; a run the
+            harness cannot complete voids it, so that rail never charges for
+            an incomplete run. The fee buys the run, never the grade. Read
+            the result with <Inline>/api/cli/check</Inline>; nothing is
+            returned synchronously.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">Request</h3>
@@ -373,11 +510,13 @@ pypi/mcp-server-fetch`}
           <p className="text-sm">
             <Inline>payUrl</Inline> is the web checkout (paid in $POLYGRAPH).
             x402-capable clients can instead POST the same body to{" "}
-            <Inline>x402Url</Inline> — a bare request gets a 402 whose{" "}
+            <Inline>x402Url</Inline>: a bare request gets a 402 whose{" "}
             <Inline>payment-required</Inline> header carries the requirements
-            ($1 USDC on Base), and a retry with an <Inline>X-PAYMENT</Inline>{" "}
-            header records the request, settles the fee, and starts the 48h
-            clock in one call.
+            ({`$${PRIORITY_GRADE_PRICE_USD}`} USDC on Base), and a retry with
+            an <Inline>X-PAYMENT</Inline> header records the request,
+            authorizes the fee, and starts the 48h clock. Settlement is
+            deferred to grade delivery, so the authorization is only charged
+            once a grade lands.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">curl</h3>
@@ -405,7 +544,7 @@ pypi/mcp-server-fetch`}
           </ul>
         </Section>
 
-        <Section num="06" label="Versioning" id="versioning">
+        <Section num="07" label="Versioning" id="versioning">
           <p>
             v0 changes are additive. We add fields; we don't remove or rename
             them. A breaking change — a removed field, a renamed key, a changed
@@ -420,7 +559,7 @@ pypi/mcp-server-fetch`}
           </p>
         </Section>
 
-        <Section num="07" label="Stability" id="stability">
+        <Section num="08" label="Stability" id="stability">
           <p>
             These endpoints are the contract the CLI is built against, so the
             URLs and field names are stable. The notify URL pattern (
@@ -441,7 +580,7 @@ pypi/mcp-server-fetch`}
           </p>
         </Section>
 
-        <Section num="08" label="Embeddable badge" id="badge">
+        <Section num="09" label="Embeddable badge" id="badge">
           <p>
             A live grade badge any server can embed — in a README, on npm, or on a
             docs site. Three artifacts, all keyed by the same server ref, all
@@ -475,49 +614,6 @@ pypi/mcp-server-fetch`}
             unencoded in the query string (<Inline>/</Inline> and{" "}
             <Inline>@</Inline> are legal there). Images are cached at the CDN; a
             regrade propagates within the hour.
-          </p>
-        </Section>
-
-        <Section num="09" label="MCP endpoint (hosted)" id="mcp-endpoint">
-          <p>
-            The same three lookups are also exposed as a hosted MCP server over
-            Streamable HTTP, so any MCP-capable client — an agent, an IDE, a
-            connector directory — can read grades without installing anything.
-          </p>
-          <Method verb="POST" path="/api/mcp" />
-          <p>
-            Point an MCP client at{" "}
-            <Inline>https://polygraph.so/api/mcp</Inline>. It serves exactly three
-            tools — <Inline>check_server</Inline>, <Inline>list_servers</Inline>,
-            and <Inline>request_grade</Inline> — the read/queue surface, and
-            nothing that runs a server&rsquo;s code. Grading is deliberately not
-            offered here: it executes the target, which has no place on a hosted,
-            anonymous endpoint. To grade a server yourself, run the open harness
-            (<Inline>npx @polygraphso/litmus</Inline>) locally.
-          </p>
-          <h3 className="font-serif text-lg text-ink mt-6 mb-2">
-            Add it to a client
-          </h3>
-          <Code>
-{`{
-  "mcpServers": {
-    "polygraph": { "url": "https://polygraph.so/api/mcp" }
-  }
-}`}
-          </Code>
-          <p className="text-sm">
-            <span className="text-ink-faint">Note · </span>the tools return the
-            same grades as the HTTP endpoints above; a{" "}
-            <Inline>not_available</Inline> result means unevaluated (neither safe
-            nor unsafe), not a failing grade. For local, one-command grading and
-            the CLI, install the{" "}
-            <a
-              target="_blank" rel="noreferrer" href="https://github.com/polygraphso/litmus"
-              className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
-            >
-              polygraph plugin
-            </a>
-            .
           </p>
         </Section>
 

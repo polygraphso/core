@@ -24,9 +24,10 @@ vi.mock("@/lib/agentIdentity", () => ({
   recordAgentCall: vi.fn(async () => {}),
 }));
 
-import { fetchPublishedGrade } from "@/lib/hostedGrades";
+import { fetchPublishedGrade, fetchPublishedGradeMap } from "@/lib/hostedGrades";
 import { runCheck } from "./check";
 import { runGradeRequest } from "./gradeRequest";
+import { runList } from "./list";
 
 function fakeSupabase(rpc: Mock = vi.fn(async () => ({ data: null, error: null }))) {
   // Minimal chainable .from() so runGradeRequest's post-RPC request-row lookup
@@ -118,5 +119,62 @@ describe("runGradeRequest", () => {
     const r = await runGradeRequest({ serverRef: "" }, { supabase: fakeSupabase(rpc), identity: identity("mcp") });
     expect(r.status).toBe("error");
     expect(rpc).not.toHaveBeenCalled();
+  });
+});
+
+describe("runList", () => {
+  const CORPUS = new Map([
+    ["npm/a-server", "A"],
+    ["npm/b-server", "B"],
+    ["npm/another-a", "A"],
+    ["npm/d-server", "D"],
+  ]);
+
+  beforeEach(() => {
+    vi.mocked(fetchPublishedGradeMap).mockResolvedValue(CORPUS as never);
+  });
+
+  it("returns every server, sorted A-first then by ref, with a summary over the full corpus", async () => {
+    const r = await runList({ supabase: fakeSupabase(), identity: identity("mcp") });
+    if ("error" in r) throw new Error("expected success");
+    expect(r.servers.map((s) => s.server_ref)).toEqual([
+      "npm/a-server",
+      "npm/another-a",
+      "npm/b-server",
+      "npm/d-server",
+    ]);
+    expect(r.total).toBe(4);
+    expect(r.summary).toEqual({ total: 4, byGrade: { A: 2, B: 1, C: 0, D: 1, F: 0 } });
+  });
+
+  it("filters by grade while summary still covers the full corpus", async () => {
+    const r = await runList({ supabase: fakeSupabase(), identity: identity("mcp") }, { grade: "A" });
+    if ("error" in r) throw new Error("expected success");
+    expect(r.servers.map((s) => s.server_ref)).toEqual(["npm/a-server", "npm/another-a"]);
+    expect(r.total).toBe(2);
+    expect(r.summary.total).toBe(4);
+    expect(r.summary.byGrade).toEqual({ A: 2, B: 1, C: 0, D: 1, F: 0 });
+  });
+
+  it("pages the filtered set with limit/offset", async () => {
+    const r = await runList({ supabase: fakeSupabase(), identity: identity("mcp") }, { limit: 2, offset: 1 });
+    if ("error" in r) throw new Error("expected success");
+    expect(r.servers.map((s) => s.server_ref)).toEqual(["npm/another-a", "npm/b-server"]);
+    expect(r.total).toBe(4); // total reflects the (unfiltered) matching set, not the page
+  });
+
+  it("rejects an invalid grade with a 400", async () => {
+    const r = await runList({ supabase: fakeSupabase(), identity: identity("mcp") }, { grade: "Z" as never });
+    expect(r).toMatchObject({ status: "error", code: 400 });
+  });
+
+  it("rejects a non-positive limit with a 400", async () => {
+    const r = await runList({ supabase: fakeSupabase(), identity: identity("mcp") }, { limit: 0 });
+    expect(r).toMatchObject({ status: "error", code: 400 });
+  });
+
+  it("rejects a negative offset with a 400", async () => {
+    const r = await runList({ supabase: fakeSupabase(), identity: identity("mcp") }, { offset: -1 });
+    expect(r).toMatchObject({ status: "error", code: 400 });
   });
 });
