@@ -463,13 +463,16 @@ curl "https://polygraph.so/api/cli/list?grade=A&limit=5"`}
         <Section num="06" label="Request a grade" id="grade-request">
           <Method verb="POST" path="/api/cli/grade-request" />
           <p>
-            Records a grade request — the write counterpart to{" "}
-            <Inline>check</Inline>. Recording is free; grading starts once the
-            request&rsquo;s $1 one-time fee is paid (the response carries the
-            payment link — web checkout in $POLYGRAPH, or the x402 endpoint for
-            agents holding USDC on Base), and the grade publishes within 48
-            hours of payment. The fee buys the run, never the grade. Read the
-            result with <Inline>/api/cli/check</Inline>; nothing is returned
+            Records a grade request: the write counterpart to{" "}
+            <Inline>check</Inline>. Recording is free. Paying the
+            request&rsquo;s one-time {`$${PRIORITY_GRADE_PRICE_USD}`} fee, via
+            the payment link in the response (a web checkout in $POLYGRAPH, or
+            the x402 endpoint for agents holding USDC on Base), authorizes the
+            run and starts the 48h grading clock. Settlement itself is
+            deferred: the fee is taken only once a grade lands, and a run the
+            harness cannot complete never charges. The fee buys the run,
+            never the grade. Read the result with{" "}
+            <Inline>/api/cli/check</Inline>; nothing is returned
             synchronously.
           </p>
 
@@ -507,11 +510,13 @@ curl "https://polygraph.so/api/cli/list?grade=A&limit=5"`}
           <p className="text-sm">
             <Inline>payUrl</Inline> is the web checkout (paid in $POLYGRAPH).
             x402-capable clients can instead POST the same body to{" "}
-            <Inline>x402Url</Inline> — a bare request gets a 402 whose{" "}
+            <Inline>x402Url</Inline>: a bare request gets a 402 whose{" "}
             <Inline>payment-required</Inline> header carries the requirements
-            ($1 USDC on Base), and a retry with an <Inline>X-PAYMENT</Inline>{" "}
-            header records the request, settles the fee, and starts the 48h
-            clock in one call.
+            ({`$${PRIORITY_GRADE_PRICE_USD}`} USDC on Base), and a retry with
+            an <Inline>X-PAYMENT</Inline> header records the request,
+            authorizes the fee, and starts the 48h clock. Settlement is
+            deferred to grade delivery, so the authorization is only charged
+            once a grade lands.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">curl</h3>

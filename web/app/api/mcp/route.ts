@@ -110,7 +110,7 @@ const TOO_MANY = "Too many requests. Please slow down and try again shortly.";
 const CHECK_OUTPUT = {
   status: z.enum(["graded", "not_available"]).describe("Whether a published grade exists."),
   server_ref: z.string(),
-  grade: z.string().optional().describe("A–F, present when status is graded."),
+  grade: z.string().optional().describe("A-F, present when status is graded."),
   categories: z
     .object({ c01: z.string(), c02: z.string(), c03: z.string() })
     .optional()
@@ -191,7 +191,7 @@ function registerTools(server: McpServer): void {
     {
       title: "Check a server's published polygraph grade",
       description:
-        "Read a server's published behavioral grade (A–F) from polygraph.so in under a second — " +
+        "Read a server's published behavioral grade (A-F) from polygraph.so in under a second — " +
         "no execution. The pre-flight check before recommending or installing an MCP server. On a " +
         "miss it returns not_available (unevaluated — neither safe nor unsafe) with next steps.",
       inputSchema: { server_ref: z.string().min(1).max(512).describe(SERVER_REF_DESC) },
@@ -254,9 +254,12 @@ function registerTools(server: McpServer): void {
       const text =
         r.total === 0
           ? "No servers match."
-          : `${r.servers.length} of ${r.total} matching server${r.total === 1 ? "" : "s"} ` +
-            `(full corpus: ${r.summary.total}):\n` +
-            r.servers.map((s) => `${s.polygraph}  ${s.server_ref}`).join("\n");
+          : r.servers.length === 0
+            ? `Offset is past the end: ${r.total} matching server${r.total === 1 ? "" : "s"} ` +
+              `(full corpus: ${r.summary.total}), none left to show at this offset.`
+            : `${r.servers.length} of ${r.total} matching server${r.total === 1 ? "" : "s"} ` +
+              `(full corpus: ${r.summary.total}):\n` +
+              r.servers.map((s) => `${s.polygraph}  ${s.server_ref}`).join("\n");
       return dataResult(text, { total: r.total, servers: r.servers, summary: r.summary });
     },
   );
