@@ -58,6 +58,8 @@ All three pass means A. A skill with no bundle leaves S-04 unverified, so it cap
 
 ## How to query
 
+For an agent, lead with the hosted MCP endpoint: no install, lookups only. Point an MCP client at `https://www.polygraph.so/api/mcp` for `check_server`, `list_servers`, and `request_grade`; `list_servers` defaults to 25 rows (capped at 100 per call) with a `summary` covering the full graded corpus regardless of paging.
+
 CLI (sub-second lookups against published grades):
 
 ```

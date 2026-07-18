@@ -56,7 +56,9 @@ All three pass means A. A skill with no bundle leaves S-04 unverified, so it cap
 
 ## How to query
 
-The fast path is the CLI. Lookups are sub-second against published grades:
+For an agent, the fastest path is the hosted MCP endpoint: no install, lookups only. Point an MCP client at `https://www.polygraph.so/api/mcp` for `check_server`, `list_servers`, and `request_grade`.
+
+The CLI is the fast path for a human at a terminal. Lookups are sub-second against published grades:
 
 ```
 npx polygraphso check npm/@modelcontextprotocol/server-filesystem
@@ -73,7 +75,7 @@ curl -X POST https://www.polygraph.so/api/cli/check \
 curl https://www.polygraph.so/api/cli/list
 ```
 
-MCP tools (`check_server`, `list_servers`, `request_grade`, plus running the harness itself) ship with the open npm package `@polygraphso/litmus`.
+The MCP tools, plus running the harness itself (`run_litmus`, local only, never hosted), ship with the open npm package `@polygraphso/litmus`.
 
 ## Server-ref format
 
