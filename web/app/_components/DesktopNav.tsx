@@ -3,10 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { NAV_ITEMS, type NavItem, type MegaMenu } from "./navConfig";
 
-// The desktop primary nav: four triggers that each open a shared, centered
+// The desktop primary nav: five triggers that each open a shared, centered
 // mega-menu on hover or keyboard focus. SiteHeader stays a server component; this
-// is the client island that owns the open/close state. Below `sm` it renders
-// nothing (MobileNav handles small screens).
+// is the client island that owns the open/close state. Below `lg` it renders
+// nothing (MobileNav handles small screens): the five mono labels + gaps run
+// ~565px wide, which overflows the centered grid row until the viewport clears
+// ~1024px, so the desktop nav only appears at `lg`.
 //
 // The panel is positioned against the <header> (the nearest positioned ancestor),
 // so it drops flush under the whole navbar and stays centered regardless of which
@@ -43,7 +45,7 @@ export function DesktopNav() {
   const active = NAV_ITEMS.find((n) => n.key === open) ?? null;
 
   return (
-    <div className="hidden sm:block">
+    <div className="hidden lg:block">
       <nav
         aria-label="Primary"
         className="flex items-center gap-7 font-mono text-[12px] uppercase tracking-[0.14em]"

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { NAV_ITEMS, type NavItem } from "./navConfig";
 import { useAuthUser, identityOf, accountItems, signOutAndRedirect } from "./useAuthUser";
 
-// Mobile header + navigation. Below `sm` the desktop mega-menus and account slot
+// Mobile header + navigation. Below `lg` the desktop mega-menus and account slot
 // are hidden, so this is the whole navigation: a bordered hamburger that toggles
 // a full-width slide-down sheet. The sheet leads with the signed-in identity,
 // then each primary section as an accordion carrying the same content the desktop
@@ -59,7 +59,7 @@ export function MobileNav() {
   }
 
   return (
-    <div className="sm:hidden">
+    <div className="lg:hidden">
       <button
         type="button"
         aria-label={open ? "Close menu" : "Open menu"}
