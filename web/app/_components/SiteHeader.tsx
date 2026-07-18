@@ -29,8 +29,8 @@ export function SiteHeader() {
         <DesktopNav />
 
         <div className="col-start-3 flex items-center justify-self-end gap-4 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-muted">
-          {/* Desktop shows the account slot inline; on mobile it moves into the sheet. */}
-          <div className="hidden items-center sm:flex">
+          {/* Desktop shows the account slot inline; below `lg` it moves into the sheet. */}
+          <div className="hidden items-center lg:flex">
             <AuthSlot />
           </div>
           <MobileNav />
