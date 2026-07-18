@@ -179,9 +179,9 @@ const REQUEST_OUTPUT = {
       asset: z.string().describe("The token the x402 rail expects: USDC."),
     })
     .describe(
-      "How grading is paid for. Settlement is deferred: the fee is taken only once a grade lands, and a " +
-        "run the harness cannot complete voids the authorization, so nothing is charged. The fee buys the " +
-        "run, never the grade.",
+      "How grading is paid for. The web checkout settles up front in $POLYGRAPH; the x402 rail takes an " +
+        "authorization that is charged only once a grade lands, and a run the harness cannot complete " +
+        "voids it, so nothing is charged. The fee buys the run, never the grade.",
     ),
 };
 
@@ -274,9 +274,9 @@ function registerTools(server: McpServer): void {
         `USD fee is paid: payment.payUrl is the human/browser checkout (paid in $POLYGRAPH), and ` +
         `payment.x402Url is the agent rail, POST the same request body there with an x402-capable ` +
         `client. A bare POST to x402Url returns a 402 with the exact payment requirements; retry ` +
-        `with an X-PAYMENT header. Asset is USDC on Base mainnet (eip155:8453). Settlement is ` +
-        `deferred: the fee is taken only once a grade lands, and a run the harness cannot complete ` +
-        `voids the authorization, so nothing is charged. Paying starts a 48h grading clock. The fee ` +
+        `with an X-PAYMENT header. Asset is USDC on Base mainnet (eip155:8453). On the x402 rail ` +
+        `settlement is deferred: the authorization is charged only once a grade lands, and a run the ` +
+        `harness cannot complete voids it, so nothing is charged. Paying starts a 48h grading clock. The fee ` +
         `buys the run, never the grade. After paying, poll check_server with the same server_ref for ` +
         `the published result, or poll statusUrl for progress.`,
       inputSchema: { server_ref: z.string().min(1).max(512).describe(SERVER_REF_DESC) },
@@ -298,8 +298,8 @@ function registerTools(server: McpServer): void {
         : payment.payUrl
           ? `Grading starts once the one-time $${payment.usdPrice} fee is paid. Pay at ${payment.payUrl}, ` +
             `or POST this request body with an X-PAYMENT header to ${payment.x402Url} ` +
-            `($${payment.usdPrice} USDC on Base). The fee settles only once a grade lands, so an ` +
-            `incomplete run is never charged. Check back with check_server${pollHint}.`
+            `($${payment.usdPrice} USDC on Base). On the x402 rail the fee settles only once a grade ` +
+            `lands, so an incomplete run is never charged. Check back with check_server${pollHint}.`
           : `Check back with check_server${pollHint}.`;
       return dataResult(
         `${lead}: ${server_ref} (${r.demand} request${r.demand === 1 ? "" : "s"} so far). ${next}`,

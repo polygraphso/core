@@ -466,14 +466,14 @@ curl "https://polygraph.so/api/cli/list?grade=A&limit=5"`}
             Records a grade request: the write counterpart to{" "}
             <Inline>check</Inline>. Recording is free. Paying the
             request&rsquo;s one-time {`$${PRIORITY_GRADE_PRICE_USD}`} fee, via
-            the payment link in the response (a web checkout in $POLYGRAPH, or
-            the x402 endpoint for agents holding USDC on Base), authorizes the
-            run and starts the 48h grading clock. Settlement itself is
-            deferred: the fee is taken only once a grade lands, and a run the
-            harness cannot complete never charges. The fee buys the run,
-            never the grade. Read the result with{" "}
-            <Inline>/api/cli/check</Inline>; nothing is returned
-            synchronously.
+            the payment link in the response, starts the 48h grading clock.
+            Two rails: the web checkout settles up front in $POLYGRAPH, while
+            the x402 endpoint (for agents holding USDC on Base) takes an
+            authorization that is charged only once a grade lands; a run the
+            harness cannot complete voids it, so that rail never charges for
+            an incomplete run. The fee buys the run, never the grade. Read
+            the result with <Inline>/api/cli/check</Inline>; nothing is
+            returned synchronously.
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">Request</h3>
