@@ -54,7 +54,7 @@ export function HowWeTest() {
       className="mx-auto max-w-6xl px-6 py-20 md:py-28 scroll-mt-12"
     >
       <SectionHeader
-        number="§ 03"
+        number="03"
         label="How we polygraph"
         title="How a tool earns its grade."
       >

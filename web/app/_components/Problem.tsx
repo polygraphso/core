@@ -3,7 +3,7 @@ import { SectionHeader } from "./SectionHeader";
 export function Problem() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-      <SectionHeader number="§ 01" label="The problem" />
+      <SectionHeader number="01" label="The problem" />
       <div className="grid md:grid-cols-12 gap-10 md:gap-16">
         <div className="md:col-span-8">
           {/* The hero subhead now states the problem — this section keeps

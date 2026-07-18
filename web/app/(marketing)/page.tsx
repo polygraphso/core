@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 };
 
 // ISR so grades published after the last deploy surface without a redeploy.
-// The § 01 live-index numbers read hosted_runs through the ecosystem loaders.
+// The section 01 live-index numbers read hosted_runs through the ecosystem loaders.
 export const revalidate = 600;
 
 // Ecosystem-first homepage (design direction 2a): lead with continuous

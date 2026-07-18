@@ -50,7 +50,7 @@ function Section({
     <section id={id} className="mt-16 first:mt-0 scroll-mt-24">
       <div className="flex items-baseline gap-3 mb-5">
         <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-faint tabular">
-          §{num}
+          {num}
         </span>
         <h2 className="font-serif text-2xl md:text-3xl text-ink tracking-tight">
           {label}
@@ -100,7 +100,7 @@ export default function MethodologyPage() {
               href="#skills"
               className="text-ink not-italic hover:text-oxblood transition-colors border-b hairline border-dotted"
             >
-              §08
+              section 08
             </a>
             .
           </p>
@@ -346,7 +346,7 @@ export default function MethodologyPage() {
           </p>
           <figure className="border hairline bg-parchment-50 mt-2">
             <figcaption className="px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-              Grade rubric · litmus-v16 §5
+              Grade rubric · litmus-v16, section 5
             </figcaption>
             <table className="w-full text-left text-sm">
               <thead>

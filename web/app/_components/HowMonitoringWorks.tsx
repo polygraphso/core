@@ -1,7 +1,7 @@
 import { SectionHeader } from "./SectionHeader";
 
 /**
- * § 03 — the monitoring engagement in three beats. The same open harness on a
+ * Section 03 — the monitoring engagement in three beats. The same open harness on a
  * clock: re-grade the whole index, detect what moved against the prior run, and
  * alert the team before users see it. Framed as the offering, set up per network.
  */
@@ -27,7 +27,7 @@ const STEPS = [
 export function HowMonitoringWorks() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
-      <SectionHeader number="§ 03" label="How monitoring works" title="Re-grade, detect, alert." />
+      <SectionHeader number="03" label="How monitoring works" title="Re-grade, detect, alert." />
 
       <div className="grid gap-4 md:grid-cols-3">
         {STEPS.map((s) => (

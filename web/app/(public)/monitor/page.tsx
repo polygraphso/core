@@ -75,7 +75,7 @@ export default async function MonitorPage({
       <section className="mx-auto max-w-3xl">
         <div className="border-t hairline pt-6 mb-10">
           <div className="flex items-baseline gap-4">
-            <span className="section-label tabular">§ MONITOR</span>
+            <span className="section-label tabular">MONITOR</span>
             <span className="section-label">/</span>
             <span className="section-label">New-version alerts</span>
           </div>
