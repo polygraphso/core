@@ -22,6 +22,18 @@ const GRADE_CMD =
 const ANY_CLIENT_CMD = "npx -y -p @polygraphso/litmus polygraphso-litmus-mcp";
 const CLAUDE_CODE_CMD = "/plugin install polygraph@polygraphso";
 
+// The hosted lookup endpoint: zero install, grade lookups only. Distinct
+// from the local litmus MCP server above: this one carries no run_litmus,
+// by design (grading executes the target's code, which has no place on a
+// hosted, anonymous endpoint).
+const HOSTED_MCP_URL = "https://polygraph.so/api/mcp";
+const HOSTED_CLI_CMD = `claude mcp add --transport http polygraph ${HOSTED_MCP_URL}`;
+const HOSTED_CONFIG_JSON = `{
+  "mcpServers": {
+    "polygraph": { "url": "${HOSTED_MCP_URL}" }
+  }
+}`;
+
 // The GitHub Action (composite, marketplace handle polygraphso/litmus@v1) that
 // fails a build when an MCP server or a bundled skill grades D/F.
 const GATE_WORKFLOW_YAML = `# .github/workflows/mcp-gate.yml
@@ -86,7 +98,30 @@ export function BuildersTooling() {
           gate your CI on it.
         </SectionHeader>
 
-        <div className="grid md:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Hosted endpoint: zero install, lookups only */}
+          <div className="border hairline bg-parchment-50 p-5 flex flex-col">
+            <p className="section-label mb-3">Hosted</p>
+            <Command
+              cmd={HOSTED_CLI_CMD}
+              copied={copied === "hosted-cli"}
+              onCopy={() => copy("hosted-cli", HOSTED_CLI_CMD)}
+            />
+            <div className="mt-3">
+              <Command
+                cmd={HOSTED_CONFIG_JSON}
+                prefix=""
+                copied={copied === "hosted-config"}
+                onCopy={() => copy("hosted-config", HOSTED_CONFIG_JSON)}
+              />
+            </div>
+            <p className="mt-3 font-mono text-[11px] text-ink-faint leading-relaxed">
+              Zero install, for grade lookups. Lookups only:{" "}
+              <span className="text-ink-muted">run_litmus</span> stays local
+              by design.
+            </p>
+          </div>
+
           {/* Cursor — one-click */}
           <div className="border hairline bg-parchment-50 p-5 flex flex-col">
             <p className="section-label mb-3">Cursor</p>
