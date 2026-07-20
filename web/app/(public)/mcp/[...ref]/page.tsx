@@ -399,6 +399,22 @@ function Graded({
         })}
       </dl>
 
+      {/* Remote-coverage disclosure: a skipped category on a remote target is
+          a coverage limit of remote grading, not a fault found in the server. */}
+      {isRemoteKey(serverKey) && (detail.c02?.startsWith("skip") || detail.c03?.startsWith("skip")) ? (
+        <p className="mt-3 font-mono text-[11px] text-ink-faint leading-relaxed">
+          A skipped category here is a coverage limit of remote grading, not a
+          fault found. See{" "}
+          <Link
+            href="/methodology#rubric"
+            className="text-ink-muted border-b hairline border-dotted hover:text-oxblood transition-colors"
+          >
+            why a remote server caps at B
+          </Link>
+          .
+        </p>
+      ) : null}
+
       {fp ? (
         <p className="mt-3 font-mono text-[11px] text-ink-faint">
           tool-defs fingerprint · <span className="text-ink-muted">{fp}</span>

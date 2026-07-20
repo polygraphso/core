@@ -32,7 +32,7 @@ const methodologyJsonLd = {
 };
 
 // Faithful rendering of litmus-test.md (polygraphso/hosted-service repo) — the
-// authoritative methodologyVersion: "litmus-v16" spec. Content edits belong
+// authoritative methodologyVersion: "litmus-v17" spec. Content edits belong
 // in the spec first; this page mirrors it.
 
 function Section({
@@ -83,7 +83,7 @@ export default function MethodologyPage() {
         <JsonLd data={methodologyJsonLd} />
         <header className="mb-14">
           <p className="section-label mb-4">
-            Methodology · litmus-v16 · specification
+            Methodology · litmus-v17 · specification
           </p>
           <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
             The litmus test
@@ -92,7 +92,7 @@ export default function MethodologyPage() {
             A behavioral evaluation of an MCP server — what it{" "}
             <em>does</em> when exercised the way an agent would, not what its
             README says. The string{" "}
-            <Inline>methodologyVersion: &quot;litmus-v16&quot;</Inline> travels
+            <Inline>methodologyVersion: &quot;litmus-v17&quot;</Inline> travels
             with every grade this spec produces. The same lab also grades{" "}
             <strong className="text-ink not-italic">Agent Skills</strong> under a
             separate static methodology, <Inline>litmus-skill-v2</Inline> —{" "}
@@ -126,7 +126,7 @@ export default function MethodologyPage() {
           <SubHead>What a passing grade does — and does not — claim</SubHead>
           <p>
             It <strong className="text-ink">does</strong> claim: against{" "}
-            <Inline>litmus-v16</Inline>, on the exact tool surface identified by
+            <Inline>litmus-v17</Inline>, on the exact tool surface identified by
             the fingerprint, the server did not exhibit the failure modes
             below, and the evidence is published and re-runnable.
           </p>
@@ -299,6 +299,14 @@ export default function MethodologyPage() {
             sandbox, 4.2 degrades to output-scan only and is annotated as
             such.
           </p>
+          <p>
+            The canaries only work if the harness runs the server itself:
+            they are seeded into the server&rsquo;s own arguments, working
+            directory, and environment. A remote MCP URL is a server the
+            harness does not run, so there is nowhere to seed a canary.
+            Probe 4.1, and with it C-03 as a whole, is recorded as{" "}
+            <Inline>skipped — remote target</Inline> (a skip is not a pass).
+          </p>
 
           <SubHead>C-04 — Adversarial input handling · probes 3.1, 3.2</SubHead>
           <p>
@@ -346,7 +354,7 @@ export default function MethodologyPage() {
           </p>
           <figure className="border hairline bg-parchment-50 mt-2">
             <figcaption className="px-4 py-2.5 border-b hairline font-mono text-[10.5px] uppercase tracking-[0.18em] text-ink-faint">
-              Grade rubric · litmus-v16, section 5
+              Grade rubric · litmus-v17, section 5
             </figcaption>
             <table className="w-full text-left text-sm">
               <thead>
@@ -363,9 +371,10 @@ export default function MethodologyPage() {
                 <tr className="border-b hairline align-top">
                   <td className="px-4 py-3 font-serif text-xl text-grade-b">B</td>
                   <td className="px-4 py-3">
-                    C-01, C-03, and C-04 pass; C-02 <Inline>skipped</Inline> (no
-                    sandbox or remote target). Egress was not verified —
-                    capped by design.
+                    C-01 and C-04 pass; C-02 <Inline>skipped</Inline> (no
+                    sandbox or remote target), and on a remote target C-03 is
+                    skipped too. The unverified categories are named in the
+                    rationale; a skip is not a pass.
                   </td>
                 </tr>
                 <tr className="border-b hairline align-top">
@@ -408,6 +417,15 @@ export default function MethodologyPage() {
             refuses a C rather than trust an unexercised powerful surface. Every
             grade carries its reasons in the evidence bundle.
           </p>
+          <p>
+            A remote server caps at B for a specific, disclosed reason. The
+            harness reaches it over the network the same way an agent would,
+            but it cannot wrap a URL it does not run in the egress sandbox,
+            and it cannot seed canaries into a process it does not control.
+            Two categories, C-02 and C-03, go unverified as a result. This is
+            a coverage limit, not a defect found in the server: the grade
+            names exactly what it tested and what it could not.
+          </p>
         </Section>
 
         <Section num="05" label="Reproducibility" id="reproducibility">
@@ -417,7 +435,7 @@ export default function MethodologyPage() {
           <ul className="list-none space-y-3">
             <li>
               <strong className="text-ink">Deterministic harness.</strong>{" "}
-              Same server version + same <Inline>litmus-v16</Inline> harness →
+              Same server version + same <Inline>litmus-v17</Inline> harness →
               same findings. The bait, jailbreak, and malformed batteries are
               varied but fixed — no randomness in probe verdicts; timestamps
               and environment are recorded, not baked in.
@@ -439,7 +457,7 @@ export default function MethodologyPage() {
             <li>
               <strong className="text-ink">Re-runnable.</strong> Anyone — a
               skeptic, a counterparty, a future independent verifier — can
-              re-run <Inline>litmus-v16</Inline> against the same server and
+              re-run <Inline>litmus-v17</Inline> against the same server and
               compare fingerprint and grade. A false grade is falsifiable, not
               merely disputable.
             </li>
@@ -507,13 +525,13 @@ export default function MethodologyPage() {
 
         <Section num="07" label="Versioning" id="versioning">
           <p>
-            This page documents <Inline>litmus-v16</Inline>. Probes evolve as
+            This page documents <Inline>litmus-v17</Inline>. Probes evolve as
             agents do; new failure modes get new probe IDs within their
             family. A change that alters pass/fail semantics bumps the
             methodology version. Every evidence bundle and every attestation
             embeds the methodology version that produced it, so a grade is
             always tied to the spec it was measured against — earlier{" "}
-            <Inline>litmus-v1</Inline>…<Inline>v15</Inline>{" "}
+            <Inline>litmus-v1</Inline>…<Inline>v16</Inline>{" "}
             grades stay valid as
             their own version&rsquo;s results.
           </p>

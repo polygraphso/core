@@ -2,7 +2,7 @@
 
 > Independent behavioral trust grades for MCP servers, AI agents, and Claude Code / Agent Skills. This is the expanded companion to https://www.polygraph.so/llms.txt: the same facts plus the grading model, the trust model, and the API in full.
 
-Synced to methodologyVersion litmus-v16 and litmus-skill-v2 on 2026-07-13. If this file disagrees with https://www.polygraph.so/methodology, the methodology page wins.
+Synced to methodologyVersion litmus-v17 and litmus-skill-v2 on 2026-07-20. If this file disagrees with https://www.polygraph.so/methodology, the methodology page wins.
 
 ## What polygraph is
 
@@ -14,31 +14,31 @@ All published grades: https://www.polygraph.so/mcp-index
 Per-server reports: `https://www.polygraph.so/mcp/<server-ref>` (e.g. https://www.polygraph.so/mcp/npm/@playwright/mcp)
 Per-skill reports: `https://www.polygraph.so/skill/<skill-path>`
 
-## The litmus test (methodologyVersion: litmus-v16)
+## The litmus test (methodologyVersion: litmus-v17)
 
 Ten probes across four categories. Probe IDs are permanent.
 
 - **C-01 Tool-output injection**: do the server's tool descriptions or outputs try to hijack the calling agent? Covers static tool-description scans, dynamic bait calls, second-order chaining (one tool's output weaponized as another's input), and indirect passthrough injection. Looks for instruction mimicry, hidden unicode, markdown and link tricks. Any failure floors the grade at F.
 - **C-02 Permission / egress overreach**: outbound network beyond the server's declared or baseline allowlist, matched on host and port, observed in a hardened default-deny sandbox with a sinkhole; plus a declared-permission honesty check (a server claiming to be read-only must behave read-only). Failure means grade D. For remote servers, or when Docker is unavailable, the egress check is recorded as skipped, not a pass, and the grade caps at B.
-- **C-03 Sensitive-data handling**: per-run-unique planted canaries (fake keys, PII strings, bearer tokens) must not surface in tool outputs or egress. Any failure floors the grade at F.
+- **C-03 Sensitive-data handling**: per-run-unique planted canaries (fake keys, PII strings, bearer tokens) must not surface in tool outputs or egress. Any failure floors the grade at F. The canaries are seeded into the server's own arguments, working directory, and environment; a remote server, one the harness does not run, cannot be seeded, so C-03 is recorded as skipped there too, not a pass.
 - **C-04 Adversarial-input handling**: on malformed, oversized, and jailbreak inputs the server must not crash, leak internals (a stack trace), or amplify the hostile input. Failure means grade D.
 
 ## The grade scale (A, B, C, D, F; E is skipped)
 
 - **A**: all four categories pass, on the exact tool surface identified by the fingerprint.
-- **B**: C-01, C-03, and C-04 pass; C-02 was skipped (no sandbox, or a remote target). Egress was not verified; the grade is capped by design and says so honestly.
+- **B**: C-01 and C-04 pass; C-02 was skipped (no sandbox, or a remote target), and on a remote target C-03 is skipped too. The unverified categories are named in the rationale; a skip is not a pass, and the grade is capped by design and says so honestly.
 - **C**: the coverage cap, live since litmus-v16. A powerful server the harness could neither sandbox nor exercise: an unexercised destructive or value-moving tool together with a category (typically egress) left unverified. That coverage is too thin to clear as B, so the default agent gate refuses a C rather than trust an unexercised powerful surface.
 - **D**: a C-02 or C-04 failure (egress overreach, a read-only lie, or a crash / internals leak / amplification) with no C-01 or C-03 failure. Serious, but not proven exfiltration.
 - **F**: any C-01 or C-03 failure: active injection or a data leak. The failures that directly harm an agent that trusts the server.
 
-What a passing grade claims: against litmus-v16, on the exact tool surface identified by the fingerprint, the server did not exhibit these failure modes, and the evidence is published and re-runnable. What it does not claim: that the server is safe in every configuration, forever, or against attacks outside the probed surface. A grade is a dated, versioned, reproducible observation, nothing more.
+What a passing grade claims: against litmus-v17, on the exact tool surface identified by the fingerprint, the server did not exhibit these failure modes, and the evidence is published and re-runnable. What it does not claim: that the server is safe in every configuration, forever, or against attacks outside the probed surface. A grade is a dated, versioned, reproducible observation, nothing more.
 
 ## What makes a grade trustworthy
 
-- **Deterministic harness.** Same server version plus same litmus-v16 harness yields the same findings. The bait, jailbreak, and malformed batteries are varied but fixed: no randomness in probe verdicts.
+- **Deterministic harness.** Same server version plus same litmus-v17 harness yields the same findings. The bait, jailbreak, and malformed batteries are varied but fixed: no randomness in probe verdicts.
 - **Tool-defs fingerprint.** The canonicalized tool surface is hashed (sha256) to a bytes32. The grade certifies that exact surface. If the server later changes a tool description (a rug pull), the fingerprint no longer matches and the grade is stale by construction. Consumers recompute the live fingerprint before trusting.
 - **Published evidence.** The full evidence bundle, every finding and artifact, travels with the grade.
-- **Re-runnable.** Anyone can re-run litmus-v16 against the same server and compare fingerprint and grade. A false grade is falsifiable, not merely disputable.
+- **Re-runnable.** Anyone can re-run litmus-v17 against the same server and compare fingerprint and grade. A false grade is falsifiable, not merely disputable.
 
 Two independent trust properties, stated plainly:
 - **Forgeability** (can the runner fake the result?) is addressed by reproducibility today and by independently verifiable grade records and hardware-attested runs on the roadmap.
