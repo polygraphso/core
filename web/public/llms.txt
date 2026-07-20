@@ -2,7 +2,7 @@
 
 > Independent behavioral trust grades for MCP servers, AI agents, and Claude Code / Agent Skills. We run MCP servers through the litmus test, a reproducible behavioral harness that connects the way an agent would and watches what the server actually does, and we statically grade skills (a SKILL.md plus bundle) for prompt injection, exfiltration instructions, and dangerous bundled code. Every grade is published with its evidence. Not vendor self-claims, not gameable user reviews. No graded party pays us or gets review or approval rights over their grade.
 
-Synced to methodologyVersion litmus-v16 and litmus-skill-v2 on 2026-07-13. If this file disagrees with https://www.polygraph.so/methodology, the methodology page wins.
+Synced to methodologyVersion litmus-v17 and litmus-skill-v2 on 2026-07-20. If this file disagrees with https://www.polygraph.so/methodology, the methodology page wins.
 
 ## What we produce
 
@@ -12,13 +12,13 @@ Published grades are live now. The full set, servers and skills, is at https://w
 
 For each **skill** we grade, we publish a report at `https://www.polygraph.so/skill/<skill-path>`: a static safety grade from a deterministic scan of the skill's bytes, anchored by a **content hash**, a sha256 of the whole skill directory. The grade certifies those exact bytes; a consumer re-hashes the skill before installing and refuses on mismatch (the same rug-pull guard a server fingerprint gives). A skill A means static-clean, not "safe to run unsupervised": it is not behavioral proof. Each skill grade is paired with a separate, advisory quality signal (well-formed / issues / malformed), never a letter, never minted.
 
-## The litmus test (methodologyVersion: litmus-v16)
+## The litmus test (methodologyVersion: litmus-v17)
 
 Ten probes across four categories:
 
 - **C-01 Tool-output injection**: do the server's tool descriptions or outputs try to hijack the calling agent, including one tool's output weaponized as another's input and indirect passthrough injection? Static scan, dynamic bait calls, and second-order chaining for instruction mimicry, hidden unicode, markdown and link tricks. Fail means grade F.
 - **C-02 Permission / egress overreach**: outbound network beyond the server's declared or baseline allowlist (matched on host and port) in a hardened default-deny sandbox, plus a declared-permission honesty check. Fail means grade D. For remote servers, or without Docker, the egress check is recorded as skipped, not a pass, and the grade caps at B.
-- **C-03 Sensitive-data handling**: planted canaries (fake keys, PII strings, bearer tokens) must not surface in outputs or egress. Fail means grade F.
+- **C-03 Sensitive-data handling**: planted canaries (fake keys, PII strings, bearer tokens) must not surface in outputs or egress. Fail means grade F. Canaries are seeded into the server's own arguments, working directory, and environment, so a remote server, one the harness does not run, cannot be seeded: C-03 is recorded as skipped there too, not a pass.
 - **C-04 Adversarial-input handling**: on malformed, oversized, and jailbreak inputs the server must not crash, leak internals (a stack trace), or amplify the hostile input. Fail means grade D.
 
 ## The grade scale
@@ -26,7 +26,7 @@ Ten probes across four categories:
 Five grades are reachable: A, B, C, D, F. The scale skips E, as letter grades conventionally do. C became a live grade in litmus-v16.
 
 - **A**: all four categories pass.
-- **B**: C-01, C-03, and C-04 pass; C-02 was skipped (no sandbox, or a remote target). Egress was not verified, so the grade is capped by design.
+- **B**: C-01 and C-04 pass; C-02 was skipped (no sandbox, or a remote target), and on a remote target C-03 is skipped too. The unverified categories are named in the rationale; a skip is not a pass.
 - **C**: the coverage cap. A powerful server the harness could neither sandbox nor exercise: an unexercised destructive or value-moving tool together with a category (typically egress) left unverified. The default agent gate refuses a C.
 - **D**: a C-02 or C-04 failure (egress overreach, a read-only lie, or a crash / internals leak / amplification) with no C-01 or C-03 failure.
 - **F**: any C-01 or C-03 failure. Active injection or a data leak.
