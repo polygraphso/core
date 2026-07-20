@@ -14,7 +14,7 @@
 export const SITE_ORIGIN = "https://www.polygraph.so";
 
 /** Current server-harness methodology version (mirrors litmus). */
-export const METHODOLOGY_VERSION = "litmus-v16";
+export const METHODOLOGY_VERSION = "litmus-v17";
 
 /** Current skill-litmus methodology version (mirrors litmus). */
 export const SKILL_METHODOLOGY_VERSION = "litmus-skill-v2";
