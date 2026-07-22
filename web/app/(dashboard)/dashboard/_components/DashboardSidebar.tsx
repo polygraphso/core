@@ -29,6 +29,7 @@ const ACCOUNT_NAV: NavItem = {
 const ADMIN_NAV: NavItem[] = [
   { href: "/admin", label: "Metrics", active: (p) => p === "/admin" },
   { href: "/admin/revenue", label: "Revenue", active: (p) => p.startsWith("/admin/revenue") },
+  { href: "/admin/streams", label: "Streams", active: (p) => p.startsWith("/admin/streams") },
   { href: "/admin/grade-requests", label: "Grade requests", active: (p) => p.startsWith("/admin/grade-requests") },
   { href: "/admin/attestations", label: "Attestations", active: (p) => p.startsWith("/admin/attestations") },
   { href: "/admin/twitter", label: "Twitter", active: (p) => p.startsWith("/admin/twitter") },

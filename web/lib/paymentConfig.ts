@@ -317,6 +317,34 @@ export const SABLIER_LOCKUP_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  // Claim surface (admin streams console). withdrawMax is payable: v4 charges a
+  // native fee on withdraw (calculateMinFeeWei) that must ride as msg.value.
+  // It reverts with WithdrawalAddressNotRecipient unless `to` is the stream's
+  // recipient, which is what lets a low-value ops key trigger claims safely.
+  {
+    inputs: [{ internalType: "uint256", name: "streamId", type: "uint256" }],
+    name: "withdrawableAmountOf",
+    outputs: [{ internalType: "uint128", name: "withdrawableAmount", type: "uint128" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [{ internalType: "uint256", name: "streamId", type: "uint256" }],
+    name: "calculateMinFeeWei",
+    outputs: [{ internalType: "uint256", name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      { internalType: "uint256", name: "streamId", type: "uint256" },
+      { internalType: "address", name: "to", type: "address" },
+    ],
+    name: "withdrawMax",
+    outputs: [{ internalType: "uint128", name: "withdrawnAmount", type: "uint128" }],
+    stateMutability: "payable",
+    type: "function",
+  },
   // Sender-only: stops the stream, refunds the unstreamed remainder to the
   // payer. The client calls this from the cancel button; the server then
   // re-reads statusOf and flips the payment row.
