@@ -183,8 +183,8 @@ export default async function DashboardPage() {
           <a href="/mcp-index" className={HEAD_LINK}>
             Browse grades →
           </a>
-          <a href="/request" className={HEAD_LINK}>
-            Request a grade →
+          <a href="/builders#install" className={HEAD_LINK}>
+            Run the harness →
           </a>
         </div>
       </header>

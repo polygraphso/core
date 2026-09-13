@@ -1,61 +1,50 @@
 import type { Metadata } from "next";
-import { getSession } from "@/lib/session";
-import { RequestForm } from "./_components/RequestForm";
 
 export const metadata: Metadata = {
   title: "Request a grade",
   description:
-    "Ask us to run the litmus battery on an MCP server you care about. $1 in $POLYGRAPH per server or skill, graded within 48 hours of payment.",
+    "Hosted grading is discontinued. Existing published grades remain on the site. To grade a server yourself, run the open harness.",
   alternates: { canonical: "/request" },
   openGraph: {
     title: "Request a grade · polygraph.so",
     description:
-      "Ask us to run the litmus battery on an MCP server you care about. $1 per server or skill, graded within 48 hours of payment.",
+      "Hosted grading is discontinued. Existing published grades remain on the site.",
     url: "/request",
   },
 };
 
-// Public by design: this is the only funnel for getting an ungraded server
-// graded (the /mcp-index CTA and every ungraded report page point here), so it
-// must work without an account. A signed-in session just pre-fills the email;
-// a ?target= (from an ungraded report's CTA) pre-fills the server.
-export default async function RequestPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ target?: string }>;
-}) {
-  const session = await getSession();
-
-  const { target } = await searchParams;
-  const initialTarget = typeof target === "string" ? target.slice(0, 512) : "";
-
+export default function RequestPage() {
   return (
-      <div className="mx-auto max-w-3xl">
-        <header className="mb-10">
-          <p className="section-label mb-4">Request a grade · $1 · 48h</p>
-          <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
-            Request a grade.
-          </h1>
-          <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug">
-            Want a server graded that isn&rsquo;t up yet? Request it, pay the $1
-            fee in $POLYGRAPH, and it&rsquo;s graded within 48 hours. The fee
-            buys the run, never the grade &mdash; and every grade stays
-            reproducible with the open harness.
-          </p>
-        </header>
-
-        <RequestForm sessionEmail={session?.email ?? null} initialTarget={initialTarget} />
-
-        <p className="mt-8 font-mono text-[11px] text-ink-faint leading-relaxed">
-          Just want to hear about new grades in general?{" "}
-          <a
-            href="/#updates"
-            className="text-ink-muted border-b hairline border-dotted hover:text-ink transition-colors"
-          >
-            Subscribe on the homepage
-          </a>{" "}
-          instead &mdash; one email per publishing drop.
+    <div className="mx-auto max-w-3xl">
+      <header className="mb-10">
+        <p className="section-label mb-4">Hosted grading · discontinued</p>
+        <h1 className="font-serif text-4xl md:text-5xl text-ink tracking-tight leading-[1.05]">
+          Hosted grading is discontinued.
+        </h1>
+        <p className="mt-5 font-serif italic text-ink-muted text-lg md:text-xl leading-snug">
+          We are no longer accepting grade requests or running the operator-hosted
+          battery. Existing published grades stay on the site, with the same
+          evidence and the same one-command re-run.
         </p>
-      </div>
+      </header>
+
+      <p className="text-ink-muted leading-relaxed max-w-xl">
+        To grade a server yourself, run the open harness:
+      </p>
+      <pre className="mt-4 overflow-x-auto rounded-sm border hairline bg-parchment-50 px-4 py-3 font-mono text-[12.5px] leading-relaxed text-ink">
+        <code>npx -y -p @polygraphso/litmus polygraphso-litmus litmus &lt;server&gt;</code>
+      </pre>
+      <p className="mt-6 text-ink-muted leading-relaxed max-w-xl">
+        Setup and examples:{" "}
+        <a href="/builders#install" className="text-ink border-b hairline border-dotted hover:text-oxblood">
+          builders
+        </a>
+        . Browse what is already published on the{" "}
+        <a href="/mcp-index" className="text-ink border-b hairline border-dotted hover:text-oxblood">
+          index
+        </a>
+        .
+      </p>
+    </div>
   );
 }

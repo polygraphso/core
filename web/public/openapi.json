@@ -3,7 +3,7 @@
   "info": {
     "title": "polygraph",
     "version": "1.0.0",
-    "description": "Independent A–F behavioral trust grades for MCP servers. The harness connects to a server the way an agent would, fingerprints its tool surface, and probes for tool-output injection, unexpected egress, planted-data leaks, and adversarial-input handling; grades publish as reproducible EAS attestations on Base. The x402 endpoint below is the agent rail for commissioning a grade: settlement is deferred — the $1 settles only when a grade lands, and a run the harness can't complete is never charged. The fee buys the run, never the grade.",
+    "description": "Independent A–F behavioral trust grades for MCP servers. Hosted grading is discontinued; published grades remain available via the lookup API. To grade a server yourself, run the open harness.",
     "contact": {
       "email": "hello@polygraph.so"
     }
@@ -13,12 +13,8 @@
     "/api/x402/grade-request": {
       "post": {
         "operationId": "requestGrade",
-        "summary": "Commission a behavioral grade for an MCP server ($1 USDC via x402 on Base)",
-        "description": "Records a grade request and starts grading immediately; the 48h deadline is the outer promise, not the schedule. x402 v2 exact scheme (USDC on Base, EIP-3009). Settlement is deferred: the payment authorization is verified and held, and the $1 settles only when a grade (A–F) publishes. Poll the statusUrl from the response to follow the run.",
-        "x-payment-info": {
-          "protocols": ["x402"],
-          "price": { "mode": "fixed", "currency": "USD", "amount": "1.00" }
-        },
+        "summary": "Hosted grading is discontinued",
+        "description": "Returns 410 Gone. Operator-run hosted grading is no longer offered. Existing published grades remain available. To grade a server yourself, run the open harness: npx -y -p @polygraphso/litmus polygraphso-litmus litmus <server>.",
         "requestBody": {
           "required": true,
           "content": {
@@ -50,25 +46,18 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Payment authorization verified; grading started. The $1 settles only when the grade lands.",
+          "410": {
+            "description": "Gone — hosted grading is discontinued. No payment is accepted.",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "string", "examples": ["grading"] },
-                    "requestId": { "type": "string" },
-                    "charged": { "type": "boolean" },
-                    "statusUrl": { "type": "string" },
-                    "deadlineAt": { "type": "string" }
+                    "error": { "type": "string" }
                   }
                 }
               }
             }
-          },
-          "402": {
-            "description": "Payment required — the x402 v2 challenge rides the Payment-Required header (accepts: $1.00 exact-scheme USDC on Base to the polygraph treasury, plus the bazaar discovery declaration)."
           }
         }
       }

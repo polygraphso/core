@@ -6,8 +6,8 @@
  * The binary is `polygraphso` (the npm name; `polygraph` was already taken).
  * The product noun is still "polygraph" in all human-facing copy.
  *
- * Commands: `check`, `list`, `request`. `login`, `watch` land with the
- * onboarding session.
+ * Commands: `check`, `list`, and a discontinued `request`. `login`, `watch`
+ * land with the onboarding session.
  */
 
 import { readFileSync } from "node:fs";
@@ -23,19 +23,17 @@ const HELP = [
   "",
   "usage:",
   "  polygraphso check <registry>/<owner>/<name>",
-  "  polygraphso request <registry>/<owner>/<name>",
   "  polygraphso list [--json]",
   "  polygraphso --version",
   "  polygraphso --help",
   "",
   "examples:",
   "  polygraphso check npm/@modelcontextprotocol/server-filesystem",
-  "  polygraphso request pypi/mcp-server-git",
   "  polygraphso check github/owner/repo",
   "  polygraphso list",
   "  polygraphso list --json",
   "",
-  "`request` adds an ungraded server to the public grading queue (free).",
+  "Hosted grading is discontinued. Grade a server yourself with the open harness.",
   "More at https://polygraph.so",
 ].join("\n");
 

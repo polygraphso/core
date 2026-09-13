@@ -5,6 +5,10 @@ import { gateKnownMcp, isCatalogedServer } from "@/lib/knownMcp";
 import { recordAgentCall } from "@/lib/agentIdentity";
 import { PRIORITY_GRADE_PRICE_USD } from "@/lib/paymentConfig";
 import { SITE_ORIGIN } from "@/lib/site";
+import {
+  HOSTED_GRADING_DISABLED,
+  HOSTED_GRADING_SUNSET_MESSAGE,
+} from "@/lib/hostedGradingSunset";
 import type { LookupContext, LookupError } from "./types";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -52,6 +56,10 @@ export async function runGradeRequest(
   input: GradeRequestInput,
   ctx: LookupContext,
 ): Promise<GradeRequestResult> {
+  if (HOSTED_GRADING_DISABLED) {
+    return { status: "error", code: 410, error: HOSTED_GRADING_SUNSET_MESSAGE };
+  }
+
   const serverRef = input.serverRef;
   if (serverRef.length === 0) {
     return { status: "error", code: 400, error: "server_ref is required." };

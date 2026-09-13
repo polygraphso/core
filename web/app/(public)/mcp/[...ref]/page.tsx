@@ -534,16 +534,15 @@ function Ungraded({
           Notify me when it&rsquo;s graded
         </Link>
         <Link
-          href={`/request?target=${encodeURIComponent(serverKey)}`}
+          href="/builders#install"
           className="inline-flex items-center gap-2 border hairline px-5 py-3 font-mono text-sm tracking-wide text-ink-muted hover:text-ink transition-colors"
         >
-          Request a grade now
+          Grade it yourself
         </Link>
       </div>
 
       <p className="mt-3 font-mono text-[11px] text-ink-faint">
-        $1 in $POLYGRAPH per server, graded within 48h of payment. The fee buys the run, never the
-        grade.
+        Hosted grading is discontinued. Run the open harness locally to grade this server.
       </p>
 
       <AdoptionSignals adoption={adoption} />

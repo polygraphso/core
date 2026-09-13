@@ -23,14 +23,14 @@ export function FixCta({ target, kind }: { target: string; kind: "mcp" | "skill"
         {kind === "mcp" ? (
           <>
             {" "}
-            Shipped a fix?{" "}
+            Shipped a fix? Re-run the open harness locally —{" "}
             <Link
-              href="/request"
+              href="/builders#install"
               className="text-ink-muted border-b hairline border-dotted hover:text-ink transition-colors"
             >
-              Request a re-grade
-            </Link>{" "}
-            — the harness re-runs against the new version.
+              builders
+            </Link>
+            .
           </>
         ) : null}
       </p>

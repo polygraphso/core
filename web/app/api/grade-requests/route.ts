@@ -22,6 +22,10 @@ import { gateKnownMcp, isCatalogedServer } from "@/lib/knownMcp";
 import { enforceRateLimit, honeypotTripped } from "@/lib/rateLimit";
 import { getSession } from "@/lib/session";
 import { fetchLatestRunOutcome, isBlockedByRecentFailure } from "@/lib/gradeability";
+import {
+  HOSTED_GRADING_DISABLED,
+  HOSTED_GRADING_SUNSET_MESSAGE,
+} from "@/lib/hostedGradingSunset";
 
 const TARGET_MAX_LEN = 512;
 const NOTE_MAX_LEN = 2000;
@@ -29,6 +33,10 @@ const EMAIL_MAX_LEN = 254;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export async function POST(request: Request) {
+  if (HOSTED_GRADING_DISABLED) {
+    return NextResponse.json({ ok: false, message: HOSTED_GRADING_SUNSET_MESSAGE }, { status: 410 });
+  }
+
   const limited = await enforceRateLimit(request, "grade-requests", { max: 10, windowSeconds: 60 });
   if (limited) return limited;
 

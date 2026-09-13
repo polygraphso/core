@@ -1,10 +1,7 @@
 name: Fulfill grade requests
 
-# Hourly drain of the public grade-request queue: reconcile requests whose
-# grading run finished (complete + email the requester on publish; decline on
-# failure), then enqueue the oldest queued requests onto the hosted runner's
-# free auto-publish lane (capped per pass — the box grades serially).
-# Offset from alerts.yml (:23) so the two jobs don't contend.
+# Hourly drain of the public grade-request queue. Hosted grading is
+# discontinued — this workflow is parked until the VPS is torn down.
 
 on:
   schedule:
@@ -17,6 +14,7 @@ concurrency:
 
 jobs:
   fulfill:
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

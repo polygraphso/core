@@ -84,13 +84,11 @@ function EntryRow({
   slug,
   vm,
   onChanged,
-  onGradeFired,
   locked,
 }: {
   slug: string;
   vm: EcosystemEntryVM;
   onChanged: () => void;
-  onGradeFired: (id: string) => void;
   /** Unpaid ecosystem: list is visible, everything that mutates or is paid is not. */
   locked?: boolean;
 }) {
@@ -106,14 +104,6 @@ function EntryRow({
       body: JSON.stringify(body),
     }).catch(() => {});
     setBusy(false);
-    onChanged();
-  }
-
-  async function regrade() {
-    setBusy(true);
-    const res = await fetch(`/api/manage/${slug}/entries/${vm.id}/regrade`, { method: "POST" });
-    setBusy(false);
-    if (res.ok) onGradeFired(vm.id);
     onChanged();
   }
 
@@ -175,9 +165,10 @@ function EntryRow({
                   {vm.featured ? "unfeature" : "feature"}
                 </button>
                 <button
-                  onClick={regrade}
-                  disabled={busy || !vm.target}
-                  className="text-ink-muted hover:text-oxblood transition-colors disabled:opacity-50"
+                  type="button"
+                  disabled
+                  title="Hosted grading is discontinued"
+                  className="text-ink-faint cursor-not-allowed"
                 >
                   regrade
                 </button>
@@ -442,7 +433,6 @@ export function EntriesManager({
                   slug={slug}
                   vm={vm}
                   onChanged={refresh}
-                  onGradeFired={watchEntry}
                   locked={locked}
                 />
               ))}

@@ -39,19 +39,15 @@ type ApiResponse =
 const GRADES = new Set(["A", "B", "C", "D", "F"]);
 
 /**
- * The "not available yet" block: what it means plus the two things you can do —
- * queue a grade, or (when the API offers it) grade it yourself now — then the
- * notify outlet. `displayUrl` is the scheme-stripped notify URL.
+ * The "not available yet" block: what it means plus self-grade (when the API
+ * offers it) and the notify outlet. Hosted request-a-grade is discontinued.
  */
 function formatNotAvailable(
-  ref: string,
+  _ref: string,
   body: { self_grade?: string },
   displayUrl: string,
 ): string {
-  const lines = [
-    "→ not available yet",
-    `→ request a grade → polygraphso request ${ref}`,
-  ];
+  const lines = ["→ not available yet"];
   if (body.self_grade) lines.push(`→ grade it now → ${body.self_grade}`);
   lines.push(`→ notify me → ${displayUrl}`);
   return lines.join("\n");

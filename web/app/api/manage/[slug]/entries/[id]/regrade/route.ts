@@ -7,12 +7,14 @@
 import { guardManage, gradeBudgetExceeded, fireGradeForEntry } from "@/lib/manageApi";
 import { getSupabaseAdmin } from "@/lib/supabase";
 import type { EcosystemEntryRow } from "@/lib/ecosystemTypes";
+import { hostedGradingGoneResponse, HOSTED_GRADING_DISABLED } from "@/lib/hostedGradingSunset";
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ slug: string; id: string }> },
 ) {
   const { slug, id } = await params;
+  if (HOSTED_GRADING_DISABLED) return hostedGradingGoneResponse();
   const guard = await guardManage(slug);
   if (guard instanceof Response) return guard;
   const { access } = guard;
