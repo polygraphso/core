@@ -7,12 +7,13 @@
  */
 
 import { SITE_ORIGIN } from "@/lib/site";
+import { HOSTED_GRADING_DISABLED } from "@/lib/hostedGradingSunset";
 
 export async function GET() {
   return Response.json(
     {
       version: 1,
-      resources: [`${SITE_ORIGIN}/api/x402/grade-request`],
+      resources: HOSTED_GRADING_DISABLED ? [] : [`${SITE_ORIGIN}/api/x402/grade-request`],
     },
     { headers: { "cache-control": "public, max-age=3600" } },
   );

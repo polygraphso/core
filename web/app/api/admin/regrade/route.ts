@@ -9,8 +9,11 @@
  * decoupled — POST returns the runner's 202 + job id, the client polls GET.
  */
 import { hostedRunnerConfig, postGrade, getGradeStatus, type RunnerKind } from "@/lib/hostedRunner";
+import { hostedGradingGoneResponse, HOSTED_GRADING_DISABLED } from "@/lib/hostedGradingSunset";
 
 export async function POST(request: Request) {
+  if (HOSTED_GRADING_DISABLED) return hostedGradingGoneResponse();
+
   let body: { target?: unknown; kind?: unknown };
   try {
     body = (await request.json()) as { target?: unknown; kind?: unknown };
@@ -37,6 +40,8 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  if (HOSTED_GRADING_DISABLED) return hostedGradingGoneResponse();
+
   const id = new URL(request.url).searchParams.get("id");
   if (!id) return Response.json({ error: "id is required" }, { status: 400 });
 

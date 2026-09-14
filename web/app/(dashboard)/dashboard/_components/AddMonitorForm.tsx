@@ -16,7 +16,7 @@ export function AddMonitorForm() {
   const [upgradeUrl, setUpgradeUrl] = useState<string | null>(null);
   const router = useRouter();
 
-  async function submitRef(server_ref: string, opts: { alreadyGraded: boolean; isSkill: boolean }) {
+  async function submitRef(server_ref: string, opts: { alreadyGraded: boolean }) {
     setStatus("loading");
     setMessage("");
     setUpgradeUrl(null);
@@ -40,22 +40,11 @@ export function AddMonitorForm() {
       return;
     }
 
-    // Queue a grade request for an ungraded SERVER so the monitor has something to
-    // alert on. Skills go through a different grading path (and the monitor engine
-    // grades a github target it's watching), so skip it for skills.
-    if (!opts.isSkill && !opts.alreadyGraded) {
-      await fetch("/api/grade-requests", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target: server_ref }),
-      }).catch(() => {});
-    }
-
     setStatus("success");
     setMessage(
       opts.alreadyGraded
         ? "Monitor added. We'll email you when its grade changes."
-        : "Monitor added. We'll email you when the grade is ready.",
+        : "Monitor added. Hosted grading is discontinued — we'll email you if a published grade appears.",
     );
     setValue("");
     setSkillValue("");
@@ -65,7 +54,7 @@ export function AddMonitorForm() {
   function onSubmitServer(e: React.FormEvent) {
     e.preventDefault();
     if (!value.trim()) return;
-    submitRef(normalizeServerRef(value), { alreadyGraded: false, isSkill: false });
+    submitRef(normalizeServerRef(value), { alreadyGraded: false });
   }
 
   function submitSkill(normalized: string) {
@@ -74,7 +63,7 @@ export function AddMonitorForm() {
       setMessage("Pick a skill from the list, or paste github/owner/repo#skill or a SKILL.md URL.");
       return;
     }
-    submitRef(normalized, { alreadyGraded: false, isSkill: true });
+    submitRef(normalized, { alreadyGraded: false });
   }
 
   function onSubmitSkill(e: React.FormEvent) {
@@ -125,8 +114,8 @@ export function AddMonitorForm() {
               <ServerCombobox
                 value={value}
                 onValueChange={(v) => { setValue(v); setStatus("idle"); setMessage(""); }}
-                onSelectResult={(r: ComboboxResult) => submitRef(r.target, { alreadyGraded: r.graded, isSkill: false })}
-                onSubmitFreeform={(normalized) => submitRef(normalized, { alreadyGraded: false, isSkill: false })}
+                onSelectResult={(r: ComboboxResult) => submitRef(r.target, { alreadyGraded: r.graded })}
+                onSubmitFreeform={(normalized) => submitRef(normalized, { alreadyGraded: false })}
                 searchKind="npm,pypi"
                 placeholder="@scope/name or pypi/name"
                 disabled={status === "loading"}
@@ -146,7 +135,7 @@ export function AddMonitorForm() {
               <ServerCombobox
                 value={skillValue}
                 onValueChange={(v) => { setSkillValue(v); setStatus("idle"); setMessage(""); }}
-                onSelectResult={(r: ComboboxResult) => submitRef(r.target, { alreadyGraded: r.graded, isSkill: true })}
+                onSelectResult={(r: ComboboxResult) => submitRef(r.target, { alreadyGraded: r.graded })}
                 onSubmitFreeform={(normalized) => submitSkill(normalized)}
                 searchUrl="/api/skills/search"
                 normalize={normalizeSkillInput}

@@ -23,9 +23,6 @@ const TONE: Record<RequestTone, string> = {
   dead: "text-ink-faint border-rule",
 };
 
-const HEAD_LINK =
-  "font-mono text-[11px] uppercase tracking-[0.1em] text-ink-muted hover:text-oxblood transition-colors border-b border-dotted border-rule pb-0.5";
-
 function fmt(date: string | null) {
   if (!date) return "—";
   return new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -41,17 +38,11 @@ export default async function UserRequestsPage() {
     <main className="px-6 sm:px-10 py-12">
       <header className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <h1 className="font-serif text-3xl md:text-4xl text-ink tracking-tight">Requests</h1>
-        <a href="/request" className={HEAD_LINK}>
-          Request a grade →
-        </a>
       </header>
 
       {requests.length === 0 ? (
         <p className="text-sm text-ink-muted">
-          You haven&apos;t requested any grades yet.{" "}
-          <a href="/request" className="text-oxblood hover:underline">
-            Request one →
-          </a>
+          You haven&apos;t requested any grades yet. Hosted grading is discontinued.
         </p>
       ) : (
         <div className="border hairline overflow-hidden">

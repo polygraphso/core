@@ -78,7 +78,7 @@
     },
     {
       "name": "request_grade",
-      "description": "Add an ungraded MCP server to polygraph.so's public grading queue (free, best-effort). Read the result later with check_server. Only real, plausibly-MCP targets are accepted.",
+      "description": "Hosted grading is discontinued. This tool returns gone. Existing published grades remain available via check_server / list_servers. To grade a server yourself, run the open harness.",
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": false,

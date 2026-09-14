@@ -15,6 +15,8 @@ function fakeBuilder(table: string) {
   b.eq = chain;
   b.in = chain;
   b.is = chain;
+  b.order = chain;
+  b.limit = chain;
   b.update = (values: Record<string, unknown>) => {
     state.updates.push({ table, values });
     return b;
@@ -36,6 +38,10 @@ vi.mock("@/lib/hostedRunner", () => ({
 }));
 vi.mock("@/lib/serverRef", () => ({ refToPath: (k: string) => k }));
 vi.mock("@/lib/skillGrades", () => ({ skillRefToPath: (t: string) => t.replace("#", "/") }));
+vi.mock("@/lib/x402Fee", () => ({
+  settleAuthorizedFeePayment: async () => ({ state: "no_authorization" }),
+  voidAuthorizedFeePayment: async () => {},
+}));
 
 import { pollAndReconcile } from "./paidGrading";
 

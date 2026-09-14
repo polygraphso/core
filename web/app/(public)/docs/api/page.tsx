@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/app/_components/JsonLd";
 import { SITE_ORIGIN, METHODOLOGY_VERSION } from "@/lib/site";
-import { PRIORITY_GRADE_PRICE_USD } from "@/lib/paymentConfig";
 
 export const metadata: Metadata = {
   title: "API",
   description:
-    "Public HTTP endpoints behind the polygraphso CLI. POST /api/cli/check looks up a server's polygraph grade; GET /api/cli/list returns every graded server; POST /api/cli/grade-request queues an ungraded server.",
+    "Public HTTP endpoints behind the polygraphso CLI. POST /api/cli/check looks up a server's polygraph grade; GET /api/cli/list returns every graded server. Hosted grade requests are discontinued.",
   alternates: { canonical: "/docs/api" },
   openGraph: {
     title: "API · polygraph.so",
     description:
-      "Public HTTP endpoints behind the polygraphso CLI: check a grade, list every graded server, queue a grade request. No auth.",
+      "Public HTTP endpoints behind the polygraphso CLI: check a grade, list every graded server. Hosted grade requests are discontinued.",
     url: "/docs/api",
   },
 };
@@ -21,7 +20,7 @@ const apiJsonLd = {
   "@type": "APIReference",
   headline: "polygraph.so public API",
   description:
-    "Public HTTP endpoints behind the polygraphso CLI. POST /api/cli/check looks up a server's polygraph grade; GET /api/cli/list returns every graded server; POST /api/cli/grade-request queues an ungraded server.",
+    "Public HTTP endpoints behind the polygraphso CLI. POST /api/cli/check looks up a server's polygraph grade; GET /api/cli/list returns every graded server. Hosted grade requests are discontinued.",
   url: `${SITE_ORIGIN}/docs/api`,
   mainEntityOfPage: `${SITE_ORIGIN}/docs/api`,
   author: { "@id": `${SITE_ORIGIN}/#org` },
@@ -128,14 +127,13 @@ export default function ApiDocsPage() {
           </ul>
           <p>
             Prefer the CLI for ergonomics:{" "}
-            <Inline>npx polygraphso check &lt;ref&gt;</Inline>,{" "}
-            <Inline>npx polygraphso list</Inline>, and{" "}
-            <Inline>npx polygraphso request &lt;ref&gt;</Inline>. The CLI hits
-            these same routes. So does the hosted MCP endpoint just below, the
-            fastest path in for an agent (no install step), and the polygraph
-            MCP tools shipped with <Inline>@polygraphso/litmus</Inline> for
-            local use (<Inline>check_server</Inline> /{" "}
-            <Inline>list_servers</Inline> / <Inline>request_grade</Inline>).
+            <Inline>npx polygraphso check &lt;ref&gt;</Inline> and{" "}
+            <Inline>npx polygraphso list</Inline>. The CLI hits these same
+            routes. So does the hosted MCP endpoint just below, the fastest
+            path in for an agent (no install step), and the polygraph MCP tools
+            shipped with <Inline>@polygraphso/litmus</Inline> for local use (
+            <Inline>check_server</Inline> / <Inline>list_servers</Inline>).
+            Hosted <Inline>request_grade</Inline> is discontinued.
           </p>
         </Section>
 
@@ -151,11 +149,11 @@ export default function ApiDocsPage() {
             Point an MCP client at{" "}
             <Inline>https://polygraph.so/api/mcp</Inline>. It serves exactly
             three tools, <Inline>check_server</Inline>,{" "}
-            <Inline>list_servers</Inline>, and <Inline>request_grade</Inline>:
-            the read/queue surface, and nothing that runs a server&rsquo;s
-            code. Grading is deliberately not offered here: it executes the
-            target, which has no place on a hosted, anonymous endpoint. To
-            grade a server yourself, run the open harness (
+            <Inline>list_servers</Inline>, and <Inline>request_grade</Inline>.
+            {" "}
+            <Inline>request_grade</Inline> now returns gone: hosted grading is
+            discontinued. The read surface is unchanged. To grade a server
+            yourself, run the open harness (
             <Inline>npx @polygraphso/litmus</Inline>) locally.
           </p>
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">
@@ -205,32 +203,14 @@ export default function ApiDocsPage() {
           </p>
 
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">
-            Paying for a grade request from an agent
+            Hosted grade requests
           </h3>
           <p>
-            <Inline>request_grade</Inline> returns a{" "}
-            <Inline>payment</Inline> object with two ways to pay:{" "}
-            <Inline>payUrl</Inline>, a human/browser checkout paid in
-            $POLYGRAPH, and <Inline>x402Url</Inline>, the agent rail. POST the
-            same request body to <Inline>x402Url</Inline> with an
-            x402-capable client; a bare POST returns a 402 with the exact
-            payment requirements, and a retry with an{" "}
-            <Inline>X-PAYMENT</Inline> header pays the one-time{" "}
-            {`$${PRIORITY_GRADE_PRICE_USD}`} fee in USDC on Base mainnet (
-            <Inline>eip155:8453</Inline>). Paying starts the 48h grading
-            clock. Settlement itself is deferred: the fee is taken only once a
-            grade lands, and a run the harness cannot complete voids the
-            authorization, so nothing is charged. After paying, poll{" "}
-            <Inline>check_server</Inline> with the same{" "}
-            <Inline>server_ref</Inline> for the published result, or poll the
-            response&rsquo;s <Inline>statusUrl</Inline>. See{" "}
-            <a
-              href="#grade-request"
-              className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
-            >
-              the full request_grade reference
-            </a>{" "}
-            below for the settlement mechanics in detail.
+            <Inline>request_grade</Inline> is discontinued. The tool remains
+            registered so existing clients do not break on a missing name; it
+            returns gone. Grade a server yourself with the open harness (
+            the <Inline>self_grade</Inline> command on a{" "}
+            <Inline>check_server</Inline> miss).
           </p>
         </Section>
 
@@ -335,21 +315,14 @@ pypi/mcp-server-fetch`}
 {`{
   "status": "not_available",
   "notify_url": "https://polygraph.so/notify?for=npm/some-owner/some-package",
-  "message": "No published polygraph for npm/some-owner/some-package yet — treat it as unevaluated (neither safe nor unsafe). To get it graded, call request_grade ($1 one-time fee; graded within 48h of payment), or grade it yourself now with the self_grade command.",
+  "message": "No published polygraph for npm/some-owner/some-package yet — treat it as unevaluated (neither safe nor unsafe). Hosted grading is discontinued; grade it yourself with the self_grade command.",
   "self_grade": "npx -y -p @polygraphso/litmus polygraphso-litmus litmus npm/some-owner/some-package"
 }`}
           </Code>
           <p className="text-sm">
             <Inline>message</Inline> spells out the next steps for an agent;{" "}
             <Inline>self_grade</Inline> is a one-shot command to run the open
-            litmus yourself; to queue it instead, see{" "}
-            <a
-              href="#grade-request"
-              className="text-ink hover:text-oxblood transition-colors border-b hairline border-dotted"
-            >
-              request a grade
-            </a>
-            . A miss bumps an anonymous demand counter so we can see which
+            litmus yourself. Hosted grade requests are discontinued. A miss bumps an anonymous demand counter so we can see which
             ungraded servers are most in demand. No request body is logged
             beyond the ref itself.
           </p>
@@ -463,85 +436,20 @@ curl "https://polygraph.so/api/cli/list?grade=A&limit=5"`}
         <Section num="06" label="Request a grade" id="grade-request">
           <Method verb="POST" path="/api/cli/grade-request" />
           <p>
-            Records a grade request: the write counterpart to{" "}
-            <Inline>check</Inline>. Recording is free. Paying the
-            request&rsquo;s one-time {`$${PRIORITY_GRADE_PRICE_USD}`} fee, via
-            the payment link in the response, starts the 48h grading clock.
-            Two rails: the web checkout settles up front in $POLYGRAPH, while
-            the x402 endpoint (for agents holding USDC on Base) takes an
-            authorization that is charged only once a grade lands; a run the
-            harness cannot complete voids it, so that rail never charges for
-            an incomplete run. The fee buys the run, never the grade. Read
-            the result with <Inline>/api/cli/check</Inline>; nothing is
-            returned synchronously.
+            Discontinued. This endpoint, the x402 rail, and the website checkout
+            all return <Inline>410 Gone</Inline>. Existing published grades are
+            unchanged; look them up with <Inline>/api/cli/check</Inline>. To
+            grade a server yourself, run the open harness:
           </p>
-
-          <h3 className="font-serif text-lg text-ink mt-6 mb-2">Request</h3>
           <Code>
-{`{
-  "server_ref": "npm/some-owner/some-package",
-  "source": "cli",               // optional: "cli" (default) or "mcp"
-  "agent_id": "claude-code/2.1", // optional: calling client, name/version
-  "agent_meta": { "capabilities": ["sampling"] } // optional, like /check
-  // "email": "you@example.com"  // optional: get notified when the grade lands
-}`}
+{`npx -y -p @polygraphso/litmus polygraphso-litmus litmus npm/some-owner/some-package`}
           </Code>
-          <p className="text-sm">
-            No contact details required — agents have no inbox, so the queue
-            records who asked (<Inline>agent_id</Inline>) instead. Requesting
-            the same server twice is a no-op, not a duplicate.
-          </p>
-
           <h3 className="font-serif text-lg text-ink mt-6 mb-2">Response</h3>
           <Code>
 {`{
-  "status": "queued",
-  "created": true,   // false when the target was already recorded
-  "demand": 3,       // requests standing behind this target
-  "requestId": "3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b",
-  "payment": {
-    "required": true,          // false once the fee is paid
-    "usdPrice": 1,
-    "payUrl": "https://www.polygraph.so/request/priority/3f2a1b4c-…",
-    "x402Url": "https://www.polygraph.so/api/x402/grade-request"
-  }
+  "error": "Hosted grading is discontinued. Existing published grades remain available. To grade a server yourself, run the open harness: npx -y -p @polygraphso/litmus polygraphso-litmus litmus <server>."
 }`}
           </Code>
-          <p className="text-sm">
-            <Inline>payUrl</Inline> is the web checkout (paid in $POLYGRAPH).
-            x402-capable clients can instead POST the same body to{" "}
-            <Inline>x402Url</Inline>: a bare request gets a 402 whose{" "}
-            <Inline>payment-required</Inline> header carries the requirements
-            ({`$${PRIORITY_GRADE_PRICE_USD}`} USDC on Base), and a retry with
-            an <Inline>X-PAYMENT</Inline> header records the request,
-            authorizes the fee, and starts the 48h clock. Settlement is
-            deferred to grade delivery, so the authorization is only charged
-            once a grade lands.
-          </p>
-
-          <h3 className="font-serif text-lg text-ink mt-6 mb-2">curl</h3>
-          <Code>
-{`curl -X POST https://polygraph.so/api/cli/grade-request \\
-  -H 'content-type: application/json' \\
-  -d '{"server_ref":"npm/some-owner/some-package"}'`}
-          </Code>
-
-          <h3 className="font-serif text-lg text-ink mt-6 mb-2">Errors</h3>
-          <ul className="list-none space-y-1 text-sm">
-            <li>
-              <Inline>400</Inline> — missing or malformed{" "}
-              <Inline>server_ref</Inline> (or an invalid{" "}
-              <Inline>email</Inline>).
-            </li>
-            <li>
-              <Inline>429</Inline> — rate limited (per-IP). Back off and retry
-              after the <Inline>Retry-After</Inline> interval.
-            </li>
-            <li>
-              <Inline>500</Inline> — the write failed server-side. Safe to
-              retry (idempotent per target).
-            </li>
-          </ul>
         </Section>
 
         <Section num="07" label="Versioning" id="versioning">

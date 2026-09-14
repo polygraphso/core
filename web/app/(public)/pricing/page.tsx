@@ -4,7 +4,6 @@ import {
   DEFAULT_MONTHLY_PRICE_USD,
   PLAN_PRICES_USD,
   PLAN_QUOTAS,
-  PRIORITY_GRADE_PRICE_USD,
   YEARLY_BILLED_MONTHS,
 } from "@/lib/paymentConfig";
 
@@ -44,16 +43,16 @@ const TIERS: Tier[] = [
   },
   {
     name: "Grading",
-    price: `$${PRIORITY_GRADE_PRICE_USD}`,
-    cadence: "one-time, per server or skill",
-    blurb: "Request any server. Graded within 48 hours of payment.",
+    price: "discontinued",
+    cadence: "hosted battery",
+    blurb: "Operator-run grading is no longer offered. Run the open harness yourself.",
     points: [
-      "The full litmus battery, run on your request within 48h",
-      "The same thresholds and publication path as every published grade",
-      "Paid in $POLYGRAPH on Base — agents can pay $1 in USDC via x402",
+      "Existing published grades stay on the site, with the same evidence",
+      "The full litmus battery remains open to re-run locally",
+      "npx -y -p @polygraphso/litmus polygraphso-litmus litmus <server>",
     ],
-    cta: { label: "Request a grade →", href: "/request" },
-    foot: "Buys the run, never the grade. Remote-only servers still cap at B.",
+    cta: { label: "Run the harness →", href: "/builders#install" },
+    foot: "Hosted grading is discontinued. A self-run grade is still reproducible.",
   },
   {
     name: "Pro monitors",

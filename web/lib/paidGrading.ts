@@ -24,6 +24,7 @@ import {
   getGradeStatus,
   runnerKindFor,
 } from "@/lib/hostedRunner";
+import { HOSTED_GRADING_DISABLED } from "@/lib/hostedGradingSunset";
 
 /** The user-facing state the status endpoint returns and the UI polls on. */
 export type GradeProgress =
@@ -52,6 +53,7 @@ const REQUEST_COLUMNS =
  * is unconfigured, or on a runner error — the request stays paid either way.
  */
 export async function startGradeForRequest(requestId: string): Promise<void> {
+  if (HOSTED_GRADING_DISABLED) return;
   const db = getSupabaseAdmin();
   if (!db) return;
   const cfg = hostedRunnerConfig();

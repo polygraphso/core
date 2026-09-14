@@ -17,8 +17,6 @@
 import { getSupabaseClient } from "../supabase.js";
 import { runEcosystemAlerts, isoWeek } from "../alerts/ecosystem.js";
 import { supabaseEcosystemAlertStore, type EcosystemAlertStore } from "../alerts/ecosystemStore.js";
-import { supabaseAlertStore } from "../alerts/store.js";
-import { defaultDriftDeps } from "../alerts/alerts.js";
 import { resendSender } from "../alerts/email.js";
 
 interface CliArgs {
@@ -67,8 +65,7 @@ async function main(): Promise<void> {
     periodKey,
     sender,
     siteUrl,
-    alertStore: supabaseAlertStore(supabase),
-    driftDeps: defaultDriftDeps,
+    // Hosted grading is discontinued — skip freshness regrades onto the VPS.
     overrideRecipient: args.to,
     dryRun: args.dryRun,
     log: (m) => console.log(m),

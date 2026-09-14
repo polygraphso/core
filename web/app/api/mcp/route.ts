@@ -23,7 +23,6 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { clientIp, rateLimitOk } from "@/lib/rateLimit";
 import { resolveAgentIdentity, type AgentIdentity } from "@/lib/agentIdentity";
 import { runCheck, runList, runGradeRequest, type LookupContext } from "@/lib/lookup";
-import { PRIORITY_GRADE_PRICE_USD } from "@/lib/paymentConfig";
 import { SITE_ORIGIN } from "@/lib/site";
 
 export const runtime = "nodejs";
@@ -43,12 +42,11 @@ const INSTRUCTIONS = [
   "Use check_server as the pre-flight check before recommending or installing a server:",
   "it returns the published grade in well under a second and runs nothing. A not_available",
   "result means the server is unevaluated (neither safe nor unsafe), not that it failed.",
-  `Call request_grade to get it graded: a $${PRIORITY_GRADE_PRICE_USD} one-time fee applies,`,
-  "paid via the response's payment link (x402 for agents, web checkout for humans); the fee",
-  "buys the run, never the grade. list_servers returns servers with a published grade, 25 at",
-  "a time by default (up to 100 per call), with a summary that always covers the full graded",
-  "corpus. Every grade is reproducible: the report page carries a one-command re-run. This",
-  "endpoint does not grade servers itself.",
+  "Hosted grading is discontinued: request_grade returns gone. Grade a server yourself with",
+  "the open harness (the self_grade command on a miss). list_servers returns servers with a",
+  "published grade, 25 at a time by default (up to 100 per call), with a summary that always",
+  "covers the full graded corpus. Every grade is reproducible: the report page carries a",
+  "one-command re-run. This endpoint does not grade servers itself.",
 ].join(" ");
 
 /** Build the caller identity from the MCP initialize handshake (name/version,
@@ -207,8 +205,7 @@ function registerTools(server: McpServer): void {
       if (r.status === "not_available") {
         return dataResult(
           `${server_ref}: not_available. Unevaluated (neither safe nor unsafe). ` +
-            `Request it with request_grade ($${PRIORITY_GRADE_PRICE_USD} fee, graded within 48h of payment), ` +
-            `or grade it yourself: ${r.self_grade}`,
+            `Hosted grading is discontinued. Grade it yourself: ${r.self_grade}`,
           { status: "not_available", server_ref, report_url: r.notify_url, self_grade: r.self_grade },
         );
       }
@@ -269,16 +266,9 @@ function registerTools(server: McpServer): void {
     {
       title: "Request a polygraph grade for an MCP server",
       description:
-        `Record a grade request with polygraph.so. Recording is free; only real, plausibly-MCP ` +
-        `targets are accepted. Grading starts once the request's one-time $${PRIORITY_GRADE_PRICE_USD} ` +
-        `USD fee is paid: payment.payUrl is the human/browser checkout (paid in $POLYGRAPH), and ` +
-        `payment.x402Url is the agent rail, POST the same request body there with an x402-capable ` +
-        `client. A bare POST to x402Url returns a 402 with the exact payment requirements; retry ` +
-        `with an X-PAYMENT header. Asset is USDC on Base mainnet (eip155:8453). On the x402 rail ` +
-        `settlement is deferred: the authorization is charged only once a grade lands, and a run the ` +
-        `harness cannot complete voids it, so nothing is charged. Paying starts a 48h grading clock. The fee ` +
-        `buys the run, never the grade. After paying, poll check_server with the same server_ref for ` +
-        `the published result, or poll statusUrl for progress.`,
+        "Hosted grading is discontinued. This tool returns gone. Existing published grades " +
+        "remain available via check_server / list_servers. To grade a server yourself, run the " +
+        "open harness: npx -y -p @polygraphso/litmus polygraphso-litmus litmus <server_ref>.",
       inputSchema: { server_ref: z.string().min(1).max(512).describe(SERVER_REF_DESC) },
       outputSchema: REQUEST_OUTPUT,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },

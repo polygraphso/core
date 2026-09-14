@@ -74,6 +74,8 @@ describe("runCheck", () => {
     if (r.status === "not_available") {
       expect(r.self_grade).toContain("npm/nope-mcp");
       expect(r.notify_url).toContain("npm/nope-mcp");
+      expect(r.message).toContain("Hosted grading is discontinued");
+      expect(r.message).not.toContain("request_grade");
     }
     // demand counter bumped on a miss
     expect(supabase.rpc).toHaveBeenCalledWith("bump_untracked_demand", { p_server_ref: "npm/nope-mcp" });
@@ -95,29 +97,16 @@ describe("runCheck", () => {
 });
 
 describe("runGradeRequest", () => {
-  it("maps an mcp caller to source=mcp and forwards its agent_id", async () => {
-    const rpc: Mock<(...a: unknown[]) => Promise<unknown>> = vi.fn(async () => ({ data: { created: true, demand: 1 }, error: null }));
-    const supabase = fakeSupabase(rpc);
-    await runGradeRequest({ serverRef: "npm/tavily-mcp" }, { supabase, identity: identity("mcp") });
-    const call = rpc.mock.calls.find((c) => c[0] === "record_grade_request");
-    expect(call?.[1]).toMatchObject({ p_source: "mcp", p_agent_id: "claude-code/2.1.0" });
-  });
-
-  it("records a raw caller as source=cli with a null agent_id", async () => {
-    const rpc: Mock<(...a: unknown[]) => Promise<unknown>> = vi.fn(async () => ({ data: { created: true, demand: 2 }, error: null }));
-    const supabase = fakeSupabase(rpc);
-    await runGradeRequest(
+  it("returns 410 and does not write when hosted grading is discontinued", async () => {
+    const rpc: Mock<(...a: unknown[]) => Promise<unknown>> = vi.fn(async () => ({
+      data: { created: true, demand: 1 },
+      error: null,
+    }));
+    const r = await runGradeRequest(
       { serverRef: "npm/tavily-mcp" },
-      { supabase, identity: identity("raw", "ua:curl/8.6") },
+      { supabase: fakeSupabase(rpc), identity: identity("mcp") },
     );
-    const call = rpc.mock.calls.find((c) => c[0] === "record_grade_request");
-    expect(call?.[1]).toMatchObject({ p_source: "cli", p_agent_id: null });
-  });
-
-  it("rejects a bad ref before touching the DB", async () => {
-    const rpc: Mock<(...a: unknown[]) => Promise<unknown>> = vi.fn(async () => ({ data: null, error: null }));
-    const r = await runGradeRequest({ serverRef: "" }, { supabase: fakeSupabase(rpc), identity: identity("mcp") });
-    expect(r.status).toBe("error");
+    expect(r).toMatchObject({ status: "error", code: 410 });
     expect(rpc).not.toHaveBeenCalled();
   });
 });
