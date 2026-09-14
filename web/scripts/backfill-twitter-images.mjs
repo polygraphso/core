@@ -3,14 +3,17 @@
 // image_url + image_ref on the row. Idempotent (upsert). Skips threads with no
 // local image. Run:
 //   node --env-file=web/.env.local web/scripts/backfill-twitter-images.mjs
+// Optional arg: path to the twitter/ dir (defaults to the workspace twitter/).
 import { readFileSync, readdirSync, existsSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!url || !key) throw new Error("missing SUPABASE_URL / SERVICE_ROLE_KEY");
 
-const TWITTER_DIR = "/Users/rubendinis/Documents/Code/polygraphso/twitter";
+const TWITTER_DIR =
+  process.argv[2] ?? resolve(dirname(fileURLToPath(import.meta.url)), "../../../twitter");
 const BUCKET = "twitter-images";
 const auth = { apikey: key, Authorization: `Bearer ${key}` };
 

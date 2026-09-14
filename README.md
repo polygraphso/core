@@ -49,3 +49,7 @@ Deployed on Vercel. The site is live; grade reads come from the shared `hosted_r
 - Keep changes scoped to what a task needs — don't add features, abstractions, or shims ahead of demand.
 - Clean slate from Talent Protocol heritage. Don't drag in Builder Score, Talent Passport, or other legacy concepts.
 - Independence is disclosure-based, not refusal-based (see `CLAUDE.md`).
+
+## License
+
+[Apache-2.0](LICENSE) — © polygraph.so.
