@@ -17,6 +17,7 @@ import { getSupabaseAdmin } from "@/lib/supabase";
 import { enforceRateLimit } from "@/lib/rateLimit";
 import { resolveAgentIdentity } from "@/lib/agentIdentity";
 import { runGradeRequest } from "@/lib/lookup";
+import { hostedGradingGoneResponse, HOSTED_GRADING_DISABLED } from "@/lib/hostedGradingSunset";
 
 interface GradeRequestBody {
   server_ref?: unknown;
@@ -27,6 +28,8 @@ interface GradeRequestBody {
 }
 
 export async function POST(request: Request) {
+  if (HOSTED_GRADING_DISABLED) return hostedGradingGoneResponse();
+
   const limited = await enforceRateLimit(request, "cli-grade-request", {
     max: 20,
     windowSeconds: 60,

@@ -118,7 +118,7 @@ export const NAV_ITEMS: NavItem[] = [
       ],
       listLabel: "Get graded",
       list: [
-        { name: "Request a grade", href: "/request" },
+        { name: "Run the harness", href: "/builders#install" },
         { name: "Monitor a server", href: "/monitor" },
       ],
       subLinks: [
@@ -127,9 +127,9 @@ export const NAV_ITEMS: NavItem[] = [
         { label: "Glama", href: GLAMA, external: true },
       ],
       cta: {
-        title: "Add your server",
-        desc: "Request a grade: $1 one-time, graded within 48h of payment.",
-        href: "/request",
+        title: "Grade a server yourself",
+        desc: "Hosted grading is discontinued. Run the open harness locally.",
+        href: "/builders#install",
       },
     },
   },

@@ -199,13 +199,12 @@ export function RankingsTable({ rows }: { rows: RankingRow[] }) {
                           {row.grade}
                         </span>
                       ) : (
-                        <Link
-                          href="/request"
-                          className="text-[11px] tracking-wide transition-colors hover:text-oxblood"
+                        <span
+                          className="text-[11px] tracking-wide"
                           style={{ color: UNRATED_HEX }}
                         >
-                          request
-                        </Link>
+                          —
+                        </span>
                       )}
                     </td>
                     <td className="py-3.5 pr-5">

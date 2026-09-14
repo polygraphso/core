@@ -4,7 +4,11 @@
  * through here so the runner bearer token (HOSTED_RUNNER_TOKEN) stays
  * server-side and never reaches the browser. The request builders are pure, so
  * the bearer/url/body wiring is unit-tested without a live runner.
+ *
+ * Hosted grading is discontinued: `hostedRunnerConfig` always returns null so
+ * every caller fails closed without talking to the VPS.
  */
+import { HOSTED_GRADING_DISABLED } from "@/lib/hostedGradingSunset";
 
 export type RunnerKind = "server" | "skill";
 
@@ -20,9 +24,10 @@ export function runnerKindFor(targetKind: string): RunnerKind {
   return targetKind === "skill" ? "skill" : "server";
 }
 
-/** Runner config from the environment, or null when unconfigured (the route maps
- *  null → 503 rather than throwing). */
+/** Runner config from the environment, or null when unconfigured / sunset
+ *  (callers map null → 503 rather than throwing). */
 export function hostedRunnerConfig(): RunnerConfig | null {
+  if (HOSTED_GRADING_DISABLED) return null;
   const url = process.env.HOSTED_RUNNER_URL;
   const token = process.env.HOSTED_RUNNER_TOKEN;
   if (!url || !token) return null;

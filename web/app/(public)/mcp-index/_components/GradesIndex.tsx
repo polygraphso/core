@@ -45,8 +45,8 @@ export function GradesIndex({
         dependents and release velocity. It measures{" "}
         <span className="text-ink-muted">reach, not safety</span>: the litmus grade is the only
         safety verdict. Grades come from the open litmus harness; you can{" "}
-        <Link href="/request" className="border-b hairline border-dotted hover:text-oxblood">
-          request a grade
+        <Link href="/builders#install" className="border-b hairline border-dotted hover:text-oxblood">
+          run it yourself
         </Link>{" "}
         for a server, or read the{" "}
         <Link href="/methodology" className="border-b hairline border-dotted hover:text-oxblood">

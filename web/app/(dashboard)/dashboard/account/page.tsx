@@ -112,10 +112,7 @@ export default async function AccountPage() {
         </div>
         {gradeRequests.length === 0 ? (
           <p className="border border-rule rounded-[4px] px-5 py-4 font-mono text-[12px] text-ink-muted">
-            No grade requests yet.{" "}
-            <Link href="/request" className="text-ink underline decoration-dotted hover:text-oxblood">
-              Request a grade →
-            </Link>
+            No grade requests yet. Hosted grading is discontinued.
           </p>
         ) : (
           <ul className="divide-y divide-rule border-y border-rule">

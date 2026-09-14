@@ -12,6 +12,8 @@ concurrency:
 
 jobs:
   alerts:
+    # Hosted grading is discontinued. Do not enqueue new-version regrades.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

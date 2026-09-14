@@ -32,6 +32,7 @@ import { PRIORITY_GRADE_PRICE_USD, TREASURY_ADDRESS } from "@/lib/paymentConfig"
 import { SITE_ORIGIN } from "@/lib/site";
 import { getX402Server, requestContext, USDC_DECIMALS } from "@/lib/x402Server";
 import type { x402HTTPResourceServer } from "@x402/core/server";
+import { hostedGradingGoneResponse, HOSTED_GRADING_DISABLED } from "@/lib/hostedGradingSunset";
 
 interface GradeRequestBody {
   server_ref?: unknown;
@@ -42,6 +43,8 @@ interface GradeRequestBody {
 }
 
 export async function POST(request: Request) {
+  if (HOSTED_GRADING_DISABLED) return hostedGradingGoneResponse();
+
   const limited = await enforceRateLimit(request, "x402-grade-request", {
     max: 20,
     windowSeconds: 60,

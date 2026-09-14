@@ -10,8 +10,11 @@
 
 import { enforceRateLimit } from "@/lib/rateLimit";
 import { verifyTransferPayment } from "@/lib/priorityPayments";
+import { hostedGradingGoneResponse, HOSTED_GRADING_DISABLED } from "@/lib/hostedGradingSunset";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (HOSTED_GRADING_DISABLED) return hostedGradingGoneResponse();
+
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/.test(id)) {
     return Response.json({ error: "bad request id" }, { status: 400 });

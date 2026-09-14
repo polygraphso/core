@@ -16,6 +16,7 @@ import {
 } from "@/lib/ecosystemAccess";
 import { getPaymentGate } from "@/lib/ecosystemPayments";
 import { hostedRunnerConfig, postGrade, runnerKindFor } from "@/lib/hostedRunner";
+import { HOSTED_GRADING_DISABLED } from "@/lib/hostedGradingSunset";
 import type { EcosystemEntryKind } from "@/lib/ecosystemTypes";
 
 export interface Guarded {
@@ -91,6 +92,7 @@ export async function fireGradeForEntry(entry: {
   target: string | null;
   target_kind: EcosystemEntryKind;
 }): Promise<GradeFire> {
+  if (HOSTED_GRADING_DISABLED) return { jobId: null, status: null, note: "hosted-grading-discontinued" };
   const db = getSupabaseAdmin();
   if (!entry.target) return { jobId: null, status: null, note: "no-target" };
   const cfg = hostedRunnerConfig();

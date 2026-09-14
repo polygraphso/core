@@ -1,10 +1,7 @@
 /**
- * `polygraphso request <ref>` — add an ungraded server to the public grading
- * queue via POST /api/cli/grade-request. Free, best-effort; the natural
- * follow-up to a `check` that came back "not available yet". Read the grade
- * later with `polygraphso check <ref>`.
- *
- * Voice: brand-foundation.md — plain English, arrow-prefixed output lines.
+ * `polygraphso request <ref>` — previously queued a server for hosted grading.
+ * Hosted grading is discontinued; the API returns 410 and this command prints
+ * that message.
  */
 
 import { NETWORK_FAILURE_LINE, cliAgentId, requestUrl } from "./api.js";
@@ -76,7 +73,11 @@ export async function runRequest(args: readonly string[]): Promise<number> {
   }
 
   if (!res.ok) {
-    process.stderr.write(`polygraphso: server returned ${res.status}. Try again in a moment.\n`);
+    const errBody = (await res.json().catch(() => null)) as { error?: unknown } | null;
+    const detail = typeof errBody?.error === "string" ? errBody.error : null;
+    process.stderr.write(
+      detail ? `polygraphso: ${detail}\n` : `polygraphso: server returned ${res.status}. Try again in a moment.\n`,
+    );
     return 1;
   }
 

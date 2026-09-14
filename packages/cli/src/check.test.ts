@@ -5,14 +5,14 @@ import { __testing } from "./check.js";
 const { formatNotAvailable } = __testing;
 
 describe("formatNotAvailable", () => {
-  it("offers request and notify actions", () => {
+  it("offers notify and not a hosted request", () => {
     const out = formatNotAvailable(
       "npm/foo-mcp",
       {},
       "polygraph.so/notify?for=npm/foo-mcp",
     );
     expect(out).toMatch(/not available/i);
-    expect(out).toContain("polygraphso request npm/foo-mcp");
+    expect(out).not.toContain("polygraphso request");
     expect(out).toContain("polygraph.so/notify?for=npm/foo-mcp");
   });
 

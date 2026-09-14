@@ -79,8 +79,7 @@ export default async function RankingsPage() {
     // Show only servers that carry a published grade. Most of the adoption
     // universe can't be graded from a public reference — servers that need an
     // API key or a local runtime just to boot (slack, postgres, figma, …) would
-    // otherwise fill the table with dead "request" rows. The top-of-page
-    // "Request a grade" CTA still covers anything ungraded. Ordered by adoption —
+    // otherwise fill the table with dead ungraded rows. Ordered by adoption —
     // filter, don't re-sort — then renumber the survivors 1..N so the rank column
     // reads cleanly.
     const registryRows = mergeRankings(ranked, grades)
@@ -121,8 +120,8 @@ export default async function RankingsPage() {
                     <>
                       {gradedCount} of {registryCount} adoption-ranked MCP servers carry a published
                       grade. The rest aren&rsquo;t graded from a public reference yet — some need
-                      authenticated access, others are still queued; request one and we&rsquo;ll run
-                      it
+                      authenticated access. Hosted grading is discontinued; run the open harness
+                      yourself to grade one.
                     </>
                   ) : (
                     <>
@@ -151,13 +150,13 @@ export default async function RankingsPage() {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-4">
             <a
-              href="/request"
+              href="/builders#install"
               className="inline-flex items-center gap-2 bg-ink text-parchment px-5 py-3 font-mono text-sm tracking-wide hover:bg-oxblood transition-colors"
             >
-              Request a grade
+              Run the harness
             </a>
             <span className="font-mono text-[11px] text-ink-faint leading-relaxed max-w-xs">
-              Not up yet? Add it to the bench — free, and we email you when it publishes.
+              Hosted grading is discontinued. Grade a server locally with the open harness.
             </span>
           </div>
         </header>
