@@ -2,12 +2,13 @@
  * GET /api/cron/x402-reconcile — the sweep half of deferred x402 settlement.
  *
  * Most authorizations settle the moment the paying agent polls its statusUrl
- * (pollAndReconcile settles/voids inline). This cron covers the agent that
- * pays and never polls: every 10 minutes it walks the open authorizations
- * ('authorized'/'settling') and runs the same reconciler, so a finished run
- * settles (or a failed one voids) well inside the authorization window.
+ * (pollAndReconcile settles/voids inline). This endpoint covers the agent that
+ * pays and never polls: it walks the open authorizations ('authorized'/
+ * 'settling') and runs the same reconciler.
  *
- * Vercel cron auth: requires CRON_SECRET (Authorization: Bearer <secret>).
+ * No longer on a schedule. Hosted grading is sunset, so no new authorization
+ * can be created and the sweep has nothing left to reach; it stays as a manual
+ * drain. Requires CRON_SECRET (Authorization: Bearer <secret>).
  */
 
 import { pollAndReconcile } from "@/lib/paidGrading";
