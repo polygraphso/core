@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono, Source_Serif_4 } from "next/font/google";
 import { SITE_ORIGIN } from "@/lib/site";
 import { JsonLd } from "@/app/_components/JsonLd";
+import { WindDownBanner } from "@/app/_components/WindDownBanner";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({
@@ -106,6 +107,8 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col paper-grain">
         <JsonLd data={siteJsonLd} />
+        {/* Above every masthead — public, marketing, and the dashboard shell. */}
+        <WindDownBanner />
         {children}
       </body>
     </html>
