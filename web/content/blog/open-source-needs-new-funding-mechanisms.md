@@ -4,9 +4,9 @@ date: "2026-06-16"
 excerpt: "Independent AI safety testing is hard to fund without bending the work. Polygraph is an experiment in open, community-funded safety infrastructure."
 ---
 
-Open source is carrying more of the AI stack every week: agents, MCP servers, evals, safety tools, dev tooling, model wrappers, automation layers. A lot of the internet's next trust layer is being maintained by tiny teams, solo builders, and independent labs.
+Open source is carrying more of the AI stack every week: agents, MCP servers, evals, safety tools, dev tooling, model wrappers, automation layers. A lot of the Internet's next trust layer is being maintained by tiny teams, solo builders, and independent labs.
 
-But the funding model still looks broken. Grants are slow. Sponsorships are fragile. VC pushes useful tools towards becoming for-profit ventures before the public-good layer is proven. And when the work is about trust, security, or AI safety, who funds it matters even more.
+But the funding model still looks broken. Grants are slow, sponsorships are fragile, and VC pushes useful tools towards becoming for-profit ventures before the public-good layer is proven… And, when the work is about trust, security, or AI safety, who funds it matters even more.
 
 ## Why this matters for AI
 
